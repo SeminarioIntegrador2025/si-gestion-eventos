@@ -16,7 +16,7 @@ public class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Cliente>()
-            .HasIndex(c => c.Cedula)
+            .HasIndex(c => c.CedulaIdentidad)
             .IsUnique();
 
         modelBuilder.Entity<Evento>()
