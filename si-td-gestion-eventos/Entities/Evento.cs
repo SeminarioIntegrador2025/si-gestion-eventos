@@ -1,10 +1,12 @@
 ﻿using si_td_gestion_eventos.Models.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace si_td_gestion_eventos.Entities
 {
     public class Evento
     {
         public int EventoId { get; set; }
+    
         public required DateTime FechaContrato { get; set; }
         public required DateTime Inicio { get; set; }
         public required DateTime Fin { get; set; }

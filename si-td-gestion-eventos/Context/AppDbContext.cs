@@ -7,7 +7,7 @@ namespace si_td_gestion_eventos.Context
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) 
         {
-            
+           
         }
 
         public DbSet<Cliente> Cliente { get; set; }

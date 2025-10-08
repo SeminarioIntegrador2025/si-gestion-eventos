@@ -1,5 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using si_td_gestion_eventos.Context;
+using si_td_gestion_eventos.Entities;
 
 namespace si_td_gestion_eventos.Controllers
 {
@@ -10,5 +13,29 @@ namespace si_td_gestion_eventos.Controllers
             var eventos = _dbContext.Evento.ToList();
             return View(eventos);
         }
+
+
+        // GET: Evento/Create
+        public IActionResult Create()
+        {
+            return View();
+        }
+
+        // POST: Evento/Create
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Create(Evento evento)
+        {
+            if (ModelState.IsValid)
+            {
+                _dbContext.Evento.Add(evento);
+                _dbContext.SaveChanges();
+                return RedirectToAction(nameof(Index));
+
+            }
+      
+            return View(evento);
+        }
+
     }
 }

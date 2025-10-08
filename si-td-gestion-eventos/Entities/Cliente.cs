@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
+
 namespace si_td_gestion_eventos.Entities
 {
     public class Cliente
@@ -7,6 +8,7 @@ namespace si_td_gestion_eventos.Entities
         public int ClienteId { get; set; }
         public required string Nombre { get; set; }
         public required string Apellido { get; set; }
+
         public required string CedulaIdentidad { get; set; }
         public required string Domicilio { get; set; }
         public required string Telefono { get; set; }
