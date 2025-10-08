@@ -1,10 +1,10 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace si_td_gestion_eventos.Models
+namespace si_td_gestion_eventos.Entities
 {
     public class Cliente
     {
-        public int Id { get; set; }
+        public int ClienteId { get; set; }
         public required string Nombre { get; set; }
         public required string Apellido { get; set; }
         public required string CedulaIdentidad { get; set; }

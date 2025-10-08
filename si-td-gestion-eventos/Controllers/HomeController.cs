@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using si_td_gestion_eventos.Models;
+using si_td_gestion_eventos.Entities;
 
 namespace si_td_gestion_eventos.Controllers
 {

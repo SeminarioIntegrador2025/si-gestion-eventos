@@ -1,0 +1,37 @@
+﻿@using si_td_gestion_eventos.Entities
+@model List<Cliente>
+
+<div>
+    <div>
+        <h2>Clientes</h2>
+        <div class="mb-3">
+            <a class="btn btn-primary" href="/Cliente/Create">Cargar Cliente</a>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Apellido</th>
+                    <th>Cédula de Identidad</th>
+                    <th>Domicilio</th>
+                    <th>Teléfono</th>
+                    <th>Activo</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var cliente in Model)
+                {
+                    <tr>
+                        <td>@cliente.Nombre</td>
+                        <td>@cliente.Apellido</td>
+                        <td>@cliente.CedulaIdentidad</td>
+                        <td>@cliente.Domicilio</td>
+                        <td>@cliente.Telefono</td>
+                        <td>@(cliente.Activo ? "Sí" : "No")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+

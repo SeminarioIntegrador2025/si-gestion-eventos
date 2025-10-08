@@ -1,4 +1,4 @@
-namespace si_td_gestion_eventos.Models
+namespace si_td_gestion_eventos.Entities
 {
     public class ErrorViewModel
     {

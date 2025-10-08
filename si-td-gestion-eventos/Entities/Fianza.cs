@@ -1,10 +1,10 @@
 ﻿using si_td_gestion_eventos.Models.Enums;
 
-namespace si_td_gestion_eventos.Models
+namespace si_td_gestion_eventos.Entities
 {
     public class Fianza
     {
-        public int Id { get; set; }
+        public int FianzaId { get; set; }
         public required int EventoId { get; set; }
                 
         public required decimal Monto { get; set; }

@@ -1,0 +1,49 @@
+﻿@using si_td_gestion_eventos.Entities
+@model List<Evento>
+
+<div>
+    <div>
+        <h2>Eventos</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Fecha Contrato</th>
+                    <th>Inicio</th>
+                    <th>Fin</th>
+                    <th>Hora Inicio</th>
+                    <th>Hora Fin</th>
+                    <th>Tipo</th>
+                    <th>Costo Alquiler</th>
+                    <th>Monto Reserva</th>
+                    <th>Cantidad Personas</th>
+                    <th>Responsable</th>
+                    <th>Teléfono Responsable</th>
+                    <th>Cédula Responsable</th>
+                    <th>Estado</th>
+                    <th>Cliente</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var evento in Model)
+                {
+                    <tr>
+                        <td>@evento.FechaContrato.ToShortDateString()</td>
+                        <td>@evento.Inicio.ToString("g")</td>
+                        <td>@evento.Fin.ToString("g")</td>
+                        <td>@evento.HoraInicio</td>
+                        <td>@evento.HoraFin</td>
+                        <td>@evento.Tipo</td>
+                        <td>@evento.CostoAlquiler.ToString("C")</td>
+                        <td>@evento.MontoReserva.ToString("C")</td>
+                        <td>@evento.CantidadPersonas</td>
+                        <td>@evento.ResponsableNombre</td>
+                        <td>@evento.ResponsableTelefono</td>
+                        <td>@evento.ResponsableCedula</td>
+                        <td>@evento.Estado</td>
+                        <td>@evento.Cliente.Nombre @evento.Cliente.Apellido</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
