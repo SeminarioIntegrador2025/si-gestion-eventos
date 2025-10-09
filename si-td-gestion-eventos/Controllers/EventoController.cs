@@ -10,7 +10,9 @@ namespace si_td_gestion_eventos.Controllers
     {
         public IActionResult Index()
         {
-            var eventos = _dbContext.Evento.ToList();
+            var eventos = _dbContext.Evento
+                .Include(e => e.Cliente) 
+                .ToList();
             return View(eventos);
         }
 

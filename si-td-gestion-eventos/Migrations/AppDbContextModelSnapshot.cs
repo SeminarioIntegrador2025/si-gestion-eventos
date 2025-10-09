@@ -55,7 +55,7 @@ namespace si_td_gestion_eventos.Migrations
 
                     b.HasKey("ClienteId");
 
-                    b.ToTable("Cliente", (string)null);
+                    b.ToTable("Cliente");
 
                     b.HasData(
                         new
@@ -97,7 +97,7 @@ namespace si_td_gestion_eventos.Migrations
                     b.HasIndex("PagoId")
                         .IsUnique();
 
-                    b.ToTable("ComprobanteExterno", (string)null);
+                    b.ToTable("ComprobanteExterno");
                 });
 
             modelBuilder.Entity("si_td_gestion_eventos.Entities.Evento", b =>
@@ -160,7 +160,7 @@ namespace si_td_gestion_eventos.Migrations
 
                     b.HasIndex("ClienteId");
 
-                    b.ToTable("Evento", (string)null);
+                    b.ToTable("Evento");
                 });
 
             modelBuilder.Entity("si_td_gestion_eventos.Entities.Fianza", b =>
@@ -197,7 +197,7 @@ namespace si_td_gestion_eventos.Migrations
                     b.HasIndex("EventoId")
                         .IsUnique();
 
-                    b.ToTable("Fianza", (string)null);
+                    b.ToTable("Fianza");
                 });
 
             modelBuilder.Entity("si_td_gestion_eventos.Entities.Pago", b =>
@@ -225,7 +225,7 @@ namespace si_td_gestion_eventos.Migrations
 
                     b.HasKey("PagoId");
 
-                    b.ToTable("Pago", (string)null);
+                    b.ToTable("Pago");
                 });
 
             modelBuilder.Entity("si_td_gestion_eventos.Entities.ComprobanteExterno", b =>
