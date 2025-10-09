@@ -1,37 +1,126 @@
-﻿@using si_td_gestion_eventos.Entities
-@model List<Cliente>
+﻿@model si_td_gestion_eventos.Infrastructure.PaginatedList<si_td_gestion_eventos.Entities.Cliente>
+@using si_td_gestion_eventos.Entities
+@{
+    ViewData["Title"] = "Clientes";
+    var ultimos = ViewBag.Ultimos as List<Cliente>;
+    string q = ViewBag.Search as string ?? "";
+    int pageSize = ViewBag.PageSize ?? 10;
+}
 
-<div>
-    <div>
-        <h2>Clientes</h2>
-        <div class="mb-3">
-            <a class="btn btn-primary" href="/Cliente/Create">Cargar Cliente</a>
-        </div>
-        <table class="table">
+@if (TempData["Ok"] != null)
+{
+    <div class="alert alert-success">@TempData["Ok"]</div>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="m-0">Lista de todos los clientes</h2>
+    <a class="btn btn-primary" asp-action="Create">+ Nuevo Cliente</a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <form method="get" class="row g-2 mb-3">
+            <div class="col-sm-8">
+                <input name="q" value="@q" class="form-control" placeholder="Buscar por nombre, apellido, cédula, teléfono o domicilio..." />
+            </div>
+            <div class="col-sm-2">
+                <select name="pageSize" class="form-select" onchange="this.form.submit()">
+                    @{
+                        int[] sizes = new[] { 5, 10, 20, 50 };
+                        foreach (var s in sizes)
+                        {
+                            <option value="@s" selected="@(s == pageSize)">@s por página</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-sm-2">
+                <button type="submit" class="btn btn-outline-secondary w-100">Buscar</button>
+            </div>
+        </form>
+
+        <table class="table table-striped">
             <thead>
                 <tr>
-                    <th>Nombre</th>
                     <th>Apellido</th>
-                    <th>Cédula de Identidad</th>
-                    <th>Domicilio</th>
+                    <th>Nombre</th>
+                    <th>Cédula</th>
                     <th>Teléfono</th>
                     <th>Activo</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (var cliente in Model)
+                @foreach (var c in Model)
                 {
                     <tr>
-                        <td>@cliente.Nombre</td>
-                        <td>@cliente.Apellido</td>
-                        <td>@cliente.CedulaIdentidad</td>
-                        <td>@cliente.Domicilio</td>
-                        <td>@cliente.Telefono</td>
-                        <td>@(cliente.Activo ? "Sí" : "No")</td>
+                        <td>@c.Apellido</td>
+                        <td>@c.Nombre</td>
+                        <td>@c.CedulaIdentidad</td>
+                        <td>@c.Telefono</td>
+                        <td>@(c.Activo ? "Sí" : "No")</td>
+                        <td class="text-end">
+                            <a asp-action="Details" asp-route-id="@c.ClienteId" class="btn btn-sm btn-outline-info">Ver</a>
+                            <a asp-action="Edit" asp-route-id="@c.ClienteId" class="btn btn-sm btn-outline-secondary">Editar</a>
+                            <a asp-action="Delete" asp-route-id="@c.ClienteId" class="btn btn-sm btn-outline-danger">Borrar</a>
+                        </td>
                     </tr>
                 }
             </tbody>
         </table>
+
+        <!-- Paginación -->
+        <nav aria-label="Paginación">
+            <ul class="pagination">
+                <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-q="@q"
+                       asp-route-page="@(Model.PageIndex - 1)"
+                       asp-route-pageSize="@pageSize">Anterior</a>
+                </li>
+
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                        <a class="page-link"
+                           asp-action="Index"
+                           asp-route-q="@q"
+                           asp-route-page="@i"
+                           asp-route-pageSize="@pageSize">@i</a>
+                    </li>
+                }
+
+                <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-q="@q"
+                       asp-route-page="@(Model.PageIndex + 1)"
+                       asp-route-pageSize="@pageSize">Siguiente</a>
+                </li>
+            </ul>
+        </nav>
+
+        <p class="text-muted">
+            Mostrando @Model.Count de @Model.TotalCount clientes (página @Model.PageIndex de @Model.TotalPages).
+        </p>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">Últimos agregados</div>
+            <ul class="list-group list-group-flush">
+                @if (ultimos != null)
+                {
+                    @foreach (var u in ultimos)
+                    {
+                        <li class="list-group-item">
+                            <strong>@u.Apellido, @u.Nombre</strong><br />
+                            <small>@u.CedulaIdentidad · @u.Telefono</small>
+                        </li>
+                    }
+                }
+            </ul>
+        </div>
     </div>
 </div>
-

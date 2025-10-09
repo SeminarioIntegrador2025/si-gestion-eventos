@@ -1,43 +1,11 @@
 ﻿@model si_td_gestion_eventos.Entities.Cliente
-
 @{
-    ViewData["Title"] = "Cargar Cliente";
+    ViewData["Title"] = "Nuevo Cliente";
 }
 
-<h2>Cargar Cliente</h2>
-
+<h2>Nuevo Cliente</h2>
 <form asp-action="Create" method="post">
-    <div class="mb-3">
-        <label asp-for="Nombre" class="form-label"></label>
-        <input asp-for="Nombre" class="form-control" />
-        <span asp-validation-for="Nombre" class="text-danger"></span>
-    </div>
-    <div class="mb-3">
-        <label asp-for="Apellido" class="form-label"></label>
-        <input asp-for="Apellido" class="form-control" />
-        <span asp-validation-for="Apellido" class="text-danger"></span>
-    </div>
-    <div class="mb-3">
-        <label asp-for="CedulaIdentidad" class="form-label"> Cedula de Identidad</label>
-        <input asp-for="CedulaIdentidad" class="form-control" />
-        <span asp-validation-for="CedulaIdentidad" class="text-danger"></span>
-    </div>
-    <div class="mb-3">
-        <label asp-for="Domicilio" class="form-label"></label>
-        <input asp-for="Domicilio" class="form-control" />
-        <span asp-validation-for="Domicilio" class="text-danger"></span>
-    </div>
-    <div class="mb-3">
-        <label asp-for="Telefono" class="form-label"></label>
-        <input asp-for="Telefono" class="form-control" />
-        <span asp-validation-for="Telefono" class="text-danger"></span>
-    </div>
-    <div class="form-check mb-3">
-        <input asp-for="Activo" class="form-check-input" />
-        <label asp-for="Activo" class="form-check-label"></label>
-    </div>
-    <button type="submit" class="btn btn-success">Guardar</button>
-    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+    <partial name="_ClienteForm" />
+    <button type="submit" class="btn btn-primary">Guardar</button>
+    <a asp-action="Index" class="btn btn-secondary">Volver</a>
 </form>
-
-

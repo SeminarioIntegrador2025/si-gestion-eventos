@@ -1,0 +1,22 @@
+﻿@model si_td_gestion_eventos.Entities.Cliente
+@{
+    ViewData["Title"] = "Detalle";
+}
+
+<h2>Detalle del Cliente</h2>
+<dl class="row">
+    <dt class="col-sm-3">Nombre</dt>
+    <dd class="col-sm-9">@Model.Nombre</dd>
+    <dt class="col-sm-3">Apellido</dt>
+    <dd class="col-sm-9">@Model.Apellido</dd>
+    <dt class="col-sm-3">Cédula</dt>
+    <dd class="col-sm-9">@Model.CedulaIdentidad</dd>
+    <dt class="col-sm-3">Domicilio</dt>
+    <dd class="col-sm-9">@Model.Domicilio</dd>
+    <dt class="col-sm-3">Teléfono</dt>
+    <dd class="col-sm-9">@Model.Telefono</dd>
+    <dt class="col-sm-3">Activo</dt>
+    <dd class="col-sm-9">@(Model.Activo ? "Sí" : "No")</dd>
+</dl>
+<a asp-action="Edit" asp-route-id="@Model.ClienteId" class="btn btn-primary">Editar</a>
+<a asp-action="Index" class="btn btn-secondary">Volver</a>
