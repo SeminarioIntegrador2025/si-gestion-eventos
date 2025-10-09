@@ -11,7 +11,7 @@
 *.sln.docstates
 
 #Hide connection strings
-appsettings.Development.json
+*.appsettings.Development.json
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
