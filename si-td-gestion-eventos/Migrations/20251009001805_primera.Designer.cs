@@ -12,7 +12,7 @@ using si_td_gestion_eventos.Context;
 namespace si_td_gestion_eventos.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251008182211_primera")]
+    [Migration("20251009001805_primera")]
     partial class primera
     {
         /// <inheritdoc />

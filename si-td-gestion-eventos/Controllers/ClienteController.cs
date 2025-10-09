@@ -30,6 +30,7 @@ namespace si_td_gestion_eventos.Controllers
                 return RedirectToAction(nameof(Index));
             }
             return View(cliente);
+
         }
     }
 }
