@@ -12,7 +12,7 @@ using si_td_gestion_eventos.Context;
 namespace si_td_gestion_eventos.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251009001805_primera")]
+    [Migration("20251011174440_primera")]
     partial class primera
     {
         /// <inheritdoc />
@@ -38,25 +38,33 @@ namespace si_td_gestion_eventos.Migrations
 
                     b.Property<string>("Apellido")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
 
                     b.Property<string>("CedulaIdentidad")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
                     b.Property<string>("Domicilio")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
 
                     b.Property<string>("Telefono")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
                     b.HasKey("ClienteId");
+
+                    b.HasIndex("CedulaIdentidad")
+                        .IsUnique();
 
                     b.ToTable("Cliente");
 
@@ -114,7 +122,7 @@ namespace si_td_gestion_eventos.Migrations
                     b.Property<int>("CantidadPersonas")
                         .HasColumnType("int");
 
-                    b.Property<int>("ClienteId")
+                    b.Property<int?>("ClienteId")
                         .HasColumnType("int");
 
                     b.Property<decimal>("CostoAlquiler")
@@ -247,8 +255,7 @@ namespace si_td_gestion_eventos.Migrations
                     b.HasOne("si_td_gestion_eventos.Entities.Cliente", "Cliente")
                         .WithMany("Eventos")
                         .HasForeignKey("ClienteId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Cliente");
                 });

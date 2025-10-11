@@ -17,11 +17,11 @@ namespace si_td_gestion_eventos.Migrations
                 {
                     ClienteId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Nombre = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Apellido = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    CedulaIdentidad = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Domicilio = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Telefono = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Nombre = table.Column<string>(type: "nvarchar(60)", maxLength: 60, nullable: false),
+                    Apellido = table.Column<string>(type: "nvarchar(60)", maxLength: 60, nullable: false),
+                    CedulaIdentidad = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
+                    Domicilio = table.Column<string>(type: "nvarchar(120)", maxLength: 120, nullable: false),
+                    Telefono = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
                     Activo = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
@@ -49,7 +49,7 @@ namespace si_td_gestion_eventos.Migrations
                     ResponsableTelefono = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ResponsableCedula = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Estado = table.Column<int>(type: "int", nullable: false),
-                    ClienteId = table.Column<int>(type: "int", nullable: false)
+                    ClienteId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -136,6 +136,12 @@ namespace si_td_gestion_eventos.Migrations
                 table: "Cliente",
                 columns: new[] { "ClienteId", "Activo", "Apellido", "CedulaIdentidad", "Domicilio", "Nombre", "Telefono" },
                 values: new object[] { 1, true, "test", "131331313", "calle", "test", "47832" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Cliente_CedulaIdentidad",
+                table: "Cliente",
+                column: "CedulaIdentidad",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ComprobanteExterno_PagoId",

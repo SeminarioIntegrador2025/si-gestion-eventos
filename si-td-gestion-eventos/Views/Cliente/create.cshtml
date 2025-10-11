@@ -1,11 +1,15 @@
-﻿@model si_td_gestion_eventos.Entities.Cliente
+﻿@model ClienteVM
 @{
     ViewData["Title"] = "Nuevo Cliente";
 }
 
-<h2>Nuevo Cliente</h2>
-<form asp-action="Create" method="post">
-    <partial name="_ClienteForm" />
-    <button type="submit" class="btn btn-primary">Guardar</button>
-    <a asp-action="Index" class="btn btn-secondary">Volver</a>
-</form>
+<div>
+    <h2>Nuevo Cliente</h2>
+    <form asp-action="Create" method="post">
+        <partial name="_ClienteForm" />
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <a asp-action="Index" class="btn btn-secondary">Volver</a>
+    </form>
+
+    
+</div>
