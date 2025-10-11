@@ -19,7 +19,7 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="m-0">Lista de todos los clientes</h2>
-    <a class="btn btn-primary" asp-action="Create">+ Nuevo Cliente</a>
+    <a class="btn btn-primary" asp-action="Create"><i class="fa-solid fa-square-plus"></i>Nuevo Cliente</a>
 </div>
 
 <div class="row">
@@ -40,7 +40,7 @@
                 </select>
             </div>
             <div class="col-sm-2">
-                <button type="submit" class="btn btn-outline-secondary w-100">Buscar</button>
+                <button type="submit" class="btn btn-outline-secondary w-100"><i class="fa-solid fa-magnifying-glass"></i>Buscar</button>
             </div>
         </form>
 
@@ -65,9 +65,9 @@
                         <td>@c.Telefono</td>
                         <td>@(c.Activo ? "Sí" : "No")</td>
                         <td class="text-end">
-                            <a asp-action="Details" asp-route-id="@c.ClienteId" class="btn btn-sm btn-outline-info">Ver</a>
-                            <a asp-action="Edit" asp-route-id="@c.ClienteId" class="btn btn-sm btn-outline-secondary">Editar</a>
-                            <a asp-action="Delete" asp-route-id="@c.ClienteId" class="btn btn-sm btn-outline-danger">Borrar</a>
+                            <a asp-action="Details" asp-route-id="@c.ClienteId" class="btn btn-sm btn-outline-info"><i class="fa-solid fa-eye"></i>Ver</a>
+                            <a asp-action="Edit" asp-route-id="@c.ClienteId" class="btn btn-sm btn-outline-secondary"><i class="fa-solid fa-pen"></i>Editar</a>
+                            <a asp-action="Delete" asp-route-id="@c.ClienteId" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-delete-left"></i>Borrar</a>
                         </td>
                     </tr>
                 }

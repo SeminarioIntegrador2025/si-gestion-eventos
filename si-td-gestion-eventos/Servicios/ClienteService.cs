@@ -1,8 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc.Rendering;
 using si_td_gestion_eventos.Context;
-using si_td_gestion_eventos.Entities; // <-- Asegúrate de tener el using de tus entidades
-using System.Collections.Generic;
-using System.Linq;
 
 namespace si_td_gestion_eventos.Services
 {
