@@ -115,13 +115,11 @@
             <span asp-validation-for="ResponsableCedula" class="text-danger"></span>
         </div>
 
-        @if (isEditing)
-        {
             <div class="mb-3">
                 <label asp-for="Estado" class="form-label"></label>
                 <select asp-for="Estado" asp-items="Html.GetEnumSelectList<EventoEstado>()" class="form-select"></select>
                 <span asp-validation-for="Estado" class="text-danger"></span>
             </div>
-        }
+
     </div>
 </div>
