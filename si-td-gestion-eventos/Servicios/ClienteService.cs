@@ -1,32 +1,31 @@
-﻿// En Services/ClienteService.cs
-using Microsoft.AspNetCore.Mvc.Rendering;
+﻿using Microsoft.AspNetCore.Mvc.Rendering;
 using si_td_gestion_eventos.Context;
+using si_td_gestion_eventos.Entities; // <-- Asegúrate de tener el using de tus entidades
+using System.Collections.Generic;
+using System.Linq;
 
 namespace si_td_gestion_eventos.Services
 {
     public class ClienteService : IClienteService
     {
         private readonly AppDbContext _dbContext;
-    
+
         public ClienteService(AppDbContext dbContext)
         {
             _dbContext = dbContext;
         }
-
-        public SelectList GetClientesActivosParaDropdown()
+        public IEnumerable<SelectListItem> GetClientesActivosParaDropdown()
         {
-            var clientesDisponibles = _dbContext.Cliente
-                                              .Where(c => c.Activo)
-                                              .OrderBy(c => c.Apellido)
-                                              .ThenBy(c => c.Nombre)
-                                               .Select(c => new
-                                               {
-                                                   ClienteId = c.ClienteId,
-                                                   NombreCompleto = c.Apellido + ", " + c.Nombre + ", CI: " + c.CedulaIdentidad // Concatenamos aquí
-                                               })
+            return _dbContext.Cliente 
+                .Where(c => c.Activo)
+                .OrderBy(c => c.Apellido)
+                .ThenBy(c => c.Nombre)
+                .Select(c => new SelectListItem
+                {                  
+                    Value = c.ClienteId.ToString(),
+                    Text = $"{c.Apellido}, {c.Nombre} (CI: {c.CedulaIdentidad})"
+                })
                 .ToList();
-
-            return new SelectList(clientesDisponibles, "ClienteId", "NombreCompleto");
         }
     }
 }

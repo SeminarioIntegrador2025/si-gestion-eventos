@@ -26,8 +26,8 @@ namespace si_td_gestion_eventos.Entities
         public required EventoEstado Estado { get; set; } = EventoEstado.PendienteAConfirmar;
 
         // relaciones con otros modelos
-        public required int ClienteId { get; set; }
-        public required Cliente Cliente { get; set; } = null!;
+        public int? ClienteId { get; set; }
+        public Cliente? Cliente { get; set; } = null!;
                 
         public ICollection<Pago> Pagos { get; set; } = new List<Pago>();
         public Fianza? Fianza { get; set; }

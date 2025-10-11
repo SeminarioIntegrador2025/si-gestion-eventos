@@ -1,0 +1,42 @@
+﻿@model si_td_gestion_eventos.Entities.Evento
+
+@{
+    ViewData["Title"] = "Detalle";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<dl class="row">
+    <dt class="col-sm-3">Cliente</dt>
+    <dd class="col-sm-9">@Model.Cliente.Nombre @Model.Cliente.Apellido</dd>
+
+    <dt class="col-sm-3">Tipo de Evento</dt>
+    <dd class="col-sm-9">@Model.Tipo</dd>
+
+    <dt class="col-sm-3">Estado</dt>
+    <dd class="col-sm-9">@Model.Estado</dd>
+
+    <dt class="col-sm-3">Fecha del Contrato</dt>
+    <dd class="col-sm-9">@Model.FechaContrato.ToShortDateString()</dd>
+
+    <dt class="col-sm-3">Fecha de Inicio</dt>
+    <dd class="col-sm-9">@Model.Inicio.ToShortDateString()</dd>
+
+    <dt class="col-sm-3">Cantidad de Personas</dt>
+    <dd class="col-sm-9">@Model.CantidadPersonas</dd>
+
+    <dt class="col-sm-3">Nombre del Responsable</dt>
+    <dd class="col-sm-9">@Model.ResponsableNombre</dd>
+
+    <dt class="col-sm-3">Teléfono del Responsable</dt>
+    <dd class="col-sm-9">@Model.ResponsableTelefono</dd>
+
+    <dt class="col-sm-3">Costo del Alquiler</dt>
+    <dd class="col-sm-9">@Model.CostoAlquiler.ToString("C")</dd>
+
+    <dt class="col-sm-3">Saldo Restante</dt>
+    <dd class="col-sm-9">@Model.SaldoRestante().ToString("C")</dd>
+</dl>
+
+<a asp-action="Edit" asp-route-id="@Model.EventoId" class="btn btn-primary">Editar</a>
+<a asp-action="Index" class="btn btn-secondary">Volver</a>

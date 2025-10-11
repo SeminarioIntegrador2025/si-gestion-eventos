@@ -1,54 +1,135 @@
-﻿@using si_td_gestion_eventos.Entities
-@model List<Evento>
+﻿@model si_td_gestion_eventos.Infrastructure.PaginatedList<si_td_gestion_eventos.Entities.Evento>
+@using si_td_gestion_eventos.Entities
+@{
+    ViewData["Title"] = "Eventos";
+    var ultimos = ViewBag.Ultimos as List<Evento>;
+    string q = ViewBag.Search as string ?? "";
+    int pageSize = ViewBag.PageSize ?? 10;
+}
 
-<div>
-    <div>
-        <h2>Eventos</h2>
+@if (TempData["Ok"] != null)
+{
+    <div class="alert alert-success">@TempData["Ok"]</div>
+}
 
-        <div class="mb-3">
-            <a class="btn btn-primary" href="/Evento/Create">Cargar Nuevo Evento</a>
-        </div>
 
-        <table class="table">
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="m-0">Lista de todos los eventos</h2>
+    <a class="btn btn-primary" asp-action="Create">+ Nuevo Evento</a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <form method="get" class="row g-2 mb-3">
+            <div class="col-sm-8">
+                <input name="q" value="@q" class="form-control" placeholder="Buscar por cliente, tipo de evento, responsable..." />
+            </div>
+            <div class="col-sm-2">
+                <select name="pageSize" class="form-select" onchange="this.form.submit()">
+                    @{
+                        int[] sizes = new[] { 5, 10, 20, 50 };
+                        foreach (var s in sizes)
+                        {
+                            <option value="@s" selected="@(s == pageSize)">@s por página</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-sm-2">
+                <button type="submit" class="btn btn-outline-secondary w-100">Buscar</button>
+            </div>
+        </form>
+
+        <table class="table table-striped">
             <thead>
                 <tr>
-                    <th>Fecha Contrato</th>
-                    <th>Inicio</th>
-                    <th>Fin</th>
-                    <th>Hora Inicio</th>
-                    <th>Hora Fin</th>
-                    <th>Tipo</th>
-                    <th>Costo Alquiler</th>
-                    <th>Monto Reserva</th>
-                    <th>Cantidad Personas</th>
-                    <th>Responsable</th>
-                    <th>Teléfono Responsable</th>
-                    <th>Cédula Responsable</th>
-                    <th>Estado</th>
                     <th>Cliente</th>
+                    <th>Tipo de Evento</th>
+                    <th>Fecha Inicio</th>
+                    <th>Estado</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (var evento in Model)
+                @foreach (var e in Model)
                 {
                     <tr>
-                        <td>@evento.FechaContrato.ToShortDateString()</td>
-                        <td>@evento.Inicio.ToString("g")</td>
-                        <td>@evento.Fin.ToString("g")</td>
-                        <td>@evento.HoraInicio</td>
-                        <td>@evento.HoraFin</td>
-                        <td>@evento.Tipo</td>
-                        <td>@evento.CostoAlquiler.ToString("C")</td>
-                        <td>@evento.MontoReserva.ToString("C")</td>
-                        <td>@evento.CantidadPersonas</td>
-                        <td>@evento.ResponsableNombre</td>
-                        <td>@evento.ResponsableTelefono</td>
-                        <td>@evento.ResponsableCedula</td>
-                        <td>@evento.Estado</td>
-                        <td>@evento.Cliente.Nombre @evento.Cliente.Apellido</td>
+                        <td>@e.Cliente.Apellido, @e.Cliente.Nombre</td>
+                        <td>@e.Tipo</td>
+                        <td>@e.Inicio.ToShortDateString()</td>
+                        <td>@e.Estado</td>
+                        <td class="text-end">
+                        
+                            <a asp-action="Details" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-info">Ver</a>
+                            <a asp-action="Edit" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-secondary">Editar</a>
+                            <a asp-action="Cancel" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-danger">Cancelar Evento</a>
+                        </td>
                     </tr>
                 }
             </tbody>
         </table>
+
+        <nav aria-label="Paginación">
+            <ul class="pagination">
+                <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-q="@q"
+                       asp-route-page="@(Model.PageIndex - 1)"
+                       asp-route-pageSize="@pageSize">Anterior</a>
+                </li>
+
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                        <a class="page-link"
+                           asp-action="Index"
+                           asp-route-q="@q"
+                           asp-route-page="@i"
+                           asp-route-pageSize="@pageSize">@i</a>
+                    </li>
+                }
+
+                <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-q="@q"
+                       asp-route-page="@(Model.PageIndex + 1)"
+                       asp-route-pageSize="@pageSize">Siguiente</a>
+                </li>
+            </ul>
+        </nav>
+
+        <p class="text-muted">
+            Mostrando @Model.Count de @Model.TotalCount eventos (página @Model.PageIndex de @Model.TotalPages).
+        </p>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">Últimos eventos agregados</div>
+            <ul class="list-group list-group-flush">
+                @if (ultimos != null && ultimos.Any())
+                {
+                    @foreach (var u in ultimos)
+                    {
+                        <li class="list-group-item">
+                            <strong>@u.Tipo - @u.Cliente.Apellido</strong><br />
+                            <small>Fecha: @u.Inicio.ToShortDateString()</small>
+                        </li>
+                    }
+                }
+                else
+                {
+                    <li class="list-group-item">No hay eventos recientes.</li>
+                }
+            </ul>
+        </div>
     </div>
 </div>

@@ -1,124 +1,13 @@
 ﻿@model si_td_gestion_eventos.Entities.Evento
-@using si_td_gestion_eventos.Models.Enums;
+@using si_td_gestion_eventos.Models.Enums
 
 @{
-    ViewData["Title"] = "Cargar Nuevo Evento";
+    ViewData["Title"] = "Nuevo Evento";
 }
 
-<h2>Cargar Nuevo Evento</h2>
-<hr />
-
+<h2>Nuevo Evento</h2>
 <form asp-action="Create" method="post">
-    <div class="row">
-
-        <div class="col-md-6">
-            <h4>Detalles del Evento</h4>
-
-            <div class="mb-3">
-                <label asp-for="FechaContrato" class="form-label"></label>
-                <input asp-for="FechaContrato" type="date" class="form-control" />
-                <span asp-validation-for="FechaContrato" class="text-danger"></span>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label asp-for="Inicio" class="form-label">Fecha de Inicio</label>
-                    <input asp-for="Inicio" type="date" class="form-control" />
-                    <span asp-validation-for="Inicio" class="text-danger"></span>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label asp-for="Fin" class="form-label">Fecha de Fin</label>
-                    <input asp-for="Fin" type="date" class="form-control" />
-                    <span asp-validation-for="Fin" class="text-danger"></span>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label asp-for="HoraInicio" class="form-label">Hora de Inicio</label>
-                    <input asp-for="HoraInicio" type="time" class="form-control" />
-                    <span asp-validation-for="HoraInicio" class="text-danger"></span>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label asp-for="HoraFin" class="form-label">Hora de Fin</label>
-                    <input asp-for="HoraFin" type="time" class="form-control" />
-                    <span asp-validation-for="HoraFin" class="text-danger"></span>
-                </div>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="Tipo" class="form-label">Tipo de Evento</label>
-                <select asp-for="Tipo" asp-items="Html.GetEnumSelectList<TipoEvento>()" class="form-control">
-                    <option value="">-- Seleccione un Tipo --</option>
-                </select>
-                <span asp-validation-for="Tipo" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="CantidadPersonas" class="form-label">Cantidad de Personas</label>
-                <input asp-for="CantidadPersonas" type="number" class="form-control" />
-                <span asp-validation-for="CantidadPersonas" class="text-danger"></span>
-            </div>
-
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <label asp-for="CostoAlquiler" class="form-label">Costo del Alquiler</label>
-                    <input asp-for="CostoAlquiler" class="form-control" />
-                    <span asp-validation-for="CostoAlquiler" class="text-danger"></span>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label asp-for="MontoReserva" class="form-label">Monto de la Reserva</label>
-                    <input asp-for="MontoReserva" class="form-control" />
-                    <span asp-validation-for="MontoReserva" class="text-danger"></span>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label asp-for="MontoAireAcondicionado" class="form-label">Monto de Aires Acondicionados</label>
-                    <input asp-for="MontoAireAcondicionado" class="form-control" />
-                    <span asp-validation-for="MontoAireAcondicionado" class="text-danger"></span>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6">
-            <h4>Cliente y Responsable</h4>
-
-            <div class="mb-3">
-                <label asp-for="ClienteId" class="form-label">Cliente</label>
-                <select asp-for="ClienteId" class="form-control" asp-items="ViewBag.Clientes">
-                    <option value="">-- Seleccione un Cliente --</option>
-                </select>
-                <span asp-validation-for="ClienteId" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="ResponsableNombre" class="form-label">Nombre del Responsable</label>
-                <input asp-for="ResponsableNombre" class="form-control" />
-                <span asp-validation-for="ResponsableNombre" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="ResponsableTelefono" class="form-label">Telefono del Responsable</label>
-                <input asp-for="ResponsableTelefono" class="form-control" />
-                <span asp-validation-for="ResponsableTelefono" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="ResponsableCedula" class="form-label">CI del Responsable</label>
-                <input asp-for="ResponsableCedula" class="form-control" />
-                <span asp-validation-for="ResponsableCedula" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="Estado" class="form-label"></label>
-                <select asp-for="Estado" asp-items="Html.GetEnumSelectList<EventoEstado>()" class="form-control"></select>
-                <span asp-validation-for="Estado" class="text-danger"></span>
-            </div>
-        </div>
-    </div>
-        <button type="submit" class="btn btn-success">Guardar Evento</button>
-        <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+    <partial name="_EventoForm" />
+    <button type="submit" class="btn btn-primary">Guardar</button>
+    <a asp-action="Index" class="btn btn-secondary">Volver</a>
 </form>
-
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
-}

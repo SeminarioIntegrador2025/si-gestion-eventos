@@ -111,14 +111,21 @@ namespace si_td_gestion_eventos.Controllers
         // POST: Cliente/Delete/{idCliente}
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public IActionResult DeleteConfirmed(int id)
+        public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var cliente = _dbContext.Cliente.Find(id);
+            var cliente = await _dbContext.Cliente.FindAsync(id);
             if (cliente is not null)
             {
-                _dbContext.Cliente.Remove(cliente);
-                _dbContext.SaveChanges();
-                TempData["Ok"] = "Cliente eliminado.";
+                if (cliente.Activo != false)
+                {
+                    cliente.Activo = false;
+                    await _dbContext.SaveChangesAsync();
+                    TempData["Ok"] = "El cliente fue eliminado correctamente (Baja Logica).";
+                }
+                else {
+                    TempData["Error"] = "El cliente ya esta eliminado (Bajado Logicamente).";
+
+                }
             }
             return RedirectToAction(nameof(Index));
         }

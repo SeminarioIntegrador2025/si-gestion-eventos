@@ -1,0 +1,13 @@
+﻿@model si_td_gestion_eventos.Entities.Evento
+@{
+    ViewData["Title"] = "Cancelacion de Eventos";
+}
+
+<h2>¿Cancelar Evento?</h2>
+<p><strong>@Model.Inicio, @Model.Fin</strong> (@Model.ClienteId)</p>
+
+<form asp-action="Cancel" method="post">
+    <input type="hidden" asp-for="EventoId" />
+    <button type="submit" class="btn btn-danger">Cancelar Evento</button>
+    <a asp-action="Index" class="btn btn-secondary">Volver</a>
+</form>
