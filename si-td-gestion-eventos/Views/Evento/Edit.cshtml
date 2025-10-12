@@ -1,0 +1,12 @@
+﻿@model si_td_gestion_eventos.Entities.Evento
+@{
+    ViewData["Title"] = "Editar Evento";
+}
+
+<h2>Editar Evento</h2>
+<form asp-action="Edit" method="post">
+    <input type="hidden" asp-for="EventoId" />
+    <partial name="_EventoForm" />
+    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+    <a asp-action="Index" class="btn btn-secondary">Volver</a>
+</form>

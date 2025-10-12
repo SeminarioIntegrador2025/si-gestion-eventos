@@ -1,0 +1,19 @@
+﻿@model ClienteVM
+@{
+    ViewData["Title"] = "Nuevo Cliente";
+}
+
+<div>
+    <h2>Nuevo Cliente</h2>
+    <form asp-action="Create" method="post">
+        <partial name="_ClienteForm" />
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <a asp-action="Index" class="btn btn-secondary">Volver</a>
+    </form>
+
+    @if (ViewBag.Message != null){
+        <div class="alert alert-success" role="alert">
+            @ViewBag.Message
+        </div>
+        }
+</div>

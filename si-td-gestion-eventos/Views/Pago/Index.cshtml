@@ -1,0 +1,49 @@
+﻿@model IEnumerable<si_td_gestion_eventos.Entities.Pago>
+
+@{
+    ViewData["Title"] = "Pagos";
+}
+
+<div>
+    <div>
+    <h2>Pagos</h2>
+
+
+    <div class="mb-3">
+        <a class="btn btn-primary" href="/pago/create">Nuevo Pago</a>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Monto</th>
+                <th>Método de Pago</th>
+                <th>Evento</th>
+                <th>Comprobante</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pago in Model)
+            {
+                <tr>
+                    <td>@pago.Fecha.ToShortDateString()</td>
+                    <td>@pago.Monto.ToString("C")</td>
+                    <td>@pago.Metodo</td>
+                    <td>@pago.Evento.ResponsableNombre</td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(pago.ComprobanteRuta))
+                        {
+                            <a href="@pago.ComprobanteRuta" target="_blank">Ver Comprobante</a>
+                        }
+                        else
+                        {
+                            <span>No disponible</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    </div>
+</div>

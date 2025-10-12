@@ -9,6 +9,11 @@
 *.user
 *.userosscache
 *.sln.docstates
+*/Migrations
+
+#Hide connection strings
+*.appsettings.Development.json
+si-td-gestion-eventos/appsettings.*.json
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

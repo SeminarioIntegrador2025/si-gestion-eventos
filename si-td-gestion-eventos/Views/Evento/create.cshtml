@@ -1,0 +1,13 @@
+﻿@model si_td_gestion_eventos.Entities.Evento
+@using si_td_gestion_eventos.Models.Enums
+
+@{
+    ViewData["Title"] = "Nuevo Evento";
+}
+
+<h2>Nuevo Evento</h2>
+<form asp-action="Create" method="post">
+    <partial name="_EventoForm" />
+    <button type="submit" class="btn btn-primary">Guardar</button>
+    <a asp-action="Index" class="btn btn-secondary">Volver</a>
+</form>

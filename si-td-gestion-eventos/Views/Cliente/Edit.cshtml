@@ -1,0 +1,12 @@
+﻿@model ClienteVM
+@{
+    ViewData["Title"] = "Editar Cliente";
+}
+
+<h2>Editar Cliente</h2>
+<form asp-action="Edit" method="post">
+    <input type="hidden" asp-for="ClienteId" />
+    <partial name="_ClienteForm" />
+    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+    <a asp-action="Index" class="btn btn-secondary">Volver</a>
+</form>

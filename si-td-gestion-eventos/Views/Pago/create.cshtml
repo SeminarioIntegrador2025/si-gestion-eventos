@@ -1,0 +1,67 @@
+﻿@model si_td_gestion_eventos.Entities.Pago
+
+@{
+    ViewData["Title"] = "Cargar Pago";
+    var eventos = ViewBag.Eventos as List<si_td_gestion_eventos.Entities.Evento>;
+}
+
+<h2>Cargar Pago</h2>
+
+<form asp-action="Create" method="post">
+    <div class="mb-3">
+        <label asp-for="Fecha" class="form-label"></label>
+        <input asp-for="Fecha" class="form-control" type="date" />
+        <span asp-validation-for="Fecha" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Monto" class="form-label"></label>
+        <input asp-for="Monto" class="form-control" type="number" step="0.01" />
+        <span asp-validation-for="Monto" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Metodo" class="form-label"></label>
+        <select asp-for="Metodo" class="form-select">
+            <option value="">Seleccione método</option>
+            @foreach (var metodo in Enum.GetValues(typeof(si_td_gestion_eventos.Models.Enums.MetodoPago)))
+            {
+                <option value="@metodo">@metodo</option>
+            }
+        </select>
+        <span asp-validation-for="Metodo" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label for="eventoId" class="form-label">Evento</label>
+        <select id="eventoId" name="eventoId" class="form-select">
+            <option value="">Seleccione evento</option>
+            @if (eventos != null)
+            {
+                foreach (var evento in eventos)
+                {
+                    <option value="@evento.EventoId">@evento.ResponsableNombre - @evento.Inicio.ToShortDateString()</option>
+                }
+            }
+        </select>
+    </div>
+    <div class="mb-3">
+        <label asp-for="ComprobanteRuta" class="form-label">Ruta del Comprobante</label>
+        <input asp-for="ComprobanteRuta" class="form-control" />
+        <span asp-validation-for="ComprobanteRuta" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="ComprobanteTipo" class="form-label"></label>
+        <select asp-for="ComprobanteTipo" class="form-select">
+            <option value="">Seleccione tipo de archivo</option>
+            @foreach (var tipo in Enum.GetValues(typeof(si_td_gestion_eventos.Models.Enums.TipoArchivo)))
+            {
+                <option value="@tipo">@tipo</option>
+            }
+        </select>
+        <span asp-validation-for="ComprobanteTipo" class="text-danger"></span>
+    </div>
+    <button type="submit" class="btn btn-success">Guardar</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

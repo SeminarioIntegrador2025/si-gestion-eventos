@@ -1,0 +1,40 @@
+﻿@model si_td_gestion_eventos.Entities.Evento
+
+@{
+    ViewData["Title"] = "Confirmar Cancelación";
+}
+
+<h2>@ViewData["Title"]</h2>
+<p class="text-danger">¿Estás seguro de que querés cancelar el siguiente evento?</p>
+
+<hr />
+
+<div>
+    <h4>Datos del Evento a Cancelar</h4>
+    <dl class="row">
+        <dt class="col-sm-3">Cliente</dt>
+        <dd class="col-sm-9">@Model.Cliente.Nombre @Model.Cliente.Apellido</dd>
+
+        <dt class="col-sm-3">Tipo de Evento</dt>
+        <dd class="col-sm-9">@Model.Tipo</dd>
+
+        <dt class="col-sm-3">Fecha del Contratoo</dt>
+        <dd class="col-sm-9">@Model.FechaContrato</dd>
+
+        <dt class="col-sm-3">Fecha de Inicio</dt>
+        <dd class="col-sm-9">@Model.Inicio.ToShortDateString()</dd>
+
+        <dt class="col-sm-3">Estado Actual</dt>
+        <dd class="col-sm-9">@Model.Estado</dd>
+    </dl>
+</div>
+
+<hr />
+
+<form asp-action="Cancel" method="post">
+    @* Pasamos el ID del evento de forma oculta *@
+    <input type="hidden" asp-for="EventoId" />
+
+    <button type="submit" class="btn btn-danger">Confirmar Cancelación</button>
+    <a asp-action="Index" class="btn btn-secondary">Volver a la lista</a>
+</form>
