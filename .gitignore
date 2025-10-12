@@ -9,6 +9,7 @@
 *.user
 *.userosscache
 *.sln.docstates
+*/Migrations
 
 #Hide connection strings
 *.appsettings.Development.json

@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using si_td_gestion_eventos.Entities;
+﻿using si_td_gestion_eventos.Entities;
 using si_td_gestion_eventos.Models.ViewModels;
 using si_td_gestion_eventos.Repositories;
 
@@ -41,10 +40,40 @@ namespace si_td_gestion_eventos.Services
             await _clienteRepository.AddAsync(entity);
         }
 
-        public async Task GetByIdAsync(int id)
+        public async Task<ClienteVM?> GetByIdAsync(int id)
         {
-            await _clienteRepository.GetByIdAsync(id);         
+            var cliente = await _clienteRepository.GetByIdAsync(id);
+            
+            if (cliente != null) {
+                var clienteVM = new ClienteVM
+                {
+                    ClienteId = cliente.ClienteId,
+                    Nombre = cliente.Nombre,
+                    Apellido = cliente.Apellido,
+                    CedulaIdentidad = cliente.CedulaIdentidad,
+                    Domicilio = cliente.Domicilio,
+                    Telefono = cliente.Telefono,
+                    Activo = cliente.Activo
+                };
+                return clienteVM;
+            }
+            return null; //ver si esto no genera problemas
         }
 
+        public async Task EditAsync(ClienteVM viewModel)
+        {
+            var cliente = await _clienteRepository.GetByIdAsync(viewModel.ClienteId);
+            if (cliente != null)
+            {
+                cliente.Nombre = viewModel.Nombre;
+                cliente.Apellido = viewModel.Apellido;
+                cliente.CedulaIdentidad = viewModel.CedulaIdentidad;
+                cliente.Domicilio = viewModel.Domicilio;
+                cliente.Telefono = viewModel.Telefono;
+                cliente.Activo = viewModel.Activo;
+
+                await _clienteRepository.SaveChangesAsync();
+            }
+        }
     }
 }

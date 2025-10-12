@@ -153,7 +153,7 @@ namespace si_td_gestion_eventos.Controllers
         }
 
 
-        // GET: Evento/Edit/5
+        // GET: Evento/EditAsync/5
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -169,7 +169,7 @@ namespace si_td_gestion_eventos.Controllers
 
             if (evento == null)
             {
-                // Esto pasaría si se accede a una URL con un ID que no existe (ej: /Evento/Edit/999)
+                // Esto pasaría si se accede a una URL con un ID que no existe (ej: /Evento/EditAsync/999)
                 return NotFound();
             }
 
@@ -179,7 +179,7 @@ namespace si_td_gestion_eventos.Controllers
         }
 
 
-        // POST: Evento/Edit/5
+        // POST: Evento/EditAsync/5
 
         [HttpPost]
         [ValidateAntiForgeryToken]

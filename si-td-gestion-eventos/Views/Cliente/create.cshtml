@@ -11,5 +11,9 @@
         <a asp-action="Index" class="btn btn-secondary">Volver</a>
     </form>
 
-    
+    @if (ViewBag.Message != null){
+        <div class="alert alert-success" role="alert">
+            @ViewBag.Message
+        </div>
+        }
 </div>

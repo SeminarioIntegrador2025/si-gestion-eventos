@@ -1,9 +1,18 @@
-﻿@model si_td_gestion_eventos.Models.ViewModels.ClienteVM
+﻿@model ClienteVM
 @{
-    ViewData["Title"] = "Detalle";
+    var title = "Detalle del cliente: " + Model.Nombre;
 }
 
-<h2>Detalle del Cliente</h2>
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success">@TempData["Message"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<h2>@title</h2>
 <dl class="row">
     <dt class="col-sm-3">Nombre</dt>
     <dd class="col-sm-9">@Model.Nombre</dd>
@@ -18,5 +27,24 @@
     <dt class="col-sm-3">Activo</dt>
     <dd class="col-sm-9">@(Model.Activo ? "Sí" : "No")</dd>
 </dl>
-<a asp-action="Edit" asp-route-id="@Model.ClienteId" class="btn btn-primary">Editar</a>
+<a asp-action="EditAsync" asp-route-id="@Model.ClienteId" class="btn btn-primary">Editar</a>
 <a asp-action="Index" class="btn btn-secondary">Volver</a>
+
+@if (Model.Activo)
+{
+    <form asp-action="ToggleUnactive" asp-route-id="@Model.ClienteId" method="post" class="d-inline">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="btn btn-danger" onclick="return confirm('¿Está seguro que desea dar de baja este cliente?');">
+            Dar de baja
+        </button>
+    </form>
+}
+else
+{
+    <form asp-action="ToggleActive" asp-route-id="@Model.ClienteId" method="post" class="d-inline">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="btn btn-success" onclick="return confirm('¿Desea dar de alta este cliente?');">
+            Dar de alta
+        </button>
+    </form>
+}

@@ -1,7 +1,7 @@
 ﻿@model List<ClienteVM>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="m-0">Lista de todos los clientes</h2>
+    <h2 class="m-0">Todos los clientes</h2>
     <a class="btn btn-primary" asp-action="Create"><i class="fa-solid fa-square-plus"></i>Nuevo Cliente</a>
 </div>
 
@@ -50,7 +50,6 @@
                         <td class="text-end">
                             <a asp-action="Details" asp-route-id="@c.ClienteId" class="btn btn-sm btn-outline-info"><i class="fa-solid fa-eye"></i>Ver</a>
                             <a asp-action="Edit" asp-route-id="@c.ClienteId" class="btn btn-sm btn-outline-secondary"><i class="fa-solid fa-pen"></i>Editar</a>
-                            <a asp-action="Delete" asp-route-id="@c.ClienteId" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-delete-left"></i>Borrar</a>
                         </td>
                     </tr>
                 }
