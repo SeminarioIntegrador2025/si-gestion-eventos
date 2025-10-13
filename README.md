@@ -29,3 +29,4 @@ Este trabajo está enmarcado dentro de la cátedra Seminario Integrador, cuyo ob
 ## Requisitos 
 - .NET 9
 - SQL Server local o en contenedor
+
