@@ -10,11 +10,11 @@ namespace si_td_gestion_eventos.Context
            
         }
 
-        public DbSet<Cliente> Cliente { get; set; }
-        public DbSet<Evento> Evento { get; set; }
-        public DbSet<Fianza> Fianza { get; set; }
-        public DbSet<Pago> Pago { get; set; }
-        public DbSet<ComprobanteExterno> ComprobanteExterno { get; set; }
+        public virtual DbSet<Cliente> Cliente { get; set; }
+        public virtual DbSet<Evento> Evento { get; set; }
+        public virtual DbSet<Fianza> Fianza { get; set; }
+        public virtual DbSet<Pago> Pago { get; set; }
+        public virtual DbSet<ComprobanteExterno> ComprobanteExterno { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

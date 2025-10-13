@@ -11,13 +11,13 @@ namespace si_td_gestion_eventos.Services
 {
     public class ClienteService : IClienteService
     {
-        private readonly GenericRepository<Cliente> _clienteRepository;
+        private readonly IGenericRepository<Cliente> _clienteRepository;
         private readonly IValidator<ClienteVM> _validator;
         private readonly IClienteBusinessRules _businessRules;
         private readonly IMapper _mapper;
 
         public ClienteService(
-            GenericRepository<Cliente> clienteRepository,
+            IGenericRepository<Cliente> clienteRepository,
             IValidator<ClienteVM> validator,
             IClienteBusinessRules businessRules,
             IMapper mapper)

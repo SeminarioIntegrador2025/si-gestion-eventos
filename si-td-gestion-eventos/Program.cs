@@ -27,7 +27,7 @@ builder.Services.AddAutoMapper(cfg =>
 });
 
 // Repositorios
-builder.Services.AddScoped(typeof(GenericRepository<>));
+builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
 // Servicios de Negocio
 builder.Services.AddScoped<IClienteService, ClienteService>();

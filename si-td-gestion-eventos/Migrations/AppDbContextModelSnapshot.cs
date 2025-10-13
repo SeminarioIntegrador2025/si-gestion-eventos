@@ -134,14 +134,14 @@ namespace si_td_gestion_eventos.Migrations
                     b.Property<DateTime>("FechaFin")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime>("FechaInicio")
+                        .HasColumnType("datetime2");
+
                     b.Property<TimeSpan>("HoraFin")
                         .HasColumnType("time");
 
                     b.Property<TimeSpan>("HoraInicio")
                         .HasColumnType("time");
-
-                    b.Property<DateTime>("FechaInicio")
-                        .HasColumnType("datetime2");
 
                     b.Property<decimal?>("MontoAireAcondicionado")
                         .HasColumnType("decimal(18,2)");
