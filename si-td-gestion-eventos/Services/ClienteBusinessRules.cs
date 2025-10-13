@@ -27,7 +27,7 @@ namespace si_td_gestion_eventos.Services.Implementation
 
         public async Task<bool> CanDeactivateClienteAsync(int clienteId)
         {
-            // Verificar si el cliente tiene eventos activos
+            // Acá se verifica si el cliente tiene eventos activos para decidir si se puede dar de baja o no
             return !await HasActiveEventsAsync(clienteId);
         }
 

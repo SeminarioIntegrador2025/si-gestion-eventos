@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+﻿using AutoMapper;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using si_td_gestion_eventos.Entities;
 using si_td_gestion_eventos.Models.ViewModels;
@@ -13,34 +14,34 @@ namespace si_td_gestion_eventos.Services
         private readonly GenericRepository<Cliente> _clienteRepository;
         private readonly IValidator<ClienteVM> _validator;
         private readonly IClienteBusinessRules _businessRules;
+        private readonly IMapper _mapper;
 
         public ClienteService(
             GenericRepository<Cliente> clienteRepository,
             IValidator<ClienteVM> validator,
-            IClienteBusinessRules businessRules)
+            IClienteBusinessRules businessRules,
+            IMapper mapper)
         {
             _clienteRepository = clienteRepository;
             _validator = validator;
             _businessRules = businessRules;
+            _mapper = mapper;
         }
 
         public async Task<IEnumerable<ClienteVM>> GetAllAsync()
         {
             var clientes = await _clienteRepository.GetAllAsync();
-            return clientes.Select(MapToViewModel);
+            return _mapper.Map<IEnumerable<ClienteVM>>(clientes);
         }
 
         public async Task<ClienteVM?> GetByIdAsync(int id)
         {
             var cliente = await _clienteRepository.GetByIdAsync(id);
-            return cliente != null ? MapToViewModel(cliente) : null;
+            return cliente != null ? _mapper.Map<ClienteVM>(cliente) : null;
         }
 
         public async Task<ServiceResult<ClienteVM>> CreateAsync(ClienteVM clienteVM)
         {
-            // Normalizar datos antes de validar
-            NormalizeClienteData(clienteVM);
-
             // Validar usando FluentValidation
             var validationResult = await _validator.ValidateAsync(clienteVM);
             
@@ -52,11 +53,11 @@ namespace si_td_gestion_eventos.Services
 
             try
             {
-                // Crear entidad
-                var entity = MapToEntity(clienteVM);
+                // Crear entidad usando AutoMapper
+                var entity = _mapper.Map<Cliente>(clienteVM);
                 await _clienteRepository.AddAsync(entity);
                 
-                // Actualizar el ID del ViewModel con el ID generado
+                // Actualizar el ID del ViewModel
                 clienteVM.ClienteId = entity.ClienteId;
                 
                 return ServiceResult<ClienteVM>.SuccessResult(
@@ -71,9 +72,6 @@ namespace si_td_gestion_eventos.Services
 
         public async Task<ServiceResult<ClienteVM>> UpdateAsync(ClienteVM clienteVM)
         {
-            // Normalizar datos antes de validar
-            NormalizeClienteData(clienteVM);
-
             // Validar usando FluentValidation
             var validationResult = await _validator.ValidateAsync(clienteVM);
             
@@ -91,8 +89,8 @@ namespace si_td_gestion_eventos.Services
                     return ServiceResult<ClienteVM>.FailureResult("Cliente no encontrado.");
                 }
 
-                // Actualizar propiedades
-                UpdateEntityFromViewModel(cliente, clienteVM);
+                // Actualizar usando AutoMapper
+                _mapper.Map(clienteVM, cliente);
                 
                 await _clienteRepository.SaveChangesAsync();
                 
@@ -110,7 +108,7 @@ namespace si_td_gestion_eventos.Services
         {
             try
             {
-                // Verificar reglas de negocio antes de desactivar
+                // Verificar reglas de negocio
                 if (!await _businessRules.CanDeactivateClienteAsync(id))
                 {
                     return ServiceResult<bool>.FailureResult(
@@ -163,95 +161,6 @@ namespace si_td_gestion_eventos.Services
                 Value = c.ClienteId.ToString(),
                 Text = $"{c.Nombre} {c.Apellido}"
             });
-        }
-
-        #region Métodos Auxiliares y Mappers
-
-        private ClienteVM MapToViewModel(Cliente cliente)
-        {
-            return new ClienteVM
-            {
-                ClienteId = cliente.ClienteId,
-                Nombre = cliente.Nombre,
-                Apellido = cliente.Apellido,
-                CedulaIdentidad = cliente.CedulaIdentidad,
-                Domicilio = cliente.Domicilio,
-                Telefono = cliente.Telefono,
-                Activo = cliente.Activo
-            };
-        }
-
-        private Cliente MapToEntity(ClienteVM clienteVM)
-        {
-            return new Cliente
-            {
-                Nombre = clienteVM.Nombre,
-                Apellido = clienteVM.Apellido,
-                CedulaIdentidad = clienteVM.CedulaIdentidad,
-                Domicilio = clienteVM.Domicilio,
-                Telefono = clienteVM.Telefono,
-                Activo = clienteVM.Activo
-            };
-        }
-
-        private void UpdateEntityFromViewModel(Cliente cliente, ClienteVM clienteVM)
-        {
-            cliente.Nombre = clienteVM.Nombre;
-            cliente.Apellido = clienteVM.Apellido;
-            cliente.CedulaIdentidad = clienteVM.CedulaIdentidad;
-            cliente.Domicilio = clienteVM.Domicilio;
-            cliente.Telefono = clienteVM.Telefono;
-            cliente.Activo = clienteVM.Activo;
-        }
-
-        private void NormalizeClienteData(ClienteVM clienteVM)
-        {
-            clienteVM.Nombre = clienteVM.Nombre?.Trim().ToTitleCase() ?? string.Empty;
-            clienteVM.Apellido = clienteVM.Apellido?.Trim().ToTitleCase() ?? string.Empty;
-            clienteVM.CedulaIdentidad = clienteVM.CedulaIdentidad?.Trim() ?? string.Empty;
-            clienteVM.Domicilio = clienteVM.Domicilio?.Trim() ?? string.Empty;
-            clienteVM.Telefono = clienteVM.Telefono?.Trim() ?? string.Empty;
-        }
-
-        #endregion
-
-        #region Métodos Legacy (para compatibilidad con el controlador actual)
-
-        /// <summary>
-        /// Método legacy para compatibilidad. Use CreateAsync en su lugar.
-        /// </summary>
-        [Obsolete("Use CreateAsync method instead")]
-        public async Task AddAsync(ClienteVM viewModel)
-        {
-            var result = await CreateAsync(viewModel);
-            if (!result.Success)
-            {
-                throw new InvalidOperationException(string.Join(", ", result.Errors));
-            }
-        }
-
-        /// <summary>
-        /// Método legacy para compatibilidad. Use UpdateAsync en su lugar.
-        /// </summary>
-        [Obsolete("Use UpdateAsync method instead")]
-        public async Task EditAsync(ClienteVM viewModel)
-        {
-            var result = await UpdateAsync(viewModel);
-            if (!result.Success)
-            {
-                throw new InvalidOperationException(string.Join(", ", result.Errors));
-            }
-        }
-
-        #endregion
-    }
-
-    public static class StringExtensions
-    {
-        public static string ToTitleCase(this string input)
-        {
-            if (string.IsNullOrWhiteSpace(input)) return string.Empty;
-            return System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(input.ToLower());
         }
     }
 }

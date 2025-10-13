@@ -1,5 +1,7 @@
 ﻿namespace si_td_gestion_eventos.Services.Common
 {
+    //esta clase es un contenedor generico para los resultados de los servicios
+    //que puede contener: datos, mensajes de error y un indicador de exito o fracaso
     public class ServiceResult<T>
     {
         public bool Success { get; set; }

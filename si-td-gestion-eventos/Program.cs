@@ -7,6 +7,8 @@ using si_td_gestion_eventos.Services.Contracts;
 using si_td_gestion_eventos.Services.Implementation;
 using si_td_gestion_eventos.Validators;
 using si_td_gestion_eventos.Models.ViewModels;
+using si_td_gestion_eventos.Mapping;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +19,12 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("SqlString"))
 );
+
+// AutoMapper
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.AddProfile<ClienteProfile>();
+});
 
 // Repositorios
 builder.Services.AddScoped(typeof(GenericRepository<>));
