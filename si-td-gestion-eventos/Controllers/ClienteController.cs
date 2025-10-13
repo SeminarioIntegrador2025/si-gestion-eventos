@@ -1,19 +1,25 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using si_td_gestion_eventos.Entities;
 using si_td_gestion_eventos.Models.ViewModels;
-using si_td_gestion_eventos.Services;
+using si_td_gestion_eventos.Services.Contracts;
 
 namespace si_td_gestion_eventos.Controllers
 {
-    public class ClienteController(ClienteService _clienteService) : Controller
+    public class ClienteController : Controller
     {
+        private readonly IClienteService _clienteService;
+
+        public ClienteController(IClienteService clienteService)
+        {
+            _clienteService = clienteService;
+        }
+
         // GET: Cliente
         public async Task<IActionResult> Index()
         {
             var clientes = await _clienteService.GetAllAsync();
             return View(clientes.ToList());
         }
-         
+
         // GET: Cliente/Details/{idCliente}
         public async Task<IActionResult> Details(int id)
         {
@@ -26,7 +32,16 @@ namespace si_td_gestion_eventos.Controllers
         [HttpGet]
         public IActionResult Create()
         {
-            return View();
+            var clienteVM = new ClienteVM
+            {
+                Nombre = "",
+                Apellido = "",
+                CedulaIdentidad = "",
+                Domicilio = "",
+                Telefono = "",
+                Activo = true
+            };
+            return View(clienteVM);
         }
 
         // POST: Cliente/Create
@@ -34,27 +49,33 @@ namespace si_td_gestion_eventos.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ClienteVM clienteVM)
         {
-            ViewBag.Message = null;
-            if (!ModelState.IsValid) return View(clienteVM);
+           
+            var result = await _clienteService.CreateAsync(clienteVM);
 
-            try
+            if (result.Success)
             {
-                await _clienteService.AddAsync(clienteVM);
-                ViewBag.Message = "Cliente creado con éxito.";
+                TempData["Message"] = result.Message;
                 return RedirectToAction("Index");
             }
-            catch (Exception ex)
+
+            // Agregar errores de validación al ModelState
+            foreach (var error in result.Errors)
             {
-                ModelState.AddModelError("", "Error al guardar: " + ex.Message);
-                return View(clienteVM);
+                ModelState.AddModelError(string.Empty, error);
             }
+
+            return View(clienteVM);
         }
 
         // GET: Cliente/EditAsync/{idCliente}
         [HttpGet]
         public async Task<IActionResult> EditAsync(int? id)
         {
+            if (!id.HasValue) return NotFound();
+
             var clienteVM = await _clienteService.GetByIdAsync(id.Value);
+            if (clienteVM == null) return NotFound();
+
             return View(clienteVM);
         }
 
@@ -62,44 +83,40 @@ namespace si_td_gestion_eventos.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditAsync(ClienteVM clienteVM)
-        {           
-            if (!ModelState.IsValid)
-            {
-                return View(clienteVM);
-            }
+        {
+            
+            var result = await _clienteService.UpdateAsync(clienteVM);
 
-            try
+            if (result.Success)
             {
-                await _clienteService.EditAsync(clienteVM);
-                TempData["Message"] = "Cliente actualizado con éxito.";
+                TempData["Message"] = result.Message;
                 return RedirectToAction("Index");
             }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError("", "Error al actualizar: " + ex.Message);
-                return View(clienteVM);
-            }
-        }
 
+            // Agregar errores de validación al ModelState
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error);
+            }
+
+            return View(clienteVM);
+        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleUnactive(int id)
         {
-            try
+            var result = await _clienteService.DeactivateAsync(id);
+            
+            if (result.Success)
             {
-                var clienteVM = await _clienteService.GetByIdAsync(id);
-                if (clienteVM != null)
-                {
-                    clienteVM.Activo = false;
-                    await _clienteService.EditAsync(clienteVM);
-                    TempData["Message"] = "Se ha dado de baja correctamente.";
-                }
+                TempData["Message"] = result.Message;
             }
-            catch (Exception ex)
+            else
             {
-                TempData["Error"] = "Error al dar de baja: " + ex.Message;
+                TempData["Error"] = string.Join(", ", result.Errors);
             }
+
             return RedirectToAction("Details", new { id });
         }
 
@@ -107,20 +124,17 @@ namespace si_td_gestion_eventos.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleActive(int id)
         {
-            try
+            var result = await _clienteService.ActivateAsync(id);
+            
+            if (result.Success)
             {
-                var clienteVM = await _clienteService.GetByIdAsync(id);
-                if (clienteVM != null)
-                {
-                    clienteVM.Activo = true;
-                    await _clienteService.EditAsync(clienteVM);
-                    TempData["Message"] = "Se ha dado de alta correctamente.";
-                }
+                TempData["Message"] = result.Message;
             }
-            catch (Exception ex)
+            else
             {
-                TempData["Error"] = "Error al dar de alta: " + ex.Message;
+                TempData["Error"] = string.Join(", ", result.Errors);
             }
+
             return RedirectToAction("Details", new { id });
         }
     }

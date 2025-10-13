@@ -61,9 +61,9 @@
                 {
                     <tr>
                         <td>@e.Cliente.Apellido, @e.Cliente.Nombre</td>
+                        <td>@e.Cliente.Nombre</td>
                         <td>@e.Tipo</td>
-                        <td>@e.Inicio.ToShortDateString()</td>
-                        <td>@e.Estado</td>
+                        <td>@e.FechaInicio.ToShortDateString()</td>
                         <td class="text-end">
                         
                             <a asp-action="Details" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-info">Ver</a>
@@ -96,7 +96,7 @@
                     </li>
                 }
 
-                <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
                     <a class="page-link"
                        asp-action="Index"
                        asp-route-q="@q"
@@ -121,7 +121,7 @@
                     {
                         <li class="list-group-item">
                             <strong>@u.Tipo - @u.Cliente.Apellido</strong><br />
-                            <small>Fecha: @u.Inicio.ToShortDateString()</small>
+                            <small>Fecha: @u.FechaInicio.ToShortDateString()</small>
                         </li>
                     }
                 }

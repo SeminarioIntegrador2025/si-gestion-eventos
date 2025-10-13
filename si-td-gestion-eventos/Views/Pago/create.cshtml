@@ -37,7 +37,7 @@
             {
                 foreach (var evento in eventos)
                 {
-                    <option value="@evento.EventoId">@evento.ResponsableNombre - @evento.Inicio.ToShortDateString()</option>
+                    <option value="@evento.EventoId">@evento.ResponsableNombre - @evento.FechaInicio.ToShortDateString()</option>
                 }
             }
         </select>

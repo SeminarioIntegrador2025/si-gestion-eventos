@@ -8,8 +8,8 @@ namespace si_td_gestion_eventos.Entities
         public int EventoId { get; set; }
     
         public required DateTime FechaContrato { get; set; }
-        public required DateTime Inicio { get; set; }
-        public required DateTime Fin { get; set; }
+        public required DateTime FechaInicio { get; set; }
+        public required DateTime FechaFin { get; set; }
         public required TimeSpan HoraInicio { get; set; }
         public required TimeSpan HoraFin { get; set; }
                 
@@ -36,6 +36,6 @@ namespace si_td_gestion_eventos.Entities
         public decimal SaldoRestante() => Math.Max(0, CostoAlquiler - TotalPagado());
 
         public bool EstaPago48hAntes(DateTime ahoraUtc)
-            => Inicio.ToUniversalTime() - ahoraUtc >= TimeSpan.FromHours(48) ? SaldoRestante() == 0 : true;
+            => FechaInicio.ToUniversalTime() - ahoraUtc >= TimeSpan.FromHours(48) ? SaldoRestante() == 0 : true;
     }
 }
