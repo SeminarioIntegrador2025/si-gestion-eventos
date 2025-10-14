@@ -134,7 +134,7 @@ namespace si_td_gestion_eventos.Migrations
                     b.Property<DateTime>("FechaContrato")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("Fin")
+                    b.Property<DateTime>("FechaFin")
                         .HasColumnType("datetime2");
 
                     b.Property<TimeSpan>("HoraFin")
@@ -143,7 +143,7 @@ namespace si_td_gestion_eventos.Migrations
                     b.Property<TimeSpan>("HoraInicio")
                         .HasColumnType("time");
 
-                    b.Property<DateTime>("Inicio")
+                    b.Property<DateTime>("FechaInicio")
                         .HasColumnType("datetime2");
 
                     b.Property<decimal?>("MontoAireAcondicionado")

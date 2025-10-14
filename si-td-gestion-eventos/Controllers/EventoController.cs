@@ -2,9 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using si_td_gestion_eventos.Context;
 using si_td_gestion_eventos.Entities;
-using si_td_gestion_eventos.Models.Enums;
-using si_td_gestion_eventos.Services;
-using System.Threading.Tasks; 
+using si_td_gestion_eventos.Services.Contracts;
 
 namespace si_td_gestion_eventos.Controllers
 {
@@ -64,7 +62,7 @@ namespace si_td_gestion_eventos.Controllers
         // POST: Evento/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("FechaContrato,Inicio,Fin,HoraInicio,HoraFin,Tipo,CostoAlquiler,MontoReserva,CantidadPersonas,MontoAireAcondicionado,ResponsableNombre,ResponsableTelefono,ResponsableCedula,ClienteId")] Evento evento)
+        public async Task<IActionResult> Create([Bind("FechaContrato,FechaInicio,FechaFin,HoraInicio,HoraFin,Tipo,CostoAlquiler,MontoReserva,CantidadPersonas,MontoAireAcondicionado,ResponsableNombre,ResponsableTelefono,ResponsableCedula,ClienteId")] Evento evento)
         {
             // El 'Estado' ya no viene del formulario, así que lo eliminamos del 'ModelState'
             // para que no falle la validación por estar ausente.
@@ -183,7 +181,7 @@ namespace si_td_gestion_eventos.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("EventoId,FechaContrato,Inicio,Fin,HoraInicio,HoraFin,Tipo,CostoAlquiler,MontoReserva,CantidadPersonas,MontoAireAcondicionado,ResponsableNombre,ResponsableTelefono,ResponsableCedula,Estado,ClienteId")] Evento evento)
+        public async Task<IActionResult> Edit(int id, [Bind("EventoId,FechaContrato,FechaInicio,FechaFin,HoraInicio,HoraFin,Tipo,CostoAlquiler,MontoReserva,CantidadPersonas,MontoAireAcondicionado,ResponsableNombre,ResponsableTelefono,ResponsableCedula,Estado,ClienteId")] Evento evento)
         {         
             if (id != evento.EventoId)
             {
