@@ -55,7 +55,7 @@ namespace si_td_gestion_eventos.Services.Implementation // Se recomienda la carp
                 .Include(e => e.Pagos)
                 .FirstOrDefaultAsync(e => e.EventoId == id);
 
-            // Mapeo automático de Entidad a ViewModel
+           
             return evento != null ? _mapper.Map<EventoVM>(evento) : null;
         }
 

@@ -1,5 +1,7 @@
 ﻿@model si_td_gestion_eventos.Models.ViewModels.ClienteVM
+ 
 
+@{var isEditing = Model?.ClienteId > 0;}
 <div>
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
     <div class="mb-3">
@@ -15,8 +17,8 @@
     </div>
 
     <div class="mb-3">
-        <label asp-for="CedulaIdentidad" class="form-label"></label>
-        <input asp-for="CedulaIdentidad" class="form-control" />
+        <label asp-for="CedulaIdentidad" class="form-label">Cedula de Identidad</label>
+        <input asp-for="CedulaIdentidad" class="form-control" readonly="@(isEditing ? "readonly" : null)" />
         <span asp-validation-for="CedulaIdentidad" class="text-danger"></span>
     </div>
 

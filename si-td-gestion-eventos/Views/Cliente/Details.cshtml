@@ -1,7 +1,7 @@
 ﻿@using si_td_gestion_eventos.Models.ViewModels
 @model ClienteVM
 @{
-    var title = "Detalle del cliente: " + Model.Nombre;
+    var title = "Detalle del cliente: ";
 }
 
 @if (TempData["Message"] != null)
@@ -28,8 +28,9 @@
     <dt class="col-sm-3">Activo</dt>
     <dd class="col-sm-9">@(Model.Activo ? "Sí" : "No")</dd>
 </dl>
-<a asp-action="EditAsync" asp-route-id="@Model.ClienteId" class="btn btn-primary">Editar</a>
+<a asp-action="Edit" asp-route-id="@Model.ClienteId" class="btn btn-primary">Editar</a>
 <a asp-action="Index" class="btn btn-secondary">Volver</a>
+
 
 @if (Model.Activo)
 {

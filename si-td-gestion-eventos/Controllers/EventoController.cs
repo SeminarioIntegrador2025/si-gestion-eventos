@@ -102,7 +102,6 @@ namespace si_td_gestion_eventos.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, EventoVM eventoVM)
         {
-            // Verificación de seguridad: el ID de la URL debe coincidir con el del formulario.
             if (id != eventoVM.EventoId)
             {
                 return NotFound();
@@ -137,7 +136,7 @@ namespace si_td_gestion_eventos.Controllers
             {
                 return NotFound();
             }
-            return View(eventoVM); // Vista de confirmación
+            return View(eventoVM); 
         }
 
         // POST: Evento/Cancel/{id}

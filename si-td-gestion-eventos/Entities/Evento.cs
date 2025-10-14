@@ -20,7 +20,6 @@ namespace si_td_gestion_eventos.Entities
         public decimal? MontoAireAcondicionado { get; set; }
         public required EventoEstado Estado { get; set; } = EventoEstado.PendienteAConfirmar;
 
-        // --- CAMPOS DEL RESPONSABLE (VUELVEN A AGREGARSE) ---
         [StringLength(100)]
         public required string ResponsableNombre { get; set; }
 
@@ -31,12 +30,9 @@ namespace si_td_gestion_eventos.Entities
         public required string ResponsableCedula { get; set; }
 
         // --- RELACIONES ---
-        // El Cliente es quien paga/contrata
         [Required]
         public required int ClienteId { get; set; }
-        public required Cliente Cliente { get; set; } = null!;
-
-        // ... resto de la clase (Pagos, Fianza, métodos de negocio) ...
+        public Cliente Cliente { get; set; } = null!;
         public ICollection<Pago> Pagos { get; set; } = new List<Pago>();
         public Fianza? Fianza { get; set; }
         public decimal TotalPagado() => Pagos.Sum(p => p.Monto);

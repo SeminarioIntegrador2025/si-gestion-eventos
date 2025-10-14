@@ -1,9 +1,60 @@
-﻿namespace si_td_gestion_eventos.Models.Enums
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace si_td_gestion_eventos.Models.Enums
 {
-    public enum EventoEstado { Confirmado, Cancelado, Reprogramado, PendienteAConfirmar }
-    public enum MetodoPago { Efectivo, Transferencia }
-    public enum EstadoFianza { DevueltaTotalmente, DevueltaParcialmente, NoDevuelta, Registrada }
-    public enum EstadoServicioEsencial { SinConfirmar, Confirmado }
-    public enum TipoArchivo { PDF, PNG, JPEG, JPG }
-    public enum TipoEvento { Cumpleanios, Casamiento, Corporativo, Otro }
+    public enum EventoEstado
+    {
+        [Display(Name = "Confirmado")]
+        Confirmado,
+        [Display(Name = "Cancelado")]
+        Cancelado,
+        [Display(Name = "Reprogramado")]
+        Reprogramado,
+        [Display(Name = "Pendiente a Confirmar")]
+        PendienteAConfirmar
+    }
+
+    public enum MetodoPago
+    {
+        [Display(Name = "Efectivo")]
+        Efectivo,
+        [Display(Name = "Transferencia Bancaria")]
+        Transferencia
+    }
+
+    public enum EstadoFianza
+    {
+        [Display(Name = "Devuelta totalmente")]
+        DevueltaTotalmente,
+        [Display(Name = "Devuelta parcialmente")]
+        DevueltaParcialmente,
+        [Display(Name = "No devuelta")]
+        NoDevuelta,
+        [Display(Name = "Registrada")]
+        Registrada
+    }
+
+    public enum TipoArchivo
+    {
+        [Display(Name = "PDF")]
+        PDF,
+        [Display(Name = "Imagen PNG")]
+        PNG,
+        [Display(Name = "Imagen JPEG")]
+        JPEG,
+        [Display(Name = "Imagen JPG")]
+        JPG
+    }
+
+    public enum TipoEvento
+    {
+        [Display(Name = "Cumpleaños")]
+        Cumpleaños,
+        [Display(Name = "Casamiento")]
+        Casamiento,
+        [Display(Name = "Corporativo")]
+        Corporativo,
+        [Display(Name = "Otro")]
+        Otro
+    }
 }
