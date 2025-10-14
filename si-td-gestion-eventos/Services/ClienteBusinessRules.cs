@@ -35,7 +35,7 @@ namespace si_td_gestion_eventos.Services.Implementation
         {
             return await _context.Evento
                 .AnyAsync(e => e.ClienteId == clienteId &&
-                              e.FechaInicio > DateTime.Now);
+                              e.Inicio > DateTime.Now);
         }
     }
 }

@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Services\ClienteService.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Remove="appsettings.Development.json" />
     <Content Remove="Views\Evento\Delete.cshtml" />
     <Content Remove="Views\Evento\Index1.cshtml" />

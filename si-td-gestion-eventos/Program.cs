@@ -1,14 +1,13 @@
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using si_td_gestion_eventos.Context;
+using si_td_gestion_eventos.Mapping;
+using si_td_gestion_eventos.Models.ViewModels;
 using si_td_gestion_eventos.Repositories;
 using si_td_gestion_eventos.Services;
 using si_td_gestion_eventos.Services.Contracts;
 using si_td_gestion_eventos.Services.Implementation;
 using si_td_gestion_eventos.Validators;
-using si_td_gestion_eventos.Models.ViewModels;
-using si_td_gestion_eventos.Mapping;
-using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,18 +22,26 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // AutoMapper
 builder.Services.AddAutoMapper(cfg =>
 {
+    // Se registran los perfiles para el mapeo de objetos
     cfg.AddProfile<ClienteProfile>();
+    cfg.AddProfile<EventoProfile>(); // <- AÑADIDO: Perfil para Evento <-> EventoVM
 });
 
 // Repositorios
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
-// Servicios de Negocio
+// Servicios de Negocio (Lógica de la aplicación)
 builder.Services.AddScoped<IClienteService, ClienteService>();
-builder.Services.AddScoped<IClienteBusinessRules, ClienteBusinessRules>();
+builder.Services.AddScoped<IEventoService, EventoService>(); // <- AÑADIDO: Servicio para Eventos
 
-// Validadores FluentValidation
+// Reglas de Negocio (Validaciones complejas)
+builder.Services.AddScoped<IClienteBusinessRules, ClienteBusinessRules>();
+// Se recomienda crear una clase para las reglas de negocio de Evento también.
+// builder.Services.AddScoped<IEventoBusinessRules, EventoBusinessRules>(); 
+
+// Validadores con FluentValidation
 builder.Services.AddScoped<IValidator<ClienteVM>, ClienteValidator>();
+builder.Services.AddScoped<IValidator<EventoVM>, EventoValidator>(); 
 
 var app = builder.Build();
 
