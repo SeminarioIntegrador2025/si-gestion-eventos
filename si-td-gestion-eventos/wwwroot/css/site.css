@@ -347,9 +347,16 @@ body.app {
     vertical-align: middle;
 }
 
-.table tbody td.table-date {
+.table tbody td .table-date {
     color: var(--accent);
 }
+
+.table tbody tr.table-secondary > * {
+    background-color: var(--bg-1);
+    color: #adb5bd;
+}
+
+
 
 /* Botones mejorados */
 .btn {
