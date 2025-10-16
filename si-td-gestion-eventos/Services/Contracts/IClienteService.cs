@@ -12,6 +12,6 @@ namespace si_td_gestion_eventos.Services.Contracts
         Task<ServiceResult<ClienteVM>> UpdateAsync(ClienteVM clienteVM);
         Task<ServiceResult<bool>> DeactivateAsync(int id);
         Task<ServiceResult<bool>> ActivateAsync(int id);
-        IEnumerable<SelectListItem> GetClientesActivosParaDropdown();
+        Task<IEnumerable<SelectListItem>> GetClientesActivosParaDropdownAsync();
     }
 }

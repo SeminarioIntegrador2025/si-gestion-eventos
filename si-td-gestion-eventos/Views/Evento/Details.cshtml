@@ -1,42 +1,89 @@
-﻿@model si_td_gestion_eventos.Entities.Evento
+﻿@model si_td_gestion_eventos.Models.ViewModels.EventoVM
 
 @{
-    ViewData["Title"] = "Detalle";
+    ViewData["Title"] = $"Detalles del Evento: {Model.Tipo}";
 }
 
-<h2>@ViewData["Title"]</h2>
+@if (TempData["Ok"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Ok"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
 
-<dl class="row">
-    <dt class="col-sm-3">Cliente</dt>
-    <dd class="col-sm-9">@Model.Cliente.Nombre @Model.Cliente.Apellido</dd>
 
-    <dt class="col-sm-3">Tipo de Evento</dt>
-    <dd class="col-sm-9">@Model.Tipo</dd>
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">@ViewData["Title"]</h2>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h4>Información General</h4>
+                <hr />
+                <dl class="row">
+                    <dt class="col-sm-5">Cliente Responsable</dt>
+                    <dd class="col-sm-7">@Model.ClienteNombreCompleto</dd>
 
-    <dt class="col-sm-3">Estado</dt>
-    <dd class="col-sm-9">@Model.Estado</dd>
+                    <dt class="col-sm-5">Tipo de Evento</dt>
+                    <dd class="col-sm-7">@Model.Tipo</dd>
 
-    <dt class="col-sm-3">Fecha del Contrato</dt>
-    <dd class="col-sm-9">@Model.FechaContrato.ToShortDateString()</dd>
+                    <dt class="col-sm-5">Estado</dt>
+                    <dd class="col-sm-7"><span class="badge bg-primary">@Model.Estado</span></dd>
 
-    <dt class="col-sm-3">Fecha de Inicio</dt>
-    <dd class="col-sm-9">@Model.FechaInicio.ToShortDateString()</dd>
+                    <dt class="col-sm-5">Cantidad de Personas</dt>
+                    <dd class="col-sm-7">@Model.CantidadPersonas</dd>
+                </dl>
 
-    <dt class="col-sm-3">Cantidad de Personas</dt>
-    <dd class="col-sm-9">@Model.CantidadPersonas</dd>
+                <h4>Fechas y Horarios</h4>
+                <hr />
+                <dl class="row">
+                    <dt class="col-sm-5">Fecha del Contrato</dt>
+                    <dd class="col-sm-7">@Model.FechaContrato.ToLongDateString()</dd>
 
-    <dt class="col-sm-3">Nombre del Responsable</dt>
-    <dd class="col-sm-9">@Model.ResponsableNombre</dd>
+                    <dt class="col-sm-5">Fecha de Inicio</dt>
+                    <dd class="col-sm-7">@Model.Inicio.ToLongDateString()</dd>
 
-    <dt class="col-sm-3">Teléfono del Responsable</dt>
-    <dd class="col-sm-9">@Model.ResponsableTelefono</dd>
+                    <dt class="col-sm-5">Fecha de Fin</dt>
+                    <dd class="col-sm-7">@Model.Fin.ToLongDateString()</dd>
 
-    <dt class="col-sm-3">Costo del Alquiler</dt>
-    <dd class="col-sm-9">@Model.CostoAlquiler.ToString("C")</dd>
+                    <dt class="col-sm-5">Horario</dt>
+                    <dd class="col-sm-7">De @Model.HoraInicio a @Model.HoraFin</dd>
+                </dl>
+            </div>
 
-    <dt class="col-sm-3">Saldo Restante</dt>
-    <dd class="col-sm-9">@Model.SaldoRestante().ToString("C")</dd>
-</dl>
+            <div class="col-md-6">
+                <h4>Información Financiera</h4>
+                <hr />
+                <dl class="row">
+                    <dt class="col-sm-5">Costo del Alquiler</dt>
+                    <dd class="col-sm-7">@Model.CostoAlquiler.ToString("C")</dd>
 
-<a asp-action="Edit" asp-route-id="@Model.EventoId" class="btn btn-primary">Editar</a>
-<a asp-action="Index" class="btn btn-secondary">Volver</a>
+                    <dt class="col-sm-5">Monto de Reserva</dt>
+                    <dd class="col-sm-7">@Model.MontoReserva.ToString("C")</dd>
+
+                    <dt class="col-sm-5">Costo Aire Acond.</dt>
+                    <dd class="col-sm-7">@(Model.MontoAireAcondicionado?.ToString("C") ?? "No incluido")</dd>
+
+                    <dt class="col-sm-5 text-success">Total Pagado</dt>
+                    <dd class="col-sm-7 fw-bold text-success">@Model.TotalPagado.ToString("C")</dd>
+
+                    <dt class="col-sm-5 text-danger">Saldo Restante</dt>
+                    <dd class="col-sm-7 fw-bold text-danger">@Model.SaldoRestante.ToString("C")</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer text-muted">
+        <a asp-action="Edit" asp-route-id="@Model.EventoId" class="btn btn-primary"><i class="fa-solid fa-pen"></i> Editar</a>
+        <a asp-action="Index" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i> Volver a la Lista</a>
+    </div>
+</div>

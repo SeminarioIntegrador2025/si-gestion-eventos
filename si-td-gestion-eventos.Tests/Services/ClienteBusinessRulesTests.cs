@@ -14,12 +14,6 @@ public class ClienteBusinessRulesTests
 
     public ClienteBusinessRulesTests()
     {
-        // Crear opciones mock para el constructor
-        //var mockOptions = new Mock<DbContextOptions<AppDbContext>>();
-
-        // Crear el mock del contexto pasando las opciones
-        //_mockContext = new Mock<AppDbContext>(mockOptions.Object);
-
         _businessRules = new ClienteBusinessRules(_mockContext.Object);
     }
 
@@ -154,11 +148,11 @@ public class ClienteBusinessRulesTests
             {
                 EventoId = 1,
                 FechaContrato = DateTime.Now,
-                FechaInicio = DateTime.Now.AddDays(10), // Evento futuro
-                FechaFin = DateTime.Now.AddDays(10),
+                Inicio = DateTime.Now.AddDays(10), // Evento futuro
+                Fin = DateTime.Now.AddDays(10),
                 HoraInicio = TimeSpan.FromHours(18),
                 HoraFin = TimeSpan.FromHours(23),
-                Tipo = TipoEvento.Cumpleanios,
+                Tipo = TipoEvento.Cumpleaños,
                 CostoAlquiler = 5000,
                 MontoReserva = 1000,
                 CantidadPersonas = 50,
@@ -190,8 +184,8 @@ public class ClienteBusinessRulesTests
             {
                 EventoId = 2,
                 FechaContrato = DateTime.Now.AddDays(-20),
-                FechaInicio = DateTime.Now.AddDays(-10), // Evento pasado
-                FechaFin = DateTime.Now.AddDays(-10),
+                Inicio = DateTime.Now.AddDays(-10), // Evento pasado
+                Fin = DateTime.Now.AddDays(-10),
                 HoraInicio = TimeSpan.FromHours(18),
                 HoraFin = TimeSpan.FromHours(23),
                 Tipo = TipoEvento.Casamiento,
@@ -246,11 +240,11 @@ public class ClienteBusinessRulesTests
             {
                 EventoId = 1,
                 FechaContrato = DateTime.Now,
-                FechaInicio = DateTime.Now.AddDays(10), // Evento futuro
-                FechaFin = DateTime.Now.AddDays(10),
+                Inicio = DateTime.Now.AddDays(10), // Evento futuro
+                Fin = DateTime.Now.AddDays(10),
                 HoraInicio = TimeSpan.FromHours(18),
                 HoraFin = TimeSpan.FromHours(23),
-                Tipo = TipoEvento.Cumpleanios,
+                Tipo = TipoEvento.Cumpleaños,
                 CostoAlquiler = 5000,
                 MontoReserva = 1000,
                 CantidadPersonas = 50,
@@ -282,8 +276,8 @@ public class ClienteBusinessRulesTests
             {
                 EventoId = 2,
                 FechaContrato = DateTime.Now.AddDays(-20),
-                FechaInicio = DateTime.Now.AddDays(-10), // Evento pasado
-                FechaFin = DateTime.Now.AddDays(-10),
+                Inicio = DateTime.Now.AddDays(-10), // Evento pasado
+                Fin = DateTime.Now.AddDays(-10),
                 HoraInicio = TimeSpan.FromHours(18),
                 HoraFin = TimeSpan.FromHours(23),
                 Tipo = TipoEvento.Casamiento,
@@ -334,11 +328,11 @@ public class ClienteBusinessRulesTests
             {
                 EventoId = 1,
                 FechaContrato = DateTime.Now,
-                FechaInicio = DateTime.Now.AddDays(10),
-                FechaFin = DateTime.Now.AddDays(10),
+                Inicio = DateTime.Now.AddDays(10),
+                Fin = DateTime.Now.AddDays(10),
                 HoraInicio = TimeSpan.FromHours(18),
                 HoraFin = TimeSpan.FromHours(23),
-                Tipo = TipoEvento.Cumpleanios,
+                Tipo = TipoEvento.Cumpleaños,
                 CostoAlquiler = 5000,
                 MontoReserva = 1000,
                 CantidadPersonas = 50,

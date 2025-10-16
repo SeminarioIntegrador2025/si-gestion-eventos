@@ -1,0 +1,131 @@
+@model si_td_gestion_eventos.Models.ViewModels.EventoVM
+
+<div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="ClienteId" class="form-label"></label>
+            <select asp-for="ClienteId" asp-items="ViewBag.Clientes" class="form-select">
+                <option value="">-- Seleccionar Cliente --</option>
+            </select>
+            <span asp-validation-for="ClienteId" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="FechaContrato" class="form-label"></label>
+            <input asp-for="FechaContrato" class="form-control" type="date" />
+            <span asp-validation-for="FechaContrato" class="text-danger"></span>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="Inicio" class="form-label"></label>
+            <input asp-for="Inicio" class="form-control" type="date" />
+            <span asp-validation-for="Inicio" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="Fin" class="form-label"></label>
+            <input asp-for="Fin" class="form-control" type="date" />
+            <span asp-validation-for="Fin" class="text-danger"></span>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="HoraInicio" class="form-label"></label>
+            <input asp-for="HoraInicio" class="form-control" type="time" />
+            <span asp-validation-for="HoraInicio" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="HoraFin" class="form-label"></label>
+            <input asp-for="HoraFin" class="form-control" type="time" />
+            <span asp-validation-for="HoraFin" class="text-danger"></span>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="Tipo" class="form-label"></label>
+            <select asp-for="Tipo" class="form-select" asp-items="Html.GetEnumSelectList<si_td_gestion_eventos.Models.Enums.TipoEvento>()">
+                <option value="">-- Seleccionar Tipo --</option>
+            </select>
+            <span asp-validation-for="Tipo" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="CantidadPersonas" class="form-label"></label>
+            <input asp-for="CantidadPersonas" class="form-control" type="number" min="1" />
+            <span asp-validation-for="CantidadPersonas" class="text-danger"></span>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="CostoAlquiler" class="form-label"></label>
+            <input asp-for="CostoAlquiler" class="form-control" type="number" step="0.01" min="0" />
+            <span asp-validation-for="CostoAlquiler" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="MontoReserva" class="form-label"></label>
+            <input asp-for="MontoReserva" class="form-control" type="number" step="0.01" min="0" />
+            <span asp-validation-for="MontoReserva" class="text-danger"></span>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="MontoAireAcondicionado" class="form-label"></label>
+            <input asp-for="MontoAireAcondicionado" class="form-control" type="number" step="0.01" min="0" />
+            <span asp-validation-for="MontoAireAcondicionado" class="text-danger"></span>
+        </div>
+    </div>
+</div>
+
+<h5 class="mt-4 mb-3">Información del Responsable</h5>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="ResponsableNombre" class="form-label"></label>
+            <input asp-for="ResponsableNombre" class="form-control" />
+            <span asp-validation-for="ResponsableNombre" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="ResponsableTelefono" class="form-label"></label>
+            <input asp-for="ResponsableTelefono" class="form-control" />
+            <span asp-validation-for="ResponsableTelefono" class="text-danger"></span>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="ResponsableCedula" class="form-label"></label>
+            <input asp-for="ResponsableCedula" class="form-control" />
+            <span asp-validation-for="ResponsableCedula" class="text-danger"></span>
+        </div>
+    </div>
+</div>

@@ -42,32 +42,32 @@ namespace si_td_gestion_eventos.Validators
 
         private bool BeOnlyLettersAndSpaces(string value)
         {
-            if (string.IsNullOrWhiteSpace(value)) return true;
+            if (string.IsNullOrWhiteSpace(value)) return false;
             return Regex.IsMatch(value, @"^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$");
         }
 
         private bool NotContainNumbers(string value)
         {
-            if (string.IsNullOrWhiteSpace(value)) return true;
+            if (string.IsNullOrWhiteSpace(value)) return false;
             return !Regex.IsMatch(value, @"\d");
         }
 
         private bool BeValidCedulaFormat(string cedula)
         {
-            if (string.IsNullOrWhiteSpace(cedula)) return true;
+            if (string.IsNullOrWhiteSpace(cedula)) return false;
             var cleanCedula = Regex.Replace(cedula, @"[\.\-]", "");
             return Regex.IsMatch(cleanCedula, @"^\d{7,8}$");
         }
 
         private bool BeValidPhoneNumber(string telefono)
         {
-            if (string.IsNullOrWhiteSpace(telefono)) return true;
+            if (string.IsNullOrWhiteSpace(telefono)) return false;
             return Regex.IsMatch(telefono, @"^[\d\s\-\(\)\+]+$");
         }
 
         private bool HaveMinimumDigits(string telefono)
         {
-            if (string.IsNullOrWhiteSpace(telefono)) return true;
+            if (string.IsNullOrWhiteSpace(telefono)) return false;
             var digitsOnly = Regex.Replace(telefono, @"[^\d]", "");
             return digitsOnly.Length >= 8;
         }

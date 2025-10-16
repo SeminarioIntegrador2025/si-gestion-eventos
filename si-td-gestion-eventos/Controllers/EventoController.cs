@@ -1,210 +1,166 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using si_td_gestion_eventos.Context;
-using si_td_gestion_eventos.Entities;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using si_td_gestion_eventos.Models.ViewModels;
 using si_td_gestion_eventos.Services.Contracts;
 
 namespace si_td_gestion_eventos.Controllers
 {
     public class EventoController : Controller
     {
-        private readonly AppDbContext _dbContext;
+        // Inyectamos IEventoService y eliminamos AppDbContext
+        // El controlador ya no debe saber cómo se guardan los datos.
+        private readonly IEventoService _eventoService;
         private readonly IClienteService _clienteService;
 
-        public EventoController(AppDbContext dbContext, IClienteService clienteService)
+        public EventoController(IEventoService eventoService, IClienteService clienteService)
         {
-            _dbContext = dbContext;
+            _eventoService = eventoService;
             _clienteService = clienteService;
         }
 
+        // GET: Evento
         public async Task<IActionResult> Index(string q, int page = 1, int pageSize = 10)
         {
-           
-            var query = _dbContext.Evento
-                                .Include(e => e.Cliente)
-                                .OrderByDescending(e => e.FechaContrato)
-                                .AsQueryable();
+            // La lógica de búsqueda, paginación y mapeo ahora vive en el servicio.
+            var paginatedList = await _eventoService.GetAllPaginatedAsync(q, page, pageSize);
 
-
-            if (!string.IsNullOrEmpty(q))
-            {
-                query = query.Where(e =>
-                    e.Cliente.Nombre.Contains(q) ||
-                    e.Cliente.Apellido.Contains(q) ||
-                    e.Tipo.ToString().Contains(q) ||
-                    e.ResponsableNombre.Contains(q)
-                );
-            }
-
-            
             ViewBag.Search = q;
             ViewBag.PageSize = pageSize;
+            ViewBag.Ultimos = await _eventoService.GetLatestAsync(5); // Obtenemos los últimos del servicio.
 
-           
-            ViewBag.Ultimos = await _dbContext.Evento
-                                        .Include(e => e.Cliente)
-                                        .OrderByDescending(e => e.EventoId)
-                                        .Take(5)
-                                        .ToListAsync();
-
-           
-            var paginatedList = await Infrastructure.PaginatedList<Evento>.CreateAsync(query, page, pageSize);
+            // La vista recibe directamente la lista de ViewModels paginada.
             return View(paginatedList);
         }
 
-        // GET: Evento/Create
-        public IActionResult Create()
+        // GET: Evento/Details/{id}
+        public async Task<IActionResult> Details(int id)
         {
-            ViewBag.Clientes = _clienteService.GetClientesActivosParaDropdown();
-            return View();
+            // El servicio nos devuelve el ViewModel listo para la vista.
+            var eventoVM = await _eventoService.GetByIdAsync(id);
+            if (eventoVM is null)
+            {
+                return NotFound();
+            }
+            return View(eventoVM);
+        }
+
+        // GET: Evento/Create
+        public async Task<IActionResult> Create()
+        {
+            // Pasamos un ViewModel vacío con valores por defecto a la vista.
+            var viewModel = new EventoVM
+            {
+                FechaContrato = DateTime.Today,
+                Inicio = DateTime.Today,
+                Fin = DateTime.Today
+            };
+
+            await PopulateClientesDropdown();
+            return View(viewModel);
         }
 
         // POST: Evento/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("FechaContrato,FechaInicio,FechaFin,HoraInicio,HoraFin,Tipo,CostoAlquiler,MontoReserva,CantidadPersonas,MontoAireAcondicionado,ResponsableNombre,ResponsableTelefono,ResponsableCedula,ClienteId")] Evento evento)
+        public async Task<IActionResult> Create(EventoVM eventoVM)
         {
-            // El 'Estado' ya no viene del formulario, así que lo eliminamos del 'ModelState'
-            // para que no falle la validación por estar ausente.
-            ModelState.Remove("Estado");
-
             if (ModelState.IsValid)
             {
-                // Asignamos el estado inicial por defecto ANTES de guardar.
-                evento.Estado = Models.Enums.EventoEstado.PendienteAConfirmar;
+                var result = await _eventoService.CreateAsync(eventoVM);
+                if (result.Success)
+                {
+                    TempData["Ok"] = result.Message;
+                    return RedirectToAction(nameof(Index));
+                }
 
-                _dbContext.Add(evento);
-                await _dbContext.SaveChangesAsync();
-                TempData["Ok"] = "Evento creado exitosamente.";
-                return RedirectToAction(nameof(Index));
+                // Agregamos los errores del servicio al ModelState.
+                foreach (var error in result.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error);
+                }
             }
 
-            // Si la validación falla por otra razón, recargamos el ViewBag.
-            ViewBag.Clientes = _clienteService.GetClientesActivosParaDropdown();
-            return View(evento);
+            await PopulateClientesDropdown();
+            return View(eventoVM);
         }
 
-        // GET: Evento/Cancel/5
-        public async Task<IActionResult> Cancel(int? id)
+        // GET: Evento/Edit/{id}
+        public async Task<IActionResult> Edit(int id)
         {
-            if (id == null)
+            var eventoVM = await _eventoService.GetByIdAsync(id);
+            if (eventoVM is null)
             {
                 return NotFound();
             }
-            var evento = await _dbContext.Evento
-                .Include(e => e.Cliente) 
-                .FirstOrDefaultAsync(m => m.EventoId == id);
 
-            if (evento == null)
+            await PopulateClientesDropdown();
+
+            return View(eventoVM);
+        }
+        // POST: Evento/Edit/{id}
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, EventoVM eventoVM)
+        {
+            if (id != eventoVM.EventoId)
             {
                 return NotFound();
             }
-            return View(evento);
+
+            // Primero, se valida que los datos del formulario cumplan las reglas básicas (ej: campos requeridos).
+            if (ModelState.IsValid)
+            {
+                // Si los datos son válidos, intentamos actualizarlos usando el servicio.
+                var result = await _eventoService.UpdateAsync(eventoVM);
+
+
+                if (result.Success)
+                {
+                    TempData["Ok"] = result.Message;
+                    return RedirectToAction(nameof(Index));
+                }
+                foreach (var error in result.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error);
+                }
+            }
+            await PopulateClientesDropdown();
+            return View(eventoVM); 
         }
 
-        // POST: Evento/Cancelar/{EventoId}
+        // GET: Evento/Cancel/{id}
+        public async Task<IActionResult> Cancel(int id)
+        {
+            var eventoVM = await _eventoService.GetByIdAsync(id);
+            if (eventoVM is null)
+            {
+                return NotFound();
+            }
+            return View(eventoVM); 
+        }
+
+        // POST: Evento/Cancel/{id}
         [HttpPost, ActionName("Cancel")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public async Task<IActionResult> CancelConfirmed(int id)
         {
-            var evento = await _dbContext.Evento.FindAsync(id);
-            if (evento is not null)
+            var result = await _eventoService.CancelAsync(id);
+            if (result.Success)
             {
-                if (evento.Estado != Models.Enums.EventoEstado.Cancelado)
-                {
-                    evento.Estado = Models.Enums.EventoEstado.Cancelado;
-                    await _dbContext.SaveChangesAsync();
-                    TempData["Ok"] = "El Evento fue eliminado correctamente (Baja Logica).";
-                }
-                else
-                {
-                    if (evento.Estado == Models.Enums.EventoEstado.Cancelado)
-                    {
-                        TempData["Error"] = "El evento ya esta cancelado (Bajado Logicamente).";
-                    }
-                }
+                TempData["Ok"] = result.Message;
+            }
+            else
+            {
+                TempData["Error"] = string.Join(", ", result.Errors);
             }
             return RedirectToAction(nameof(Index));
         }
 
-        // GET: Evento/Details/{EventoId}
-
-        public async Task<IActionResult> Details(int? id)
+        // Método helper para no repetir el código de cargar el dropdown.
+        private async Task PopulateClientesDropdown()
         {
-            if (id is null)
-            {
-                return NotFound();
-            }
-
-            // 1. Agregamos .Include() para cargar el Cliente
-            // 2. Usamos la versión Async para no bloquear el servidor
-            var evento = await _dbContext.Evento
-                .Include(e => e.Cliente)
-                .FirstOrDefaultAsync(c => c.EventoId == id);
-
-            if (evento is null)
-            {
-                return NotFound();
-            }
-
-            return View(evento);
+            var clientes = await _clienteService.GetClientesActivosParaDropdownAsync();
+            ViewBag.Clientes = new SelectList(clientes, "Value", "Text");
         }
-
-
-        // GET: Evento/EditAsync/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            // Buscamos el evento que coincida con el ID de la URL
-            // E INCLUIMOS los datos del cliente asociado.
-            var evento = await _dbContext.Evento
-                .Include(e => e.Cliente)
-                .FirstOrDefaultAsync(e => e.EventoId == id); // <-- LÍNEA CLAVE
-
-            if (evento == null)
-            {
-                // Esto pasaría si se accede a una URL con un ID que no existe (ej: /Evento/EditAsync/999)
-                return NotFound();
-            }
-
-            // Cargamos la lista de clientes para el dropdown.
-            ViewBag.Clientes = _clienteService.GetClientesActivosParaDropdown();
-            return View(evento);
-        }
-
-
-        // POST: Evento/EditAsync/5
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("EventoId,FechaContrato,FechaInicio,FechaFin,HoraInicio,HoraFin,Tipo,CostoAlquiler,MontoReserva,CantidadPersonas,MontoAireAcondicionado,ResponsableNombre,ResponsableTelefono,ResponsableCedula,Estado,ClienteId")] Evento evento)
-        {         
-            if (id != evento.EventoId)
-            {
-                return NotFound();
-            }
-            if (ModelState.IsValid)
-            {
-                try
-                {                   
-                    _dbContext.Update(evento);
-                    await _dbContext.SaveChangesAsync();
-                    TempData["Ok"] = "Evento actualizado correctamente.";
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    TempData["Error"] = "El registro fue modificado por otro usuario. Intente de nuevo.";
-                    return View(evento);
-                }
-                return RedirectToAction(nameof(Index));
-            }           
-            ViewBag.Clientes = _clienteService.GetClientesActivosParaDropdown();
-            return View(evento);
-        }
-
     }
 }

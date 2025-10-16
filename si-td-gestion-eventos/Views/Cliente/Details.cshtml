@@ -1,15 +1,7 @@
-﻿@model ClienteVM
+﻿@using si_td_gestion_eventos.Models.ViewModels
+@model ClienteVM
 @{
-    var title = "Detalle del cliente: " + Model.Nombre;
-}
-
-@if (TempData["Message"] != null)
-{
-    <div class="alert alert-success">@TempData["Message"]</div>
-}
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger">@TempData["Error"]</div>
+    var title = "Detalle del cliente: ";
 }
 
 <h2>@title</h2>
@@ -25,10 +17,23 @@
     <dt class="col-sm-3">Teléfono</dt>
     <dd class="col-sm-9">@Model.Telefono</dd>
     <dt class="col-sm-3">Activo</dt>
-    <dd class="col-sm-9">@(Model.Activo ? "Sí" : "No")</dd>
+    <dd class="col-sm-9">
+        @if (Model.Activo)
+        {
+            <i class="fa-solid fa-check text-success"></i>
+        
+            <span class="text-success">Sí</span>
+        }
+        else
+        {
+            <i class="fa-solid fa-xmark text-danger"></i>
+            <span class="text-danger">No</span>
+        }
+    </dd>
 </dl>
-<a asp-action="EditAsync" asp-route-id="@Model.ClienteId" class="btn btn-primary">Editar</a>
+<a asp-action="Edit" asp-route-id="@Model.ClienteId" class="btn btn-primary">Editar</a>
 <a asp-action="Index" class="btn btn-secondary">Volver</a>
+
 
 @if (Model.Activo)
 {
