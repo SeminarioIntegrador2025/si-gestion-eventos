@@ -1,32 +1,302 @@
 ﻿@using si_td_gestion_eventos.Models.ViewModels
 @model List<ClienteVM>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="m-0">Todos los clientes</h2>
-    <a class="btn btn-primary" asp-action="Create"><i class="fa-solid fa-square-plus"></i>Nuevo Cliente</a>
+@{
+    ViewData["Title"] = "Clientes - Gestión";
+}
+
+<!-- Encabezado de página -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="fa-solid fa-users text-primary me-3"></i>Clientes
+        </h1>
+        <p class="text-muted mb-0">Administra la base de datos de clientes</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-success" asp-action="Create">
+            <i class="fa-solid fa-user-plus me-2"></i>Nuevo Cliente
+        </a>
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fa-solid fa-download me-2"></i>Exportar
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#"><i class="fa-solid fa-file-excel me-2"></i>Excel</a></li>
+                <li><a class="dropdown-item" href="#"><i class="fa-solid fa-file-csv me-2"></i>CSV</a></li>
+            </ul>
+        </div>
+    </div@{
+    ViewData["Title"] = "Clientes - Gestión";
+}
+
+<!-- Encabezado de página -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="fa-solid fa-users text-primary me-3"></i>Clientes
+        </h1>
+        <p class="text-muted mb-0">Administra la base de datos de clientes</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-success" asp-action="Create">
+            <i class="fa-solid fa-user-plus me-2"></i>Nuevo Cliente
+        </a>
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fa-solid fa-download me-2"></i>Exportar
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#"><i class="fa-solid fa-file-excel me-2"></i>Excel</a></li>
+                <li><a class="dropdown-item" href="#"><i class="fa-solid fa-file-csv me-2"></i>CSV</a></li>
+            </ul>
+        </div>
+    </div@{
+    ViewData["Title"] = "Clientes - Gestión";
+}
+
+<!-- Encabezado de página -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="fa-solid fa-users text-primary me-3"></i>Clientes
+        </h1>
+        <p class="text-muted mb-0">Administra la base de datos de clientes</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-success" asp-action="Create">
+            <i class="fa-solid fa-user-plus me-2"></i>Nuevo Cliente
+        </a>
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fa-solid fa-download me-2"></i>Exportar
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#"><i class="fa-solid fa-file-excel me-2"></i>Excel</a></li>
+                <li><a class="dropdown-item" href="#"><i class="fa-solid fa-file-csv me-2"></i>CSV</a></li>
+            </ul>
+        </div>
+    </div@{
+    ViewData["Title"] = "Clientes - Gestión";
+}
+
+<!-- Encabezado de página -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="fa-solid fa-users text-primary me-3"></i>Clientes
+        </h1>
+        <p class="text-muted mb-0">Administra la base de datos de clientes</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-success" asp-action="Create">
+            <i class="fa-solid fa-user-plus me-2"></i>Nuevo Cliente
+        </a>
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fa-solid fa-download me-2"></i>Exportar
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#"><i class="fa-solid fa-file-excel me-2"></i>Excel</a></li>
+                <li><a class="dropdown-item" href="#"><i class="fa-solid fa-file-csv me-2"></i>CSV</a></li>
+            </ul>
+        </div>
+    </div>
 </div>
 
-<div class="row">
-    <div class="col-md-8">
-        <form method="get" class="row g-2 mb-3">
-            <div class="col-sm-8">
-              
+<div class="row g-4">
+    <!-- Área principal -->
+    <div class="col-lg-8">
+        <!-- KPIs de clientes -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card card-kpi text-center">
+                    <div class="card-body">
+                        <div class="card-title mb-1">Total Clientes</div>
+                        <div class="display-6 text-primary fw-bold">@Model.Count</div>
+                    </div>
+                </div>
             </div>
-            <div class="col-sm-2">
-                <select name="pageSize" class="form-select" onchange="this.form.submit()">
-                    @{
-                        int[] sizes = new[] { 5, 10, 20, 50 };
-                        foreach (var s in sizes)
+            <div class="col-md-4">
+                <div class="card card-kpi text-center">
+                    <div class="card-body">
+                        <div class="card-title mb-1">Activos</div>
+                        <div class="display-6 text-success fw-bold">@Model.Count(c => c.Activo)</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card card-kpi text-center">
+                    <div class="card-body">
+                        <div class="card-title mb-1">Inactivos</div>
+                        <div class="display-6 text-warning fw-bold">@Model.Count(c => !c.Activo)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros de búsqueda -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="get" class="row g-3 align-items-end">
+                    <div class="col-md-5">
+                        <label class="form-label fw-semibold">
+                            <i class="fa-solid fa-magnifying-glass me-1"></i>Buscar Cliente
+                        </label>
+                        <input name="q" class="form-control" placeholder="Nombre, apellido, cédula o teléfono..." />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">
+                            <i class="fa-solid fa-filter me-1"></i>Estado
+                        </label>
+                        <select name="estado" class="form-select">
+                            <option value="">Todos</option>
+                            <option value="activo">Solo activos</option>
+                            <option value="inactivo">Solo inactivos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-semibold">Mostrar</label>
+                        <select name="pageSize" class="form-select" onchange="this.form.submit()">
+                            @{
+                                int[] sizes = new[] { 10, 25, 50, 100 };
+                                foreach (var s in sizes)
+                                {
+                                    <option value="@s">@s por página</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fa-solid fa-search me-1"></i>Buscar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tabla de clientes -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fa-solid fa-table me-2"></i>Lista de Clientes</span>
+                <span class="badge bg-primary">@Model.Count clientes</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>
+                                <i class="fa-solid fa-user me-1"></i>Cliente
+                            </th>
+                            <th>
+                                <i class="fa-solid fa-id-card me-1"></i>Cédula
+                            </th>
+                            <th>
+                                <i class="fa-solid fa-phone me-1"></i>Teléfono
+                            </th>
+                            <th>
+                                <i class="fa-solid fa-toggle-on me-1"></i>Estado
+                            </th>
+                            <th class="text-center">
+                                <i class="fa-solid fa-cog me-1"></i>Acciones
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Any())
                         {
-                         
+                            @foreach (var cliente in Model)
+                            {
+                                <tr class="@(!cliente.Activo ? "table-secondary" : "")">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-md @(cliente.Activo ? "bg-primary" : "bg-secondary") text-white rounded-circle d-flex align-items-center justify-content-center me-3">
+                                                @(cliente.Nombre.Substring(0, 1) + cliente.Apellido.Substring(0, 1))
+                                            </div>
+                                            <div>
+                                                <div class="fw-semibold">@cliente.Apellido, @cliente.Nombre</div>
+                                                <small class="text-muted">Cliente @(cliente.Activo ? "activo" : "inactivo")</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="font-monospace">@cliente.CedulaIdentidad</span>
+                                    </td>
+                                    <td>
+                                        <a href="tel:@cliente.Telefono" class="text-decoration-none">
+                                            <i class="fa-solid fa-phone me-1 text-success"></i>@cliente.Telefono
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge @(cliente.Activo ? "bg-success" : "bg-secondary")">
+                                            <i class="fa-solid fa-@(cliente.Activo ? "check" : "times") me-1"></i>
+                                            @(cliente.Activo ? "Activo" : "Inactivo")
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group" role="group">
+                                            <a asp-action="Details" asp-route-id="@cliente.ClienteId" 
+                                               class="btn btn-sm btn-outline-info" title="Ver detalles">
+                                                <i class="fa-solid fa-eye"></i>
+                                            </a>
+                                            <a asp-action="Edit" asp-route-id="@cliente.ClienteId" 
+                                               class="btn btn-sm btn-outline-secondary" title="Editar">
+                                                <i class="fa-solid fa-pen"></i>
+                                            </a>
+                                            <a asp-controller="Evento" asp-action="Create" asp-route-clienteId="@cliente.ClienteId"
+                                               class="btn btn-sm btn-outline-success" title="Crear evento">
+                                                <i class="fa-solid fa-calendar-plus"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
                         }
-                    }
-                </select>
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center py-5">
+                                    <div class="text-muted">
+                                        <i class="fa-solid fa-user-slash fa-3x mb-3 d-block"></i>
+                                        <h5>No se encontraron clientes</h5>
+                                        <p>Intenta ajustar los filtros de búsqueda o 
+                                           <a asp-action="Create" class="text-decoration-none">agregar un nuevo cliente</a>
+                                        </p>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             </div>
-            <div class="col-sm-2">
-                <button type="submit" class="btn btn-outline-secondary w-100"><i class="fa-solid fa-magnifying-glass"></i>Buscar</button>
+        </div>
+    </div>
+
+    <!-- Sidebar derecho -->
+    <div class="col-lg-4">
+        <!-- Estadísticas rápidas -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fa-solid fa-chart-pie me-2"></i>Estadísticas
             </div>
-        </form>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="text-center">
+                            <div class="h4 text-primary mb-0">@(Model.Any() ? Math.Round((double)Model.Count(c => c.Activo) / Model.Count * 100, 1) : 0)%</div>
+                            <small class="text-muted">Clientes Activos</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <div class="h4 text-success mb-0">@Model.Count(c => !string.IsNullOrEmpty(c.Telefono))</div>
+                            <small class="text-muted">Con Teléfono</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div  >
 
         <table class="table table-striped">
             <thead>

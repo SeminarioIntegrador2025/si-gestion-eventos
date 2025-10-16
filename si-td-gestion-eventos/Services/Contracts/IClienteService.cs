@@ -12,9 +12,6 @@ namespace si_td_gestion_eventos.Services.Contracts
         Task<ServiceResult<ClienteVM>> UpdateAsync(ClienteVM clienteVM);
         Task<ServiceResult<bool>> DeactivateAsync(int id);
         Task<ServiceResult<bool>> ActivateAsync(int id);
-
-        // --- MÉTODO ACTUALIZADO ---
-        // Se convierte a asíncrono para un mejor rendimiento y consistencia.
         Task<IEnumerable<SelectListItem>> GetClientesActivosParaDropdownAsync();
     }
 }

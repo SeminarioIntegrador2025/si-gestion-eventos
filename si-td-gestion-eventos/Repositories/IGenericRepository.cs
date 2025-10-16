@@ -10,12 +10,16 @@ namespace si_td_gestion_eventos.Repositories
 
         Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate);
 
+        Task<IEnumerable<TEntity>> FindWithIncludesAsync(
+            Expression<Func<TEntity, bool>>? predicate = null,
+            params Expression<Func<TEntity, object>>[] includes);
+
+        Task<TEntity?> GetByIdWithIncludesAsync(int id, params Expression<Func<TEntity, object>>[] includes);
+
         Task AddAsync(TEntity entity);
 
-        // Se renombra a 'Update' y se hace síncrono
         void Update(TEntity entity);
 
-        // Se renombra a 'Remove' y se hace síncrono
         void Remove(TEntity entity);
 
         Task SaveChangesAsync();

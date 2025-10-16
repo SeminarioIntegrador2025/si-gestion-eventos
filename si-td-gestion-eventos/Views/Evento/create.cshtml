@@ -7,20 +7,18 @@
 <h2 class="mb-4">Nuevo Evento</h2>
 
 <form asp-action="Create" method="post">
-    @* Se pasa el ViewModel a la vista parcial *@
     <partial name="_EventoForms" model="Model" />
-
     <div class="mt-4">
         <button type="submit" class="btn btn-primary">
-            <i class="bi bi-check-circle"></i> Guardar Evento
+            <i class="bi bi-check-circle"></i> Crear Evento
         </button>
         <a asp-action="Index" class="btn btn-secondary">
-            <i class="bi bi-x-circle"></i> Cancelar
+            <i class="bi bi-x-circle"></i> Volver
         </a>
     </div>
 </form>
 
-@* Es fundamental incluir esta sección para que la validación del lado del cliente funcione *@
+@* validación del lado del cliente *@
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");

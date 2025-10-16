@@ -1,61 +1,232 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="es">
+    @{
+        var title = ViewData["Title"] as string ?? "Gestión de Eventos - Tata David";
+        var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+        var action = ViewContext.RouteData.Values["action"]?.ToString();
+    }
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] Gestion de Eventos - Tata David</title>
+    <title>@title</title>
+
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/si_td_gestion_eventos.styles.css" asp-append-version="true" />
-    <link href="~/lib/font-awesome/css/all.css" rel="stylesheet" />
     <link href="~/lib/font-awesome/css/all.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    <meta name="color-scheme" content="light dark">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
 </head>
-<body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Gestion de Eventos</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
+<body class="app">
+    <!-- Topbar -->
+    <header class="topbar navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <div class="d-flex align-items-center">
+                <button id="sidebarToggle" class="btn btn-outline-secondary btn-sm me-3" aria-label="Alternar navegación" title="Alternar menú">
+                    <i class="fas fa-bars"></i>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Inicio</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Cliente" asp-action ="Index">Clientes</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Evento" asp-action="Index">Eventos</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Pago" asp-action="Index">Pagos</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Fianza" asp-action="Index">Fianzas</a>
-                        </li>
-                    </ul>
+                <a class="navbar-brand fw-bold d-flex align-items-center" asp-area="" asp-controller="Home" asp-action="Index">
+                    <i class="fa-solid fa-champagne-glasses me-2 text-primary fs-4"></i> 
+                    <span class="d-none d-md-inline">Gestión de Eventos</span>
+                    <span class="d-md-none">Eventos</span>
+                </a>
+            </div>
+
+            <div class="ms-auto d-flex align-items-center gap-3">
+                <!-- Buscador global -->
+                <form class="d-none d-lg-flex position-relative" role="search" method="get" asp-controller="Evento" asp-action="Index">
+                    <input name="q" class="form-control form-control-sm pe-5" type="search" placeholder="Buscar eventos, clientes..." style="width: 250px;" />
+                    <button type="submit" class="btn btn-link position-absolute end-0 top-50 translate-middle-y border-0 text-muted">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </button>
+                </form>
+
+                <!-- Accesos rápidos en topbar -->
+                <div class="d-none d-md-flex gap-2">
+                    <a class="btn btn-success btn-sm" asp-controller="Evento" asp-action="Create" title="Crear evento">
+                        <i class="fa-solid fa-plus me-1"></i>Evento
+                    </a>
+                    <a class="btn btn-outline-secondary btn-sm" asp-controller="Cliente" asp-action="Create" title="Agregar cliente">
+                        <i class="fa-solid fa-user-plus me-1"></i>Cliente
+                    </a>
+                </div>
+                <a class="btn btn-outline-secondary btn-sm" asp-controller="Pago" asp-action="Create">
+                    <i class="fa-solid fa-receipt me-1"></i>Pago
+                </a>               
+            </div>
+        </div>
+    </header>
+
+    <div id="layout" class="layout">
+        <!-- Sidebar -->
+        <nav id="sidebar" class="sidebar">
+            <div class="sidebar-title">
+                <i class="fa-solid fa-list me-2"></i>
+                <span class="nav-label">Navegación</span>
+            </div>
+            
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link @(controller == "Home" && action == "Index" ? "active" : "")" 
+                       asp-controller="Home" asp-action="Index" title="Panel principal">
+                        <i class="fa-solid fa-house"></i>
+                        <span class="nav-label">Dashboard</span>
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a class="nav-link @(controller == "Evento" ? "active" : "")" 
+                       asp-controller="Evento" asp-action="Index" title="Gestionar eventos">
+                        <i class="fa-solid fa-calendar-check"></i>
+                        <span class="nav-label">Eventos</span>
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a class="nav-link @(controller == "Cliente" ? "active" : "")" 
+                       asp-controller="Cliente" asp-action="Index" title="Gestionar clientes">
+                        <i class="fa-solid fa-users"></i>
+                        <span class="nav-label">Clientes</span>
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a class="nav-link @(controller == "Pago" ? "active" : "")" 
+                       asp-controller="Pago" asp-action="Index" title="Control de pagos">
+                        <i class="fa-solid fa-money-check-dollar"></i>
+                        <span class="nav-label">Pagos</span>
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a class="nav-link @(controller == "Fianza" ? "active" : "")" 
+                       asp-controller="Fianza" asp-action="Index" title="Administrar fianzas">
+                        <i class="fa-solid fa-handshake"></i>
+                        <span class="nav-label">Fianzas</span>
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a class="nav-link @(controller == "Reporte" ? "active" : "")" 
+                       asp-controller="Reporte" asp-action="Index" title="Reportes financieros">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <span class="nav-label">Reportes</span>
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Sección de atajos -->
+            <div class="shortcuts">
+                <div class="shortcuts-title">
+                    <i class="fa-solid fa-bolt me-1"></i>Acciones rápidas
+                </div>
+                <div class="d-grid gap-2">
+                    <a class="shortcut-btn primary" asp-controller="Evento" asp-action="Create">
+                        <i class="fa-solid fa-plus"></i>
+                        <span class="nav-label">Nuevo evento</span>
+                    </a>
+                    <a class="shortcut-btn secondary" asp-controller="Cliente" asp-action="Create">
+                        <i class="fa-solid fa-user-plus"></i>
+                        <span class="nav-label">Agregar cliente</span>
+                    </a>
                 </div>
             </div>
         </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
+
+        <!-- Contenido principal -->
+        <main class="content">
+            <div class="page-content">
+                @RenderBody()
+            </div>
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2025 - si_td_gestion_eventos - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+            <span class="text-muted">&copy; @DateTime.Now.Year - Tata David Eventos - Sistema de Gestión</span>
+            <div class="d-flex align-items-center gap-3">
+                <span class="badge bg-success">v2.0</span>
+                <a href="#" class="text-muted text-decoration-none">
+                    <i class="fa-solid fa-question-circle me-1"></i>Ayuda
+                </a>
+            </div>
         </div>
     </footer>
+
+    <!-- Overlay para móvil -->
+    <div id="sidebarOverlay" class="d-md-none"></div>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
     <script src="~/lib/font-awesome/js/all.min.js"></script>
+
+    <script>
+        // Funcionalidad del sidebar mejorada
+        (function () {
+            const storageKey = "td-sidebar-collapsed";
+            const layout = document.getElementById("layout");
+            const sidebar = document.getElementById("sidebar");
+            const toggle = document.getElementById("sidebarToggle");
+            const overlay = document.getElementById("sidebarOverlay");
+
+            // Restaurar estado del sidebar
+            if (localStorage.getItem(storageKey) === "1") {
+                layout.classList.add("collapsed");
+            }
+
+            // Toggle del sidebar
+            toggle?.addEventListener("click", function () {
+                const isMobile = window.innerWidth < 768;
+                
+                if (isMobile) {
+                    sidebar.classList.toggle("show");
+                    overlay.style.display = sidebar.classList.contains("show") ? "block" : "none";
+                } else {
+                    layout.classList.toggle("collapsed");
+                    localStorage.setItem(storageKey, layout.classList.contains("collapsed") ? "1" : "0");
+                }
+            });
+
+            // Cerrar sidebar en móvil al hacer clic en overlay
+            overlay?.addEventListener("click", function () {
+                sidebar.classList.remove("show");
+                overlay.style.display = "none";
+            });
+
+            // Cerrar sidebar en móvil al cambiar de página
+            sidebar.querySelectorAll(".nav-link").forEach(link => {
+                link.addEventListener("click", function () {
+                    if (window.innerWidth < 768) {
+                        sidebar.classList.remove("show");
+                        overlay.style.display = "none";
+                    }
+                });
+            });
+
+            // Manejar cambios de tamaño de ventana
+            window.addEventListener("resize", function () {
+                if (window.innerWidth >= 768) {
+                    sidebar.classList.remove("show");
+                    overlay.style.display = "none";
+                }
+            });
+
+            // Animaciones de entrada
+            setTimeout(() => {
+                document.body.classList.add("loaded");
+            }, 100);
+        })();
+
+        // Tooltip para elementos con title
+        document.addEventListener("DOMContentLoaded", function () {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
