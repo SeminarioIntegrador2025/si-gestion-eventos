@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using si_td_gestion_eventos.Infrastructure;
 using si_td_gestion_eventos.Models.ViewModels;
 using si_td_gestion_eventos.Services.Contracts;
 
@@ -18,17 +19,42 @@ namespace si_td_gestion_eventos.Controllers
             _clienteService = clienteService;
         }
 
-        // GET: Evento
-        public async Task<IActionResult> Index(string q, int page = 1, int pageSize = 10)
-        {
-            // La lógica de búsqueda, paginación y mapeo ahora vive en el servicio.
-            var paginatedList = await _eventoService.GetAllPaginatedAsync(q, page, pageSize);
+        // GET
+        public async Task<IActionResult> Index(
+            string q,
+            DateTime? fechaDesde,
+            DateTime? fechaHasta,
+            string ordenPor = "fecha_inicio_asc",
+            int page = 1,
+            int pageSize = 10)
+        {     
+            if (fechaDesde.HasValue && fechaHasta.HasValue && fechaHasta.Value < fechaDesde.Value)
+            {
+                ModelState.AddModelError("Fechas", "La 'Fecha Hasta' no puede ser anterior a la 'Fecha Desde'.");                
+                ViewBag.Search = q;
+                ViewBag.FechaDesde = fechaDesde;
+                ViewBag.FechaHasta = fechaHasta;
+                ViewBag.OrdenPor = ordenPor;
+                ViewBag.PageSize = pageSize;
+                var emptyList = new PaginatedList<EventoVM>(new List<EventoVM>(), 0, page, pageSize);
+                return View(emptyList);
+            }
+
+            var paginatedList = await _eventoService.GetAllPaginatedAsync(
+                q,
+                fechaDesde,
+                fechaHasta,
+                ordenPor,
+                page,
+                pageSize);
+
 
             ViewBag.Search = q;
+            ViewBag.FechaDesde = fechaDesde;
+            ViewBag.FechaHasta = fechaHasta;
             ViewBag.PageSize = pageSize;
-            ViewBag.Ultimos = await _eventoService.GetLatestAsync(5); // Obtenemos los últimos del servicio.
-
-            // La vista recibe directamente la lista de ViewModels paginada.
+            ViewBag.Ultimos = await _eventoService.GetLatestAsync(5);
+            ViewBag.OrdenPor = ordenPor;
             return View(paginatedList);
         }
 

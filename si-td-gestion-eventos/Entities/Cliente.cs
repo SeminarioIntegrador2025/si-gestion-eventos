@@ -15,7 +15,7 @@ namespace si_td_gestion_eventos.Entities
         [Required, StringLength(30)]
         [Display(Name = "Cédula de Identidad")]
         public required string CedulaIdentidad { get; set; }
-        [Required, StringLength(120)]
+        [Required, StringLength(11)]
         public required string Domicilio { get; set; }
         [Required, StringLength(30)]
         [Phone]

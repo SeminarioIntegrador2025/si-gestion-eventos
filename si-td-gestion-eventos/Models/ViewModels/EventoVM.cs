@@ -29,7 +29,7 @@ namespace si_td_gestion_eventos.Models.ViewModels
         
         [Required(ErrorMessage = "El tipo de evento es obligatorio.")]
         [Display(Name = "Tipo de Evento")]
-        public TipoEvento Tipo { get; set; }
+        public TipoEvento? Tipo { get; set; }
         
         [Required(ErrorMessage = "El costo de alquiler es obligatorio.")]
         [Range(0.01, double.MaxValue, ErrorMessage = "El costo debe ser mayor a 0.")]
@@ -71,7 +71,9 @@ namespace si_td_gestion_eventos.Models.ViewModels
         [StringLength(30)]
         [Display(Name = "Cédula del Responsable")]
         public string ResponsableCedula { get; set; } = string.Empty;
-        
+
+        public string? OrdenPor { get; set; }
+
         // Propiedades de solo lectura para la vista
         public string? ClienteNombreCompleto { get; set; }
         public decimal TotalPagado { get; set; }

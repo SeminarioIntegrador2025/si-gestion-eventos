@@ -7,34 +7,43 @@ namespace si_td_gestion_eventos.Validators
     {
         public EventoValidator()
         {
-            RuleFor(e => e.ClienteId).GreaterThan(0).WithMessage("Debe seleccionar un cliente.");
-            RuleFor(e => e.Fin).GreaterThanOrEqualTo(e => e.Inicio)
-                .WithMessage("La fecha de fin no puede ser anterior a la fecha de inicio.");
-            RuleFor(e => e.CantidadPersonas).GreaterThan(0).WithMessage("La cantidad de personas debe ser mayor a cero.");
-            RuleFor(e => e.CostoAlquiler).GreaterThan(0).WithMessage("El costo del alquiler debe ser mayor a cero.");
+            // --- Cliente ---
+            RuleFor(e => e.ClienteId)
+                .GreaterThan(0).WithMessage("Debe seleccionar un cliente.");
 
+            // --- Detalles del Evento ---
+            RuleFor(e => e.Tipo)
+                .NotEmpty().WithMessage("Debe seleccionar un tipo de evento.");
+
+            RuleFor(e => e.CantidadPersonas)
+                .GreaterThan(0).WithMessage("La cantidad de personas debe ser mayor a cero.")
+                .Must(cantidad => cantidad % 1 == 0).WithMessage("La cantidad de personas debe ser un número entero.")
+                .LessThanOrEqualTo(500).WithMessage("La cantidad de personas no puede exceder 500.");
+
+            // --- Fechas y Horas ---
             RuleFor(x => x.FechaContrato)
                 .NotEmpty().WithMessage("La fecha del contrato es obligatoria.")
                 .LessThanOrEqualTo(DateTime.Today).WithMessage("La fecha del contrato no puede ser futura.");
 
-            RuleFor(x => x.Inicio)
+            RuleFor(x => x.Inicio) 
                 .NotEmpty().WithMessage("La fecha de inicio es obligatoria.")
                 .GreaterThanOrEqualTo(DateTime.Today).WithMessage("La fecha de inicio no puede ser anterior a hoy.");
-
-            RuleFor(x => x.Fin)
-                .NotEmpty().WithMessage("La fecha de fin es obligatoria.")
-                .GreaterThanOrEqualTo(x => x.Inicio).WithMessage("La fecha de fin debe ser posterior o igual a la fecha de inicio.");
 
             RuleFor(x => x.HoraInicio)
                 .NotEmpty().WithMessage("La hora de inicio es obligatoria.");
 
+            RuleFor(x => x.Fin) 
+                .NotEmpty().WithMessage("La fecha de fin es obligatoria.")
+                .GreaterThanOrEqualTo(x => x.Inicio)
+                .WithMessage("La fecha de fin no puede ser anterior a la fecha de inicio.");
+
             RuleFor(x => x.HoraFin)
                 .NotEmpty().WithMessage("La hora de fin es obligatoria.")
-                .GreaterThan(x => x.HoraInicio).WithMessage("La hora de fin debe ser posterior a la hora de inicio.");
+                .GreaterThan(x => x.HoraInicio)
+                .When(x => x.Fin == x.Inicio) 
+                .WithMessage("Si es el mismo día, la hora de fin debe ser posterior a la hora de inicio.");
 
-            RuleFor(x => x.Tipo)
-                .NotEmpty().WithMessage("Debe seleccionar un tipo de evento.");
-
+            // --- Costos y Montos ---
             RuleFor(x => x.CostoAlquiler)
                 .GreaterThan(0).WithMessage("El costo del alquiler debe ser mayor a cero.");
 
@@ -42,17 +51,11 @@ namespace si_td_gestion_eventos.Validators
                 .GreaterThanOrEqualTo(0).WithMessage("El monto de reserva no puede ser negativo.")
                 .LessThanOrEqualTo(x => x.CostoAlquiler).WithMessage("El monto de reserva no puede ser mayor al costo del alquiler.");
 
-            RuleFor(x => x.CantidadPersonas)
-                .GreaterThan(0).WithMessage("La cantidad de personas debe ser mayor a cero.")
-                .LessThanOrEqualTo(500).WithMessage("La cantidad de personas no puede exceder 500.");
-
             RuleFor(x => x.MontoAireAcondicionado)
                 .GreaterThanOrEqualTo(0).WithMessage("El monto del aire acondicionado no puede ser negativo.")
                 .When(x => x.MontoAireAcondicionado.HasValue);
 
-            RuleFor(x => x.ClienteId)
-                .GreaterThan(0).WithMessage("Debe seleccionar un cliente.");
-
+            // --- Responsable ---
             RuleFor(x => x.ResponsableNombre)
                 .NotEmpty().WithMessage("El nombre del responsable es obligatorio.")
                 .Length(2, 100).WithMessage("El nombre del responsable debe tener entre 2 y 100 caracteres.");
@@ -64,7 +67,6 @@ namespace si_td_gestion_eventos.Validators
             RuleFor(x => x.ResponsableCedula)
                 .NotEmpty().WithMessage("La cédula del responsable es obligatoria.")
                 .Length(7, 30).WithMessage("La cédula debe tener entre 7 y 30 caracteres.");
-
         }
     }
 }

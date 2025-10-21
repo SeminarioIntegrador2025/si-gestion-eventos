@@ -1,12 +1,13 @@
-﻿@* Se cambia el modelo para usar el ViewModel, mejorando rendimiento y seguridad *@
-@model si_td_gestion_eventos.Infrastructure.PaginatedList<si_td_gestion_eventos.Models.ViewModels.EventoVM>
+﻿@model si_td_gestion_eventos.Infrastructure.PaginatedList<si_td_gestion_eventos.Models.ViewModels.EventoVM>
 
 @{
     ViewData["Title"] = "Gestión de Eventos";
-    // Hacemos el casting al tipo correcto (lista de ViewModels)
     var ultimos = ViewBag.Ultimos as List<si_td_gestion_eventos.Models.ViewModels.EventoVM>;
     string q = ViewBag.Search as string ?? "";
     int pageSize = ViewBag.PageSize ?? 10;
+    int? clienteIdBusqueda = ViewBag.ClienteIdSeleccionado as int?;
+    DateTime? fechaDesde = ViewBag.FechaDesde as DateTime?;
+    DateTime? fechaHasta = ViewBag.FechaHasta as DateTime?;
 }
 
 @if (TempData["Ok"] != null)
@@ -30,104 +31,205 @@
     <a class="btn btn-primary" asp-action="Create"><i class="fa-solid fa-plus"></i> Nuevo Evento</a>
 </div>
 
-<div class="row">
-    <div class="col-md-8">
-        <form method="get" class="row g-2 mb-3">
-            <div class="col-sm-8">
-                @* Se actualiza el placeholder para reflejar el nuevo modelo de datos *@
-                <input name="q" value="@q" class="form-control" placeholder="Buscar por cliente o tipo de evento..." />
-            </div>
-            <div class="col-sm-2">
-                <select name="pageSize" class="form-select" onchange="this.form.submit()">
-                    @{
-                        int[] sizes = new[] { 5, 10, 20, 50 };
-                        foreach (var s in sizes)
-                        {
-                            <option value="@s" selected="@(s == pageSize)">@s por página</option>
-                        }
+<form method="get" class="row g-3 mb-3 align-items-end">
+    <div class="col-sm-4">
+        <label for="q" class="form-label">Buscar por Cliente</label>
+        <input type="text" name="q" id="q" class="form-control" value="@q" placeholder="Nombre cliente o CI" />
+    </div>
+
+    <div class="col-sm-3">
+        <label for="fechaDesde" class="form-label">Fecha Desde</label>
+        <input type="date" name="fechaDesde" id="fechaDesde" class="form-control" value="@fechaDesde?.ToString("yyyy-MM-dd")" />
+    </div>
+
+    <div class="col-sm-3">
+        <label for="fechaHasta" class="form-label">Fecha Hasta</label>
+        <input type="date" name="fechaHasta" id="fechaHasta" class="form-control" value="@fechaHasta?.ToString("yyyy-MM-dd")" />
+    </div>
+
+
+
+        <div class="row">
+
+            <div class="col-md-3">
+                <label for="pageSize" class="form-label">Por Página</label>
+                <select name="pageSize" id="pageSize" class="form-select" onchange="this.form.submit()">
+                    @if (ViewBag.PageSize == 10)
+                    {
+                        <option value="10" selected>10</option>
+                    }
+                    else
+                    {
+                        <option value="10">10</option>
+                    }
+
+                    @if (ViewBag.PageSize == 25)
+                    {
+                        <option value="25" selected>25</option>
+                    }
+                    else
+                    {
+                        <option value="25">25</option>
+                    }
+
+                    @if (ViewBag.PageSize == 50)
+                    {
+                        <option value="50" selected>50</option>
+                    }
+                    else
+                    {
+                        <option value="50">50</option>
                     }
                 </select>
             </div>
-            <div class="col-sm-2">
-                <button type="submit" class="btn btn-outline-secondary w-100"><i class="fa-solid fa-magnifying-glass"></i> Buscar</button>
-            </div>
-        </form>
 
-        <table class="table table-striped table-hover">
-            <thead>
-                <tr>
-                    <th>Cliente Responsable</th>
-                    <th>Tipo de Evento</th>
-                    <th>Fecha Inicio</th>
-                    <th>Estado</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var e in Model)
-                {
-                    <tr>
-                        @* Se usa la propiedad pre-formateada del ViewModel *@
-                        <td>@e.ClienteNombreCompleto</td>
-                        <td>@e.Tipo</td>
-                        <td>@e.Inicio.ToShortDateString()</td>
-                        <td>
-                            @* Opcional: Usar un badge para que el estado se vea mejor *@
-                            <span class="badge bg-info text-dark">@e.Estado</span>
-                        </td>
-                        <td class="text-end">
-                            <a asp-action="Details" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-info" title="Ver Detalles"><i class="fa-solid fa-eye"></i></a>
-                            <a asp-action="Edit" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="fa-solid fa-pen"></i></a>
-                            <a asp-action="Cancel" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-danger" title="Cancelar Evento"><i class="fa-solid fa-ban"></i></a>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+            <div class="col-md-3">
+                <label for="ordenPor" class="form-label">Ordenar por</label>
+                <select name="ordenPor" id="ordenPor" class="form-select" onchange="this.form.submit()">
 
-        @* El código de paginación no necesita cambios, ya que funciona con la clase PaginatedList *@
-        <nav aria-label="Paginación">
-            <ul class="pagination">
-                <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
-                    <a class="page-link" asp-action="Index" asp-route-q="@q" asp-route-page="@(Model.PageIndex - 1)" asp-route-pageSize="@pageSize">Anterior</a>
-                </li>
-                @for (int i = 1; i <= Model.TotalPages; i++)
-                {
-                    <li class="page-item @(i == Model.PageIndex ? "active" : "")">
-                        <a class="page-link" asp-action="Index" asp-route-q="@q" asp-route-page="@i" asp-route-pageSize="@pageSize">@i</a>
-                    </li>
-                }
-                <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
-                    <a class="page-link" asp-action="Index" asp-route-q="@q" asp-route-page="@(Model.PageIndex + 1)" asp-route-pageSize="@pageSize">Siguiente</a>
-                </li>
-            </ul>
-        </nav>
-
-        <p class="text-muted">
-            Mostrando @Model.Count de @Model.TotalCount eventos (página @Model.PageIndex de @Model.TotalPages).
-        </p>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">Últimos eventos agregados</div>
-            <ul class="list-group list-group-flush">
-                @if (ultimos != null && ultimos.Any())
-                {
-                    @foreach (var u in ultimos)
+                    @if (ViewBag.OrdenPor == "fecha_inicio_asc")
                     {
-                        <li class="list-group-item">
-                            @* Se actualiza para usar las propiedades del ViewModel *@
-                            <strong>@u.Tipo - @u.ClienteNombreCompleto</strong><br />
-                            <small>Fecha: @u.Inicio.ToShortDateString()</small>
-                        </li>
+                        <option value="fecha_inicio_asc" selected>Fecha de inicio (más cercana)</option>
                     }
-                }
-                else
-                {
-                    <li class="list-group-item">No hay eventos recientes.</li>
-                }
-            </ul>
+                    else
+                    {
+                        <option value="fecha_inicio_asc">Fecha de inicio (más cercana)</option>
+                    }
+
+                    @if (ViewBag.OrdenPor == "fecha_inicio_desc")
+                    {
+                        <option value="fecha_inicio_desc" selected>Fecha de inicio (más lejana)</option>
+                    }
+                    else
+                    {
+                        <option value="fecha_inicio_desc">Fecha de inicio (más lejana)</option>
+                    }
+
+                    @if (ViewBag.OrdenPor == "fecha_contrato_asc")
+                    {
+                        <option value="fecha_contrato_asc" selected>Fecha de contrato (más cercana)</option>
+                    }
+                    else
+                    {
+                        <option value="fecha_contrato_asc">Fecha de contrato (más cercana)</option>
+                    }
+
+                    @if (ViewBag.OrdenPor == "fecha_contrato_desc")
+                    {
+                        <option value="fecha_contrato_desc" selected>Fecha de contrato (más lejana)</option>
+                    }
+                    else
+                    {
+                        <option value="fecha_contrato_desc">Fecha de contrato (más lejana)</option>
+                    }
+
+                    @if (ViewBag.OrdenPor == "cantidad_personas_desc")
+                    {
+                        <option value="cantidad_personas_desc" selected>Cantidad de Personas (Mayor)</option>
+                    }
+                    else
+                    {
+                        <option value="cantidad_personas_desc">Cantidad de Personas (Mayor)</option>
+                    }
+
+                    @if (ViewBag.OrdenPor == "cantidad_personas_asc")
+                    {
+                        <option value="cantidad_personas_asc" selected>Cantidad de Personas (Menor)</option>
+                    }
+                    else
+                    {
+                        <option value="cantidad_personas_asc">Cantidad de Personas (Menor)</option>
+                    }
+
+                    @if (ViewBag.OrdenPor == "tipo_evento")
+                    {
+                        <option value="tipo_evento" selected>Tipo de Evento (A-Z)</option>
+                    }
+                    else
+                    {
+                        <option value="tipo_evento">Tipo de Evento (A-Z)</option>
+                    }
+                </select>
+            </div>
+
         </div>
+
+
+    <div class="col-12 mt-2">
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-magnifying-glass"></i>Buscar Eventos</button>
     </div>
+
+</form>
+
+<table class="table table-striped table-hover">
+    <thead>
+        <tr>
+            <th>Cliente Responsable</th>
+            <th>Tipo de Evento</th>
+            <th>Fecha Inicio</th>
+            <th>Estado</th>
+            <th></th> @* Agregamos Saldo Pendiente? *@
+        </tr>
+    </thead>
+
+    <tbody>
+        @if (!Model.Any())
+        {
+            <tr>
+                <td colspan="5" class="text-center">
+                    <div class="alert alert-warning my-3" role="alert">
+                        <i class="fa-solid fa-circle-info me-2"></i>
+                        @if (!string.IsNullOrEmpty(q))
+                        {
+                            @:No se encontraron eventos para "@q".
+                        }
+                        else 
+                        {
+                            @:No se encontraron eventos que coincidan con las fechas.
+                        }
+                    </div>
+                </td>
+            </tr>
+        }
+        else
+        {
+            @foreach (var e in Model)
+            {
+                <tr>
+                    <td>@e.ClienteNombreCompleto</td>
+                    <td>@e.Tipo</td>
+                    <td>@e.Inicio.ToShortDateString()</td>
+                    <td><span class="badge bg-info text-dark">@e.Estado</span></td>
+                    <td class="text-end">
+                        <a asp-action="Details" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-info" title="Ver Detalles"><i class="fa-solid fa-eye"></i></a>
+                        <a asp-action="Edit" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="fa-solid fa-pen"></i></a>
+                        <a asp-action="Cancel" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-danger" title="Cancelar Evento"><i class="fa-solid fa-ban"></i></a>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+<div class="d-flex justify-content-between align-items-center mt-3">
+
+    <nav aria-label="Paginación">
+        <ul class="pagination mb-0">
+            <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                <a class="page-link" asp-action="Index" asp-route-q="@q" asp-route-fechaDesde="@fechaDesde?.ToString("yyyy-MM-dd")" asp-route-fechaHasta="@fechaHasta?.ToString("yyyy-MM-dd")" asp-route-page="@(Model.PageIndex - 1)" asp-route-pageSize="@pageSize">Anterior</a>
+            </li>
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-q="@q" asp-route-fechaDesde="@fechaDesde?.ToString("yyyy-MM-dd")" asp-route-fechaHasta="@fechaHasta?.ToString("yyyy-MM-dd")" asp-route-page="@i" asp-route-pageSize="@pageSize">@i</a>
+                </li>
+            }
+            <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                <a class="page-link" asp-action="Index" asp-route-q="@q" asp-route-fechaDesde="@fechaDesde?.ToString("yyyy-MM-dd")" asp-route-fechaHasta="@fechaHasta?.ToString("yyyy-MM-dd")" asp-route-page="@(Model.PageIndex + 1)" asp-route-pageSize="@pageSize">Siguiente</a>
+            </li>
+        </ul>
+    </nav>
+    <p class="text-muted mb-0">
+        Mostrando @Model.Count de @Model.TotalCount eventos (página @Model.PageIndex de @Model.TotalPages).
+    </p>
 </div>

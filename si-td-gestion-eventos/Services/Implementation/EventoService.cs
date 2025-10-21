@@ -26,39 +26,81 @@ namespace si_td_gestion_eventos.Services.Implementation
             _mapper = mapper;
             _validator = validator;
         }
-
-        public async Task<PaginatedList<EventoVM>> GetAllPaginatedAsync(string? searchQuery, int page, int pageSize)
+        public async Task<PaginatedList<EventoVM>> GetAllPaginatedAsync(
+            string? searchQuery,
+            DateTime? fechaDesde,
+            DateTime? fechaHasta,
+            string ordenarPor, // <-- Ya lo tenés
+            int page,
+            int pageSize)
         {
             try
             {
-                // Obtener eventos con la relación Cliente incluida
-                var eventos = await _eventoRepository.FindWithIncludesAsync(
-                    predicate: e =>
-                        string.IsNullOrEmpty(searchQuery) ||
-                        e.Cliente.Nombre.Contains(searchQuery) ||
-                        e.Cliente.Apellido.Contains(searchQuery) ||
-                        e.Cliente.CedulaIdentidad.Contains(searchQuery) ||
-                        e.ResponsableNombre.Contains(searchQuery) ||
-                        e.Tipo.ToString().Contains(searchQuery),
-                    includes: e => e.Cliente // Incluir la entidad Cliente
-                );
+                Expression<Func<Evento, bool>> textPredicate = e =>
+                    string.IsNullOrEmpty(searchQuery) ||
+                    (e.Cliente.Nombre + " " + e.Cliente.Apellido).Contains(searchQuery) ||
+                    e.Cliente.CedulaIdentidad.Contains(searchQuery) ||
+                    e.Tipo.ToString().Contains(searchQuery);
 
-                // Ordenar por fecha de inicio descendente
-                var eventosOrdenados = eventos.OrderByDescending(e => e.Inicio);
+                // 1. Obtiene los datos (tal como lo tenías)
+                var eventosQuery = (await _eventoRepository.FindWithIncludesAsync(
+                                        textPredicate,
+                                        includes: q => q.Cliente
+                                    )).AsQueryable();
 
-                // Mapear a ViewModels
-                var eventosVM = _mapper.Map<IEnumerable<EventoVM>>(eventosOrdenados);
+                // 2. Aplica filtros de fecha (tal como lo tenías)
+                if (fechaDesde.HasValue)
+                {
+                    eventosQuery = eventosQuery.Where(e => e.Inicio.Date >= fechaDesde.Value.Date);
+                }
+                if (fechaHasta.HasValue)
+                {
+                    eventosQuery = eventosQuery.Where(e => e.Inicio.Date <= fechaHasta.Value.Date);
+                }
 
-                // Crear lista paginada
-                var totalCount = eventosVM.Count();
-                var items = eventosVM.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+              
+                IOrderedQueryable<Evento> eventosOrdenados;
+
+                // Usamos el 'switch' para aplicar el ordenamiento
+                switch (ordenarPor)
+                {
+                    case "fecha_inicio_desc":
+                        eventosOrdenados = eventosQuery.OrderByDescending(e => e.Inicio);
+                        break;
+                    case "fecha_contrato_asc":
+                        eventosOrdenados = eventosQuery.OrderBy(e => e.FechaContrato);
+                        break;
+                    case "fecha_contrato_desc":
+                        eventosOrdenados = eventosQuery.OrderByDescending(e => e.FechaContrato);
+                        break;
+                    case "cantidad_personas_desc":
+                        eventosOrdenados = eventosQuery.OrderByDescending(e => e.CantidadPersonas);
+                        break;
+                    case "cantidad_personas_asc":
+                        eventosOrdenados = eventosQuery.OrderBy(e => e.CantidadPersonas);
+                        break;
+                    case "tipo_evento":
+                        eventosOrdenados = eventosQuery.OrderBy(e => e.Tipo);
+                        break;
+                    default:
+                        eventosOrdenados = eventosQuery.OrderBy(e => e.Inicio); 
+                        break;
+                }
+                
+
+
+               
+                var totalCount = eventosOrdenados.Count();
+                var eventosPaginados = eventosOrdenados.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+                var items = _mapper.Map<List<EventoVM>>(eventosPaginados);
 
                 return new PaginatedList<EventoVM>(items, totalCount, page, pageSize);
             }
             catch (Exception ex)
             {
-                // Manejar el error apropiadamente (log, rethrow, etc.)
-                throw new Exception("Error al obtener los eventos.", ex);
+                // Loggear el ex (buena práctica)
+                return new PaginatedList<EventoVM>(new List<EventoVM>(), 0, page, pageSize);
             }
         }
 

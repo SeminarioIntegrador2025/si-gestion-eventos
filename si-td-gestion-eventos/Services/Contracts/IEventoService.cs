@@ -6,7 +6,7 @@ namespace si_td_gestion_eventos.Services.Contracts
 {
     public interface IEventoService
     {
-        Task<PaginatedList<EventoVM>> GetAllPaginatedAsync(string? searchQuery, int page, int pageSize);
+        Task<PaginatedList<EventoVM>> GetAllPaginatedAsync(string? searchQuery, DateTime? fechaDesde, DateTime? fechaHasta, string ordenarPor,  int page, int pageSize);
         Task<List<EventoVM>> GetLatestAsync(int count);
         Task<EventoVM?> GetByIdAsync(int id);
         Task<ServiceResult<EventoVM>> CreateAsync(EventoVM eventoVM);
