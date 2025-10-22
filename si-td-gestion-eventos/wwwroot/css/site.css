@@ -438,12 +438,103 @@ body.app {
     outline: none;
 }
 
+/* Evitar “texto blanco sobre blanco” en inputs vacíos */
+.form-control, .form-select {
+    color: var(--ink);
+}
+
 .form-select {
     background: var(--bg-2);
     border: 2px solid var(--line);
     border-radius: 0.5rem;
     padding: 0.75rem 1rem;
     color: var(--ink);
+}
+
+/* Inputs de solo lectura / deshabilitados: alto contraste y legibles */
+.form-control[readonly],
+.form-control-plaintext[readonly],
+.form-select:disabled {
+    background-color: var(--bg-3) !important;
+    color: var(--ink) !important;
+    opacity: 1; /* no los apagues demasiado */
+}
+
+/* Placeholders siempre legibles */
+::placeholder {
+    color: var(--ink-light);
+    opacity: .9;
+}
+
+:-ms-input-placeholder {
+    color: var(--ink-light);
+}
+
+::-ms-input-placeholder {
+    color: var(--ink-light);
+}
+
+/* Estilo visual para “bloqueado” (candado y fondo sutil) */
+.input-locked {
+    position: relative; /* necesario para posicionar el icono */
+    display: flex;
+    align-items: center;
+background: linear-gradient(135deg, rgba(16,185,129,.06), rgba(37,99,235,.04));
+border: 1px dashed var(--line);
+border-radius: .5rem;
+padding: .25rem .75rem;
+color: var(--ink);
+}
+
+/* Candado fijo a la izquierda */
+.input-locked .lock-left {
+    position: absolute;
+    left: .65rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: .9rem;
+    pointer-events: none;
+}
+/* Candado fijo a la derecha */
+.input-locked .lock-right {
+    position: absolute;
+    right: .65rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: .9rem;
+    pointer-events: none;
+}
+
+/* Input desplazado a la derecha para no tapar el ícono */
+.input-locked .form-control-plaintext {
+    flex: 1;
+    padding-left: 1.5rem; /* deja espacio para el candado */
+    padding-right: 0;
+    margin: 0;
+    color: var(--ink);
+    font-weight: 500;
+}
+
+/* Alineación correcta para form-control-plaintext dentro de input-group */
+.input-group .form-control-plaintext {
+    padding-left: .5rem;
+    padding-right: 2rem; /* deja espacio al candado derecho */
+}
+
+/* Variante oscura cuidada */
+@media (prefers-color-scheme: dark) {
+    .form-control[readonly],
+    .form-control-plaintext[readonly],
+    .form-select:disabled {
+        background-color: rgba(255,255,255,.06) !important;
+        color: var(--ink) !important;
+    }
+
+    .input-locked {
+        background: linear-gradient(135deg, rgba(16,185,129,.08), rgba(37,99,235,.06));
+    }
 }
 
 /* Alertas */

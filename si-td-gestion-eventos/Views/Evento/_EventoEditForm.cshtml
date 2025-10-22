@@ -8,20 +8,22 @@
 <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
 <div class="row">
-    @* --- COLUMNA IZQUIERDA: DETALLES DEL EVENTO (Esta parte estaba bien) --- *@
     <div class="col-md-6">
         <h4>Detalles del Evento</h4>
         <hr />
-
+        @* --- COLUMNA IZQUIERDA: Datos del evento--- *@
+        @* --- Fechas --- *@
         <div class="mb-3">
             <label asp-for="FechaContrato" class="form-label"></label>
-            <input asp-for="FechaContrato" type="date" class="form-control" readonly="@(isEditing ? "readonly" : null)" />
-            <span asp-validation-for="FechaContrato" class="text-danger"></span>
+            <input asp-for="FechaContrato" type="hidden" class="form-control" readonly="@(isEditing ? "readonly" : null)" />
+            <div class="input-locked d-flex align-items-center gap-2 px-2 py-1 rounded">
+                <i class="fa-solid fa-lock lock-left"></i>
+                <input asp-for="FechaContrato" type="date" class="form-control-plaintext mb-0 flex-grow-1" readonly />
+            </div>
         </div>
 
         <div class="row">
             <div class="col-md-6 mb-3">
-                @* Se cambió la etiqueta para que tome el [Display] del ViewModel *@
                 <label asp-for="Inicio" class="form-label"></label>
                 <input asp-for="Inicio" type="date" class="form-control" />
                 <span asp-validation-for="Inicio" class="text-danger"></span>
@@ -79,7 +81,7 @@
         </div>
     </div>
 
-    @* --- COLUMNA DERECHA: CLIENTE Y RESPONSABLE --- *@
+    @* --- COLUMNA DERECHA: datos del cliente, y del responsable --- *@
     <div class="col-md-6">
         <h4>Cliente y Responsable</h4>
         <hr />
@@ -88,8 +90,12 @@
             <label asp-for="ClienteId" class="form-label"></label>
             @if (isEditing)
             {
-                <input type="hidden" asp-for="ClienteId" />
-                <select asp-for="ClienteId" class="form-select" asp-items="ViewBag.Clientes" disabled></select>
+                <div class="input-locked d-flex align-items-center gap-2 px-2 py-1 rounded">
+                    <i class="fa-solid fa-lock lock-left"></i>
+                    <input type="hidden" asp-for="ClienteId" class="form-control-plaintext mb-0 flex-grow-1" readonly />
+                    <select asp-for="ClienteId" class="form-select" asp-items="ViewBag.Clientes" disabled></select>
+                </div>
+                
             }
             else
             {
