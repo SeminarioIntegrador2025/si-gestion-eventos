@@ -4,10 +4,50 @@
     ViewData["Title"] = "Editar Cliente";
 }
 
-<h2>Editar Cliente</h2>
-<form asp-action="Edit" method="post">
-    <input type="hidden" asp-for="ClienteId" />
-    <partial name="_ClienteForm" />
-    <button type="submit" class="btn btn-primary">Guardar cambios</button>
-    <a asp-action="Index" class="btn btn-secondary">Volver</a>
-</form>
+<div class="container-fluid">
+    <div class="page-header mb-4">
+        <h2 class="page-title">
+            <i class="fas fa-user-edit me-3 text-warning"></i>Editar Cliente
+        </h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-action="Index">Clientes</a></li>
+                <li class="breadcrumb-item active">Editar</li>
+            </ol>
+        </nav>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-edit me-2"></i>Modificar Información del Cliente
+                    </h5>
+                </div>
+                
+                <div class="card-body">
+                    <form asp-action="Edit" method="post" novalidate>
+                        <input type="hidden" asp-for="ClienteId" />
+                        <partial name="_ClienteForm" />
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </a>
+                            <button type="submit" class="btn btn-warning btn-lg">
+                                <i class="fas fa-save me-2"></i>Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

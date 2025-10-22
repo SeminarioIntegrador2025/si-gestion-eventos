@@ -32,12 +32,11 @@ builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepositor
 
 // Servicios de Negocio (Lógica de la aplicación)
 builder.Services.AddScoped<IClienteService, ClienteService>();
-builder.Services.AddScoped<IEventoService, EventoService>(); // <- AÑADIDO: Servicio para Eventos
+builder.Services.AddScoped<IEventoService, EventoService>(); 
 
 // Reglas de Negocio (Validaciones complejas)
 builder.Services.AddScoped<IClienteBusinessRules, ClienteBusinessRules>();
-// Se recomienda crear una clase para las reglas de negocio de Evento también.
-// builder.Services.AddScoped<IEventoBusinessRules, EventoBusinessRules>(); 
+builder.Services.AddScoped<IEventoBusinessRules, EventoBusinessRules>(); 
 
 // Validadores con FluentValidation
 builder.Services.AddScoped<IValidator<ClienteVM>, ClienteValidator>();

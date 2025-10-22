@@ -4,21 +4,62 @@
     ViewData["Title"] = "Crear Nuevo Evento";
 }
 
-<h2 class="mb-4">Nuevo Evento</h2>
-
-<form asp-action="Create" method="post">
-    <partial name="_EventoCreateForm" model="Model" />
-    <div class="mt-4">
-        <button type="submit" class="btn btn-primary">
-            <i class="bi bi-check-circle"></i> Crear Evento
-        </button>
-        <a asp-action="Index" class="btn btn-secondary">
-            <i class="bi bi-x-circle"></i> Volver
-        </a>
+<div class="container-fluid">
+    <div class="page-header mb-4">
+        <h2 class="page-title">
+            <i class="fas fa-calendar-plus me-3 text-success"></i>Nuevo Evento
+        </h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-controller="Evento" asp-action="Index">Eventos</a></li>
+                <li class="breadcrumb-item active">Nuevo</li>
+            </ol>
+        </nav>
     </div>
-</form>
 
-@* validación del lado del cliente *@
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-plus me-2"></i>Información del Evento
+                    </h5>
+                </div>
+                
+                <div class="card-body">
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Por favor, corrige los siguientes errores:
+                            </h6>
+                            <ul class="mb-0">
+                                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                                {
+                                    <li>@error.ErrorMessage</li>
+                                }
+                            </ul>
+                        </div>
+                    }
+
+                    <form asp-action="Create" method="post" novalidate>
+                        <partial name="_EventoCreateForm" model="Model" />
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </a>
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-check-circle me-2"></i>Crear Evento
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");

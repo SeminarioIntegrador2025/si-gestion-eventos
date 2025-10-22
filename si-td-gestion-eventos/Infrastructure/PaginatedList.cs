@@ -1,8 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace si_td_gestion_eventos.Infrastructure
 {
@@ -23,6 +19,10 @@ namespace si_td_gestion_eventos.Infrastructure
         public bool HasPreviousPage => PageIndex > 1;
         public bool HasNextPage => PageIndex < TotalPages;
 
+        //Navegación     
+        public int StartPage => Math.Max(1, PageIndex - 2);
+        public int EndPage => Math.Min(TotalPages, PageIndex + 2);
+        
         public static async Task<PaginatedList<T>> CreateAsync(IQueryable<T> source, int pageIndex, int pageSize)
         {
             var count = await source.CountAsync();
