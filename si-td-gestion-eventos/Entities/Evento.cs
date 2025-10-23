@@ -17,7 +17,7 @@ namespace si_td_gestion_eventos.Entities
         public required decimal MontoReserva { get; set; }
         public required int CantidadPersonas { get; set; }
         public decimal? MontoAireAcondicionado { get; set; }
-        public required EventoEstado Estado { get; set; } = EventoEstado.PendienteAConfirmar;
+        public required EventoEstado Estado { get; set; } = EventoEstado.Confirmado;
 
         [StringLength(100)]
         public required string ResponsableNombre { get; set; }

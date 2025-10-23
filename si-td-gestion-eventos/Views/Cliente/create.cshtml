@@ -1,4 +1,5 @@
-﻿@using si_td_gestion_eventos.Models.ViewModels
+﻿@using si_td_gestion_eventos.Models.Enums
+@using si_td_gestion_eventos.Models.ViewModels
 @model ClienteVM
 @{
     ViewData["Title"] = "Nuevo Cliente";
@@ -25,11 +26,44 @@
                         <i class="fas fa-user-plus me-2"></i>Información del Cliente
                     </h5>
                 </div>
-                
+
                 <div class="card-body">
                     <form asp-action="Create" method="post" novalidate>
+
+                        <h5 class="mb-3">Tipo de Cliente</h5>
+                        <div class="row mb-4">
+                            <div class="col">
+                                <div class="btn-group w-100" role="group" data-bs-toggle="buttons">
+
+                                    <input type="radio"
+                                           class="btn-check"
+                                           asp-for="Tipo"
+                                           id="radioPersonaFisica"
+                                           value="@TipoCliente.PersonaFisica"
+                                           autocomplete="off">
+                                    <label class="btn btn-outline-primary w-50" for="radioPersonaFisica">
+                                        <i class="fa-solid fa-user me-2"></i>Persona Física
+                                    </label>
+
+                                    <input type="radio"
+                                           class="btn-check"
+                                           asp-for="Tipo"
+                                           id="radioPersonaJuridica"
+                                           value="@TipoCliente.PersonaJuridica"
+                                           autocomplete="off">
+                                    <label class="btn btn-outline-primary w-50" for="radioPersonaJuridica">
+                                        <i class="fa-solid fa-building me-2"></i>Persona Jurídica (Empresa)
+                                    </label>
+
+                                </div>
+                                <span asp-validation-for="Tipo" class="text-danger d-block mt-2"></span>
+                            </div>
+                        </div>
+
+                        <hr />
+
                         <partial name="_ClienteForm" />
-                        
+
                         <div class="d-flex justify-content-between mt-4">
                             <a asp-action="Index" class="btn btn-secondary">
                                 <i class="fas fa-arrow-left me-2"></i>Volver
@@ -57,4 +91,90 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+
+    <script>
+        $(document).ready(function() {
+
+            // --- LÓGICA CONDICIONAL DE FORMULARIO ---
+
+            // Referencias a los radios
+            const radioFisica = $('#radioPersonaFisica');
+            const radioJuridica = $('#radioPersonaJuridica');
+
+            // Referencias a los campos del partial view
+            const campoApellido = $('#campo-apellido-div');
+            const labelNombre = $('#label-nombre');
+            const campoCedula = $('#campo-cedula-div');
+            const inputCedula = $('#CedulaIdentidad');
+            const campoRut = $('#campo-rut-div');
+            const inputRut = $('#RUT');
+
+            // Advertencia si no se encuentran los elementos
+            if(!campoApellido.length || !labelNombre.length || !campoCedula.length || !campoRut.length) {
+                 console.error("Error de Script: No se encontraron uno o más elementos del formulario. Revisa los IDs en _ClienteForm.cshtml.");
+            }
+
+            function actualizarFormulario() {
+                if (radioJuridica.is(':checked')) {
+                    // MODO EMPRESA
+                    labelNombre.html('<i class="fas fa-building me-1"></i>Razón Social *');
+                    campoApellido.hide();
+                    campoRut.show();
+                    campoCedula.hide();
+                    if(inputCedula.length) {
+                        inputCedula.val('');
+                    }
+                } else {
+                    // MODO PERSONA
+                    labelNombre.html('<i class="fas fa-user me-1"></i>Nombre *');
+                    campoApellido.show();
+                    campoRut.hide();
+                    campoCedula.show();
+                    if(inputRut.length) {
+                        inputRut.val('');
+                    }
+                }
+            }
+
+            // Escuchar cambios en los radios
+            radioFisica.on('change', actualizarFormulario);
+            radioJuridica.on('change', actualizarFormulario);
+
+            // Ejecutar una vez al cargar la página
+            actualizarFormulario();
+
+            // --- LÓGICA DE VALIDACIÓN Y FORMATO ---
+
+            function toggleValidationSummary() {
+                const hasErrors = $('.text-danger.small').filter(function() {
+                    return $(this).text().trim() !== '';
+                }).length > 0;
+
+                const summary = $('[asp-validation-summary="ModelOnly"]');
+
+                if (hasErrors) {
+                    summary.removeClass('d-none').addClass('d-block');
+                } else {
+                    summary.removeClass('d-block').addClass('d-none');
+                }
+            }
+
+            // Formatear cédula automáticamente
+            $('#CedulaIdentidad').on('input', function() {
+                let value = this.value.replace(/[^\d]/g, '');
+                if (value.length >= 7) {
+                    value = value.substring(0, value.length - 1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') + '-' + value.substring(value.length - 1);
+                }
+                this.value = value.substring(0, 10);
+            });
+
+            // Validación en tiempo real al salir de un campo
+            $('input').on('blur', function() {
+                setTimeout(toggleValidationSummary, 150);
+            });
+
+            // Verificar al cargar la página (por si recarga con errores)
+            setTimeout(toggleValidationSummary, 150);
+        });
+    </script>
 }

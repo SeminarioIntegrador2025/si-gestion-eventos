@@ -121,7 +121,7 @@ namespace si_td_gestion_eventos.Services.Implementation
             try
             {
                 var evento = _mapper.Map<Evento>(eventoVM);
-                evento.Estado = EventoEstado.PendienteAConfirmar;
+                evento.Estado = EventoEstado.Confirmado;
 
                 await _eventoRepository.AddAsync(evento);
                 await _eventoRepository.SaveChangesAsync();
