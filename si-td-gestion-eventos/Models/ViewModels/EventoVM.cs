@@ -57,6 +57,10 @@ namespace si_td_gestion_eventos.Models.ViewModels
         [Display(Name = "Cliente (Contratante)")]
         public int ClienteId { get; set; }
 
+        [Display(Name = "Tipo de Cliente")]
+        public TipoCliente TipoCli { get; set; }
+
+
         [Required(ErrorMessage = "El nombre del responsable es obligatorio.")]
         [StringLength(100)]
         [Display(Name = "Nombre del Responsable (Contacto en el evento)")]

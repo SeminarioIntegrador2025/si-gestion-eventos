@@ -183,9 +183,28 @@
                                             <a asp-action="Edit" asp-route-id="@cliente.ClienteId" class="btn btn-sm btn-outline-secondary" title="Editar">
                                                 <i class="fa-solid fa-pen"></i>
                                             </a>
-                                            <a asp-controller="Evento" asp-action="Create" asp-route-clienteId="@cliente.ClienteId" class="btn btn-sm btn-outline-success" title="Crear evento">
+                                         @* No aplica las validaciones para crear un evento (Cliente Activo) y en todo caso deberia crear el evento con el cliente ya seleccionado
+                                             <a asp-controller="Evento" asp-action="Create" asp-route-clienteId="@cliente.ClienteId" class="btn btn-sm btn-outline-success" title="Crear evento">
                                                 <i class="fa-solid fa-calendar-plus"></i>
-                                            </a>
+                                            </a> *@
+                                            @if (@cliente.Activo)
+                                            {
+                                                <form asp-action="ToggleUnactive" asp-route-id="@cliente.ClienteId" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-danger" onclick="return confirm('¿Está seguro que desea dar de baja este cliente?');">
+                                                        Dar de baja
+                                                    </button>
+                                                </form>
+                                            }
+                                            else
+                                            {
+                                                <form asp-action="ToggleActive" asp-route-id="@cliente.ClienteId" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-success" onclick="return confirm('¿Desea dar de alta este cliente?');">
+                                                        Dar de alta
+                                                    </button>
+                                                </form>
+                                            }
                                         </div>
                                     </td>
                                 </tr>

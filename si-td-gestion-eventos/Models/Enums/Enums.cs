@@ -4,8 +4,10 @@ namespace si_td_gestion_eventos.Models.Enums
 {
     public enum TipoCliente
     {
-       PersonaFisica = 1,
-       PersonaJuridica = 2
+        [Display(Name = "Persona Fisica")]
+        PersonaFisica = 1,
+        [Display(Name = "Persona Juridica")]
+        PersonaJuridica = 2
     }
     public enum EventoEstado
     {

@@ -30,14 +30,17 @@
                 <h4>Información General</h4>
                 <hr />
                 <dl class="row">
-                    <dt class="col-sm-5">Cliente Responsable</dt>
+                    <dt class="col-sm-5">Cliente</dt>
                     <dd class="col-sm-7">@Model.ClienteNombreCompleto</dd>
+
+                    <dt class="col-sm-5">Tipo de Cliente</dt>
+                    <dd class="col-sm-7">@Model.TipoCli</dd>
 
                     <dt class="col-sm-5">Tipo de Evento</dt>
                     <dd class="col-sm-7">@Model.Tipo</dd>
 
                     <dt class="col-sm-5">Estado</dt>
-                    <dd class="col-sm-7"><span class="badge bg-primary">@Model.Estado</span></dd>
+                    <dd class="col-sm-7">@Model.Estado</dd>
 
                     <dt class="col-sm-5">Cantidad de Personas</dt>
                     <dd class="col-sm-7">@Model.CantidadPersonas</dd>
