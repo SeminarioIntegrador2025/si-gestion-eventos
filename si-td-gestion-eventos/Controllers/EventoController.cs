@@ -82,9 +82,10 @@ namespace si_td_gestion_eventos.Controllers
                 FechaContrato = DateTime.Today,
                 Inicio = DateTime.Today.AddDays(1),
                 Fin = DateTime.Today.AddDays(1)
+               
             };
 
-            await PopulateClientesDropdown();
+            await PopulateClientesDropdown(); 
             return View(viewModel);
         }
 
@@ -93,37 +94,23 @@ namespace si_td_gestion_eventos.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(EventoVM eventoVM)
         {
-            // IMPORTANTE: Validar con FluentValidation incluyendo reglas comunes + RuleSet "Create"
-            var validationResult = await _validator.ValidateAsync(eventoVM, options => 
-            {
-                options.IncludeRuleSets("default", "Create", "Edit");
-            });
-
-            // Agregar errores de validación al ModelState manualmente
-            if (!validationResult.IsValid)
-            {
-                foreach (var error in validationResult.Errors)
-                {
-                    ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
-                }
-            }
-
             if (ModelState.IsValid)
             {
                 var result = await _eventoService.CreateAsync(eventoVM);
                 if (result.Success)
                 {
+                   
                     TempData["Ok"] = result.Message;
                     return RedirectToAction(nameof(Index));
                 }
-
-                // Agregar los errores del servicio al ModelState
-                foreach (var error in result.Errors)
+                else
                 {
-                    ModelState.AddModelError(string.Empty, error);
+                    foreach (var error in result.Errors)
+                    {
+                        ModelState.AddModelError(string.Empty, error);
+                    }
                 }
             }
-
             await PopulateClientesDropdown();
             return View(eventoVM);
         }

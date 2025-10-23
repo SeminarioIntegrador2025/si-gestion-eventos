@@ -2,7 +2,7 @@
 {
     public class ComprobanteExterno
     {
-        public int Id { get; set; }
+        public int ComprobanteExternoId { get; set; }
         public required string NombreArchivo { get; set; }
         public required string UrlArchivo { get; set; }
         public required DateTime FechaComprobante { get; set; } = DateTime.UtcNow;

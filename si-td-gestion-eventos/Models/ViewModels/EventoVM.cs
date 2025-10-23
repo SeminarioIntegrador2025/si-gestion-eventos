@@ -74,6 +74,7 @@ namespace si_td_gestion_eventos.Models.ViewModels
 
         public string? OrdenPor { get; set; }
 
+        public FianzaVM? DetalleFianza { get; set; }
         // Propiedades de solo lectura para la vista
         public string? ClienteNombreCompleto { get; set; }
         public decimal TotalPagado { get; set; }

@@ -37,5 +37,20 @@ namespace si_td_gestion_eventos.Services.Implementation
                 .AnyAsync(e => e.ClienteId == clienteId &&
                               e.Inicio > DateTime.Now);
         }
+        public async Task<bool> IsRUTUniqueAsync(string rut, int? excludeClienteId = null)
+        {
+            var query = _context.Cliente.Where(c => c.RUT == rut);
+
+            // 2. Si se está editando, excluye al cliente actual
+            if (excludeClienteId.HasValue)
+            {
+                query = query.Where(c => c.ClienteId != excludeClienteId.Value);
+            }
+
+            // 3. Devuelve 'true' si NO existe ningún otro cliente con ese RUT
+            return !await query.AnyAsync();
+        }
+   
     }
 }
+

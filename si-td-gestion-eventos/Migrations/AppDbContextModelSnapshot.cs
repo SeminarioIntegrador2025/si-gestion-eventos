@@ -34,12 +34,10 @@ namespace si_td_gestion_eventos.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("Apellido")
-                        .IsRequired()
                         .HasMaxLength(60)
                         .HasColumnType("nvarchar(60)");
 
                     b.Property<string>("CedulaIdentidad")
-                        .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
@@ -50,18 +48,30 @@ namespace si_td_gestion_eventos.Migrations
 
                     b.Property<string>("Nombre")
                         .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("nvarchar(60)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("RUT")
+                        .HasMaxLength(12)
+                        .HasColumnType("nvarchar(12)");
 
                     b.Property<string>("Telefono")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
+                    b.Property<int>("Tipo")
+                        .HasColumnType("int");
+
                     b.HasKey("ClienteId");
 
                     b.HasIndex("CedulaIdentidad")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[CedulaIdentidad] IS NOT NULL");
+
+                    b.HasIndex("RUT")
+                        .IsUnique()
+                        .HasFilter("[RUT] IS NOT NULL");
 
                     b.ToTable("Cliente");
 
@@ -74,17 +84,18 @@ namespace si_td_gestion_eventos.Migrations
                             CedulaIdentidad = "131331313",
                             Domicilio = "calle",
                             Nombre = "test",
-                            Telefono = "47832"
+                            Telefono = "47832",
+                            Tipo = 1
                         });
                 });
 
             modelBuilder.Entity("si_td_gestion_eventos.Entities.ComprobanteExterno", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("ComprobanteExternoId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ComprobanteExternoId"));
 
                     b.Property<DateTime>("FechaComprobante")
                         .HasColumnType("datetime2");
@@ -100,7 +111,7 @@ namespace si_td_gestion_eventos.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("Id");
+                    b.HasKey("ComprobanteExternoId");
 
                     b.HasIndex("PagoId")
                         .IsUnique();
@@ -119,11 +130,11 @@ namespace si_td_gestion_eventos.Migrations
                     b.Property<int>("CantidadPersonas")
                         .HasColumnType("int");
 
-                    b.Property<int?>("ClienteId")
+                    b.Property<int>("ClienteId")
                         .HasColumnType("int");
 
                     b.Property<decimal>("CostoAlquiler")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(18, 2)");
 
                     b.Property<int>("Estado")
                         .HasColumnType("int");
@@ -131,10 +142,7 @@ namespace si_td_gestion_eventos.Migrations
                     b.Property<DateTime>("FechaContrato")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime>("FechaFin")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("FechaInicio")
+                    b.Property<DateTime>("Fin")
                         .HasColumnType("datetime2");
 
                     b.Property<TimeSpan>("HoraFin")
@@ -143,23 +151,14 @@ namespace si_td_gestion_eventos.Migrations
                     b.Property<TimeSpan>("HoraInicio")
                         .HasColumnType("time");
 
+                    b.Property<DateTime>("Inicio")
+                        .HasColumnType("datetime2");
+
                     b.Property<decimal?>("MontoAireAcondicionado")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(18, 2)");
 
                     b.Property<decimal>("MontoReserva")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("ResponsableCedula")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ResponsableNombre")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ResponsableTelefono")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("decimal(18, 2)");
 
                     b.Property<int>("Tipo")
                         .HasColumnType("int");
@@ -202,8 +201,7 @@ namespace si_td_gestion_eventos.Migrations
 
                     b.HasKey("FianzaId");
 
-                    b.HasIndex("EventoId")
-                        .IsUnique();
+                    b.HasIndex("EventoId");
 
                     b.ToTable("Fianza");
                 });
@@ -211,15 +209,15 @@ namespace si_td_gestion_eventos.Migrations
             modelBuilder.Entity("si_td_gestion_eventos.Entities.Pago", b =>
                 {
                     b.Property<int>("PagoId")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<int>("ComprobanteId")
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PagoId"));
+
+                    b.Property<int?>("ComprobanteExternoId")
                         .HasColumnType("int");
 
-                    b.Property<string>("ComprobanteRuta")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("ComprobanteTipo")
+                    b.Property<int>("EventoId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("Fecha")
@@ -228,12 +226,38 @@ namespace si_td_gestion_eventos.Migrations
                     b.Property<int>("Metodo")
                         .HasColumnType("int");
 
-                    b.Property<decimal>("Monto")
-                        .HasColumnType("decimal(18,2)");
+                    b.Property<float>("Monto")
+                        .HasColumnType("real");
 
                     b.HasKey("PagoId");
 
+                    b.HasIndex("EventoId");
+
                     b.ToTable("Pago");
+                });
+
+            modelBuilder.Entity("si_td_gestion_eventos.Entities.Reporte", b =>
+                {
+                    b.Property<int>("ReporteId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReporteId"));
+
+                    b.Property<int>("EventoId")
+                        .HasColumnType("int");
+
+                    b.Property<float>("MontoAlquiler")
+                        .HasColumnType("real");
+
+                    b.Property<float>("MontoPagado")
+                        .HasColumnType("real");
+
+                    b.HasKey("ReporteId");
+
+                    b.HasIndex("EventoId");
+
+                    b.ToTable("Reporte");
                 });
 
             modelBuilder.Entity("si_td_gestion_eventos.Entities.ComprobanteExterno", b =>
@@ -252,16 +276,86 @@ namespace si_td_gestion_eventos.Migrations
                     b.HasOne("si_td_gestion_eventos.Entities.Cliente", "Cliente")
                         .WithMany("Eventos")
                         .HasForeignKey("ClienteId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.OwnsOne("si_td_gestion_eventos.Entities.ResponsableSalon", "ResponsableSalon", b1 =>
+                        {
+                            b1.Property<int>("EventoId")
+                                .HasColumnType("int");
+
+                            b1.Property<string>("CI")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Nombre")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Telefono")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.HasKey("EventoId");
+
+                            b1.ToTable("Evento");
+
+                            b1.WithOwner()
+                                .HasForeignKey("EventoId");
+                        });
+
+                    b.OwnsOne("si_td_gestion_eventos.Entities.ServiciosEsenciales", "ServiciosEsenciales", b1 =>
+                        {
+                            b1.Property<int>("EventoId")
+                                .HasColumnType("int");
+
+                            b1.HasKey("EventoId");
+
+                            b1.ToTable("Evento");
+
+                            b1.WithOwner()
+                                .HasForeignKey("EventoId");
+
+                            b1.OwnsOne("si_td_gestion_eventos.Entities.CertificadoAGADU", "CertificadoAGADU", b2 =>
+                                {
+                                    b2.Property<int>("ServiciosEsencialesEventoId")
+                                        .HasColumnType("int");
+
+                                    b2.Property<DateTime?>("FechaAdjunto")
+                                        .HasColumnType("datetime2");
+
+                                    b2.Property<string>("RutaArchivo")
+                                        .HasColumnType("nvarchar(max)");
+
+                                    b2.Property<bool>("Verificado")
+                                        .HasColumnType("bit");
+
+                                    b2.HasKey("ServiciosEsencialesEventoId");
+
+                                    b2.ToTable("Evento");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("ServiciosEsencialesEventoId");
+                                });
+
+                            b1.Navigation("CertificadoAGADU")
+                                .IsRequired();
+                        });
 
                     b.Navigation("Cliente");
+
+                    b.Navigation("ResponsableSalon")
+                        .IsRequired();
+
+                    b.Navigation("ServiciosEsenciales")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("si_td_gestion_eventos.Entities.Fianza", b =>
                 {
                     b.HasOne("si_td_gestion_eventos.Entities.Evento", "Evento")
-                        .WithOne("Fianza")
-                        .HasForeignKey("si_td_gestion_eventos.Entities.Fianza", "EventoId")
+                        .WithMany("Fianzas")
+                        .HasForeignKey("EventoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -272,7 +366,18 @@ namespace si_td_gestion_eventos.Migrations
                 {
                     b.HasOne("si_td_gestion_eventos.Entities.Evento", "Evento")
                         .WithMany("Pagos")
-                        .HasForeignKey("PagoId")
+                        .HasForeignKey("EventoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Evento");
+                });
+
+            modelBuilder.Entity("si_td_gestion_eventos.Entities.Reporte", b =>
+                {
+                    b.HasOne("si_td_gestion_eventos.Entities.Evento", "Evento")
+                        .WithMany("Reportes")
+                        .HasForeignKey("EventoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -286,9 +391,11 @@ namespace si_td_gestion_eventos.Migrations
 
             modelBuilder.Entity("si_td_gestion_eventos.Entities.Evento", b =>
                 {
-                    b.Navigation("Fianza");
+                    b.Navigation("Fianzas");
 
                     b.Navigation("Pagos");
+
+                    b.Navigation("Reportes");
                 });
 
             modelBuilder.Entity("si_td_gestion_eventos.Entities.Pago", b =>

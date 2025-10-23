@@ -4,11 +4,15 @@
 }
 
 <div class="container-fluid">
-    <div asp-validation-summary="ModelOnly" class="alert alert-danger d-none" role="alert">
-        <h6 class="alert-heading">
-            <i class="fas fa-exclamation-triangle me-2"></i>Por favor, corrige los siguientes errores:
-        </h6>
-    </div>
+    @* Mostrar validation summary SI HAY ERRORES *@
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert">
+            <h6 class="alert-heading">
+                <i class="fas fa-exclamation-triangle me-2"></i>Por favor, corrige los siguientes errores:
+            </h6>
+        </div>
+    }
 
     <div class="row">
         <div class="col-md-6">

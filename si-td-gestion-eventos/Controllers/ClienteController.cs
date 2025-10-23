@@ -34,12 +34,11 @@ namespace si_td_gestion_eventos.Controllers
         {
             var clienteVM = new ClienteVM
             {
-                Nombre = "",
-                Apellido = "",
-                CedulaIdentidad = "",
-                Domicilio = "",
-                Telefono = "",
-                Activo = true
+                Tipo = si_td_gestion_eventos.Models.Enums.TipoCliente.PersonaFisica,
+                Activo = true,
+                Nombre = string.Empty,
+                Domicilio = string.Empty,
+                Telefono = string.Empty,
             };
             return View(clienteVM);
         }
@@ -49,7 +48,6 @@ namespace si_td_gestion_eventos.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ClienteVM clienteVM)
         {
-           
             var result = await _clienteService.CreateAsync(clienteVM);
 
             if (result.Success)
@@ -57,13 +55,13 @@ namespace si_td_gestion_eventos.Controllers
                 TempData["Message"] = result.Message;
                 return RedirectToAction("Index");
             }
-
-            // Agregar errores de validación al ModelState
+            
+            // Agregar errores de FluentValidation al ModelState
             foreach (var error in result.Errors)
             {
                 ModelState.AddModelError(string.Empty, error);
             }
-
+            
             return View(clienteVM);
         }
 

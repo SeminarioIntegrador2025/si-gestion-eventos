@@ -154,19 +154,25 @@ namespace si_td_gestion_eventos.Services.Implementation
         public async Task<IEnumerable<SelectListItem>> GetClientesActivosParaDropdownAsync()
         {
             var clientesActivos = await _clienteRepository.FindAsync(c => c.Activo);
-
+            
             if (clientesActivos == null || !clientesActivos.Any())
             {
                 return new List<SelectListItem>();
             }
-
-            return clientesActivos
-                .OrderBy(c => c.Apellido)
+    
+                return clientesActivos
+                
+                .OrderBy(c => c.Apellido ?? c.Nombre) // Si Apellido es null, ordena por Nombre
                 .ThenBy(c => c.Nombre)
+                
                 .Select(c => new SelectListItem
                 {
                     Value = c.ClienteId.ToString(),
-                    Text = $"{c.Apellido}, {c.Nombre}"
+                    Text = (c.Tipo == si_td_gestion_eventos.Models.Enums.TipoCliente.PersonaFisica)
+                           // Si es Física: "Apellido, Nombre" 
+                           ? $"{(c.Apellido ?? "")}, {c.Nombre}"
+                           // Si es Jurídica: "Empresa: Nombre"
+                           : $"Empresa: {c.Nombre}"
                 });
         }
     }

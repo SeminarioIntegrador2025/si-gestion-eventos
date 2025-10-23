@@ -97,22 +97,15 @@
 
             // --- LÓGICA CONDICIONAL DE FORMULARIO ---
 
-            // Referencias a los radios
             const radioFisica = $('#radioPersonaFisica');
             const radioJuridica = $('#radioPersonaJuridica');
 
-            // Referencias a los campos del partial view
             const campoApellido = $('#campo-apellido-div');
             const labelNombre = $('#label-nombre');
             const campoCedula = $('#campo-cedula-div');
             const inputCedula = $('#CedulaIdentidad');
             const campoRut = $('#campo-rut-div');
             const inputRut = $('#RUT');
-
-            // Advertencia si no se encuentran los elementos
-            if(!campoApellido.length || !labelNombre.length || !campoCedula.length || !campoRut.length) {
-                 console.error("Error de Script: No se encontraron uno o más elementos del formulario. Revisa los IDs en _ClienteForm.cshtml.");
-            }
 
             function actualizarFormulario() {
                 if (radioJuridica.is(':checked')) {
@@ -136,45 +129,18 @@
                 }
             }
 
-            // Escuchar cambios en los radios
             radioFisica.on('change', actualizarFormulario);
             radioJuridica.on('change', actualizarFormulario);
-
-            // Ejecutar una vez al cargar la página
             actualizarFormulario();
 
-            // --- LÓGICA DE VALIDACIÓN Y FORMATO ---
-
-            function toggleValidationSummary() {
-                const hasErrors = $('.text-danger.small').filter(function() {
-                    return $(this).text().trim() !== '';
-                }).length > 0;
-
-                const summary = $('[asp-validation-summary="ModelOnly"]');
-
-                if (hasErrors) {
-                    summary.removeClass('d-none').addClass('d-block');
-                } else {
-                    summary.removeClass('d-block').addClass('d-none');
-                }
-            }
-
-            // Formatear cédula automáticamente
+            // --- FORMATEAR CÉDULA ---
             $('#CedulaIdentidad').on('input', function() {
                 let value = this.value.replace(/[^\d]/g, '');
                 if (value.length >= 7) {
                     value = value.substring(0, value.length - 1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') + '-' + value.substring(value.length - 1);
                 }
-                this.value = value.substring(0, 10);
+                this.value = value.substring(0, 12);
             });
-
-            // Validación en tiempo real al salir de un campo
-            $('input').on('blur', function() {
-                setTimeout(toggleValidationSummary, 150);
-            });
-
-            // Verificar al cargar la página (por si recarga con errores)
-            setTimeout(toggleValidationSummary, 150);
         });
     </script>
 }
