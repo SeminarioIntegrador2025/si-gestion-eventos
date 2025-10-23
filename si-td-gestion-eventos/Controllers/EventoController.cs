@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using si_td_gestion_eventos.Infrastructure;
 using si_td_gestion_eventos.Models.ViewModels;
 using si_td_gestion_eventos.Services.Contracts;
+using FluentValidation;
 
 namespace si_td_gestion_eventos.Controllers
 {
@@ -10,11 +11,16 @@ namespace si_td_gestion_eventos.Controllers
     {
         private readonly IEventoService _eventoService;
         private readonly IClienteService _clienteService;
+        private readonly IValidator<EventoVM> _validator;
 
-        public EventoController(IEventoService eventoService, IClienteService clienteService)
+        public EventoController(
+            IEventoService eventoService, 
+            IClienteService clienteService,
+            IValidator<EventoVM> validator)
         {
             _eventoService = eventoService;
             _clienteService = clienteService;
+            _validator = validator;
         }
 
         // GET: Evento/Index (eventos actuales)
@@ -46,7 +52,7 @@ namespace si_td_gestion_eventos.Controllers
                 page,
                 pageSize,
                 incluirPasados: false,
-                incluirCancelados: false);
+                incluirCancelados: true);
 
             ViewBag.Search = q;
             ViewBag.FechaDesde = fechaDesde;
@@ -60,7 +66,6 @@ namespace si_td_gestion_eventos.Controllers
         // GET: Evento/Details/{id}
         public async Task<IActionResult> Details(int id)
         {
-            // El servicio nos devuelve el ViewModel listo para la vista.
             var eventoVM = await _eventoService.GetByIdAsync(id);
             if (eventoVM is null)
             {
@@ -72,23 +77,37 @@ namespace si_td_gestion_eventos.Controllers
         // GET: Evento/Create
         public async Task<IActionResult> Create()
         {
-            // Pasamos un ViewModel vacío con valores por defecto a la vista.
             var viewModel = new EventoVM
             {
                 FechaContrato = DateTime.Today,
-                Inicio = DateTime.Today,
-                Fin = DateTime.Today
+                Inicio = DateTime.Today.AddDays(1),
+                Fin = DateTime.Today.AddDays(1)
             };
 
             await PopulateClientesDropdown();
             return View(viewModel);
         }
 
-        // POST: Evento/Create/{id}
+        // POST: Evento/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(EventoVM eventoVM)
         {
+            // IMPORTANTE: Validar con FluentValidation incluyendo reglas comunes + RuleSet "Create"
+            var validationResult = await _validator.ValidateAsync(eventoVM, options => 
+            {
+                options.IncludeRuleSets("default", "Create", "Edit");
+            });
+
+            // Agregar errores de validación al ModelState manualmente
+            if (!validationResult.IsValid)
+            {
+                foreach (var error in validationResult.Errors)
+                {
+                    ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
+                }
+            }
+
             if (ModelState.IsValid)
             {
                 var result = await _eventoService.CreateAsync(eventoVM);
@@ -98,7 +117,7 @@ namespace si_td_gestion_eventos.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                // Agregamos los errores del servicio al ModelState.
+                // Agregar los errores del servicio al ModelState
                 foreach (var error in result.Errors)
                 {
                     ModelState.AddModelError(string.Empty, error);
@@ -180,7 +199,6 @@ namespace si_td_gestion_eventos.Controllers
                 incluirPasados: true,
                 incluirCancelados: true);
 
-            // Filtrar solo cancelados
             var eventosCancelados = paginatedList.Where(e => e.Estado == Models.Enums.EventoEstado.Cancelado).ToList();
             var totalCancelados = eventosCancelados.Count;
             var result = new PaginatedList<EventoVM>(eventosCancelados, totalCancelados, page, pageSize);
@@ -203,7 +221,6 @@ namespace si_td_gestion_eventos.Controllers
                 return NotFound();
             }
 
-            // Verificar si se puede editar (cliente activo y 48h de anticipación)
             var canModify = await _eventoService.CanModifyEventoAsync(id);
             ViewBag.CanModify = canModify;
 
@@ -211,6 +228,7 @@ namespace si_td_gestion_eventos.Controllers
 
             return View(eventoVM);
         }
+
         // POST: Evento/Edit/{id}
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -221,23 +239,49 @@ namespace si_td_gestion_eventos.Controllers
                 return NotFound();
             }
 
-            // Primero, se valida que los datos del formulario cumplan las reglas básicas (ej: campos requeridos).
+            // Validar con FluentValidation incluyendo reglas comunes + RuleSet "Edit"
+            var validationResult = await _validator.ValidateAsync(eventoVM, options => 
+            {
+                options.IncludeRuleSets("default", "Edit");
+            });
+
+            // Agregar errores de validación al ModelState manualmente
+            if (!validationResult.IsValid)
+            {
+                foreach (var error in validationResult.Errors)
+                {
+                    ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
+                }
+            }
+
             if (ModelState.IsValid)
             {
-                // Si los datos son válidos, intentamos actualizarlos usando el servicio.
                 var result = await _eventoService.UpdateAsync(eventoVM);
-
 
                 if (result.Success)
                 {
                     TempData["Ok"] = result.Message;
                     return RedirectToAction(nameof(Index));
                 }
+                
                 foreach (var error in result.Errors)
                 {
                     ModelState.AddModelError(string.Empty, error);
                 }
             }
+            
+            // IMPORTANTE: Recargar los datos del evento desde la BD para recuperar ClienteNombreCompleto
+            // Si hay errores de validación, necesitamos mantener los datos del cliente
+            if (!ModelState.IsValid)
+            {
+                var eventoOriginal = await _eventoService.GetByIdAsync(id);
+                if (eventoOriginal != null)
+                {
+                    eventoVM.ClienteNombreCompleto = eventoOriginal.ClienteNombreCompleto;
+                    eventoVM.ClienteId = eventoOriginal.ClienteId;
+                }
+            }
+            
             await PopulateClientesDropdown();
             return View(eventoVM); 
         }
@@ -270,7 +314,6 @@ namespace si_td_gestion_eventos.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // Método helper para no repetir el código de cargar el dropdown.
         private async Task PopulateClientesDropdown()
         {
             var clientes = await _clienteService.GetClientesActivosParaDropdownAsync();

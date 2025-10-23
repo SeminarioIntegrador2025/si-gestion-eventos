@@ -1,32 +1,22 @@
 @model si_td_gestion_eventos.Models.ViewModels.EventoVM
 
-<!-- Resumen de errores de validación -->
-<div asp-validation-summary="ModelOnly" class="alert alert-danger d-none" role="alert">
-    <h6 class="alert-heading">
-        <i class="fas fa-exclamation-triangle me-2"></i>Por favor, corrige los siguientes errores:
-    </h6>
-</div>
+<div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
 <div class="row">
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="ClienteId" class="form-label fw-semibold">
-                <i class="fas fa-user me-1"></i>Cliente *
-            </label>
+            <label asp-for="ClienteId" class="form-label"></label>
             <select asp-for="ClienteId" asp-items="ViewBag.Clientes" class="form-select">
                 <option value="">-- Seleccionar Cliente --</option>
             </select>
-            <span asp-validation-for="ClienteId" class="text-danger small"></span>
+            <span asp-validation-for="ClienteId" class="text-danger"></span>
         </div>
     </div>
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="FechaContrato" class="form-label fw-semibold">
-                <i class="fas fa-calendar me-1"></i>Fecha del Contrato *
-            </label>
+            <label asp-for="FechaContrato" class="form-label"></label>
             <input asp-for="FechaContrato" class="form-control" type="date" />
-            <small class="text-muted">No puede ser fecha futura</small>
-            <span asp-validation-for="FechaContrato" class="text-danger small"></span>
+            <span asp-validation-for="FechaContrato" class="text-danger"></span>
         </div>
     </div>
 </div>
@@ -34,22 +24,16 @@
 <div class="row">
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="Inicio" class="form-label fw-semibold">
-                <i class="fas fa-calendar-day me-1"></i>Fecha de Inicio *
-            </label>
+            <label asp-for="Inicio" class="form-label"></label>
             <input asp-for="Inicio" class="form-control" type="date" />
-            <small class="text-muted">Debe ser fecha futura</small>
-            <span asp-validation-for="Inicio" class="text-danger small"></span>
+            <span asp-validation-for="Inicio" class="text-danger"></span>
         </div>
     </div>
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="Fin" class="form-label fw-semibold">
-                <i class="fas fa-calendar-day me-1"></i>Fecha de Fin *
-            </label>
+            <label asp-for="Fin" class="form-label"></label>
             <input asp-for="Fin" class="form-control" type="date" />
-            <small class="text-muted">Debe ser igual o posterior a la fecha de inicio</small>
-            <span asp-validation-for="Fin" class="text-danger small"></span>
+            <span asp-validation-for="Fin" class="text-danger"></span>
         </div>
     </div>
 </div>
@@ -57,21 +41,16 @@
 <div class="row">
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="HoraInicio" class="form-label fw-semibold">
-                <i class="fas fa-clock me-1"></i>Hora de Inicio *
-            </label>
+            <label asp-for="HoraInicio" class="form-label"></label>
             <input asp-for="HoraInicio" class="form-control" type="time" />
-            <span asp-validation-for="HoraInicio" class="text-danger small"></span>
+            <span asp-validation-for="HoraInicio" class="text-danger"></span>
         </div>
     </div>
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="HoraFin" class="form-label fw-semibold">
-                <i class="fas fa-clock me-1"></i>Hora de Fin *
-            </label>
+            <label asp-for="HoraFin" class="form-label"></label>
             <input asp-for="HoraFin" class="form-control" type="time" />
-            <small class="text-muted">Si es el mismo día, debe ser posterior a la hora de inicio</small>
-            <span asp-validation-for="HoraFin" class="text-danger small"></span>
+            <span asp-validation-for="HoraFin" class="text-danger"></span>
         </div>
     </div>
 </div>
@@ -79,23 +58,18 @@
 <div class="row">
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="Tipo" class="form-label fw-semibold">
-                <i class="fas fa-tags me-1"></i>Tipo de Evento *
-            </label>
+            <label asp-for="Tipo" class="form-label"></label>
             <select asp-for="Tipo" class="form-select" asp-items="Html.GetEnumSelectList<si_td_gestion_eventos.Models.Enums.TipoEvento>()">
                 <option value="">-- Seleccionar Tipo --</option>
             </select>
-            <span asp-validation-for="Tipo" class="text-danger small"></span>
+            <span asp-validation-for="Tipo" class="text-danger"></span>
         </div>
     </div>
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="CantidadPersonas" class="form-label fw-semibold">
-                <i class="fas fa-users me-1"></i>Cantidad de Personas *
-            </label>
-            <input asp-for="CantidadPersonas" class="form-control" type="number" min="1" max="500" />
-            <small class="text-muted">Máximo 500 personas</small>
-            <span asp-validation-for="CantidadPersonas" class="text-danger small"></span>
+            <label asp-for="CantidadPersonas" class="form-label"></label>
+            <input asp-for="CantidadPersonas" class="form-control" type="number" min="1" />
+            <span asp-validation-for="CantidadPersonas" class="text-danger"></span>
         </div>
     </div>
 </div>
@@ -103,21 +77,16 @@
 <div class="row">
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="CostoAlquiler" class="form-label fw-semibold">
-                <i class="fas fa-dollar-sign me-1"></i>Costo del Alquiler *
-            </label>
-            <input asp-for="CostoAlquiler" class="form-control" type="number" step="0.01" min="0.01" />
-            <span asp-validation-for="CostoAlquiler" class="text-danger small"></span>
+            <label asp-for="CostoAlquiler" class="form-label"></label>
+            <input asp-for="CostoAlquiler" class="form-control" type="number" step="0.01" min="0" />
+            <span asp-validation-for="CostoAlquiler" class="text-danger"></span>
         </div>
     </div>
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="MontoReserva" class="form-label fw-semibold">
-                <i class="fas fa-hand-holding-dollar me-1"></i>Monto de Reserva *
-            </label>
+            <label asp-for="MontoReserva" class="form-label"></label>
             <input asp-for="MontoReserva" class="form-control" type="number" step="0.01" min="0" />
-            <small class="text-muted">No puede ser mayor al costo del alquiler</small>
-            <span asp-validation-for="MontoReserva" class="text-danger small"></span>
+            <span asp-validation-for="MontoReserva" class="text-danger"></span>
         </div>
     </div>
 </div>
@@ -125,37 +94,28 @@
 <div class="row">
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="MontoAireAcondicionado" class="form-label fw-semibold">
-                <i class="fas fa-snowflake me-1"></i>Monto Aire Acondicionado
-            </label>
+            <label asp-for="MontoAireAcondicionado" class="form-label"></label>
             <input asp-for="MontoAireAcondicionado" class="form-control" type="number" step="0.01" min="0" />
-            <small class="text-muted">Opcional</small>
-            <span asp-validation-for="MontoAireAcondicionado" class="text-danger small"></span>
+            <span asp-validation-for="MontoAireAcondicionado" class="text-danger"></span>
         </div>
     </div>
 </div>
 
-<h5 class="mt-4 mb-3">
-    <i class="fas fa-user-tie me-2"></i>Información del Responsable
-</h5>
+<h5 class="mt-4 mb-3">InformaciÃ³n del Responsable</h5>
 
 <div class="row">
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="ResponsableNombre" class="form-label fw-semibold">
-                <i class="fas fa-user me-1"></i>Nombre del Responsable *
-            </label>
-            <input asp-for="ResponsableNombre" class="form-control" placeholder="Nombre completo del responsable" maxlength="100" />
-            <span asp-validation-for="ResponsableNombre" class="text-danger small"></span>
+            <label asp-for="ResponsableNombre" class="form-label"></label>
+            <input asp-for="ResponsableNombre" class="form-control" />
+            <span asp-validation-for="ResponsableNombre" class="text-danger"></span>
         </div>
     </div>
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="ResponsableTelefono" class="form-label fw-semibold">
-                <i class="fas fa-phone me-1"></i>Teléfono del Responsable *
-            </label>
-            <input asp-for="ResponsableTelefono" class="form-control" placeholder="Teléfono de contacto" maxlength="30" />
-            <span asp-validation-for="ResponsableTelefono" class="text-danger small"></span>
+            <label asp-for="ResponsableTelefono" class="form-label"></label>
+            <input asp-for="ResponsableTelefono" class="form-control" />
+            <span asp-validation-for="ResponsableTelefono" class="text-danger"></span>
         </div>
     </div>
 </div>
@@ -163,11 +123,9 @@
 <div class="row">
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="ResponsableCedula" class="form-label fw-semibold">
-                <i class="fas fa-id-card me-1"></i>Cédula del Responsable *
-            </label>
-            <input asp-for="ResponsableCedula" class="form-control" placeholder="Ej: 1.234.567-8" maxlength="30" />
-            <span asp-validation-for="ResponsableCedula" class="text-danger small"></span>
+            <label asp-for="ResponsableCedula" class="form-label"></label>
+            <input asp-for="ResponsableCedula" class="form-control" />
+            <span asp-validation-for="ResponsableCedula" class="text-danger"></span>
         </div>
     </div>
 </div>

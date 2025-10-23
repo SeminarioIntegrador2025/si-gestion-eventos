@@ -12,9 +12,9 @@
                 <i class="fas fa-calendar me-1"></i>Fecha del Contrato
             </label>
             <input type="hidden" asp-for="FechaContrato" />
-            <div class="input-locked d-flex align-items-center gap-2 px-3 py-2 rounded bg-light border">
+            <div class="input-locked d-flex align-items-center gap-2 px-3 py-2 rounded border" style="background-color: rgba(15, 23, 42, .08);">
                 <i class="fa-solid fa-lock text-muted"></i>
-                <input value="@Model.FechaContrato.ToString("yyyy-MM-dd")" type="date" class="form-control-plaintext mb-0 flex-grow-1" readonly />
+                <input value="@Model.FechaContrato.ToString("yyyy-MM-dd")" type="date" class="form-control-plaintext mb-0 flex-grow-1 text-muted" readonly style="background-color: rgba(15, 23, 42, .08);" />
             </div>
             <small class="text-muted">La fecha de contrato no se puede modificar</small>
         </div>
@@ -83,9 +83,9 @@
                     <i class="fas fa-dollar-sign me-1"></i>Costo Alquiler
                 </label>
                 <input type="hidden" asp-for="CostoAlquiler" />
-                <div class="input-locked d-flex align-items-center gap-2 px-2 py-2 rounded bg-light border">
+                <div class="input-locked d-flex align-items-center gap-2 px-2 py-2 rounded border" style="background-color: rgba(15, 23, 42, .08);">
                     <i class="fa-solid fa-lock text-muted"></i>
-                    <input value="@Model.CostoAlquiler.ToString("N2")" type="text" class="form-control-plaintext mb-0 flex-grow-1" readonly />
+                    <input value="@Model.CostoAlquiler.ToString("N2")" type="text" class="form-control-plaintext mb-0 flex-grow-1 text-muted" readonly style="background-color: transparent;" />
                 </div>
             </div>
             <div class="col-md-4 mb-3">
@@ -93,9 +93,9 @@
                     <i class="fas fa-hand-holding-dollar me-1"></i>Monto Reserva
                 </label>
                 <input type="hidden" asp-for="MontoReserva" />
-                <div class="input-locked d-flex align-items-center gap-2 px-2 py-2 rounded bg-light border">
+                <div class="input-locked d-flex align-items-center gap-2 px-2 py-2 rounded border" style="background-color: rgba(15, 23, 42, .08);">
                     <i class="fa-solid fa-lock text-muted"></i>
-                    <input value="@Model.MontoReserva.ToString("N2")" type="text" class="form-control-plaintext mb-0 flex-grow-1" readonly />
+                    <input value="@Model.MontoReserva.ToString("N2")" type="text" class="form-control-plaintext mb-0 flex-grow-1 text-muted" readonly style="background-color: transparent;" />
                 </div>
             </div>
             <div class="col-md-4 mb-3">
@@ -119,9 +119,9 @@
                 <i class="fas fa-user me-1"></i>Cliente
             </label>
             <input type="hidden" asp-for="ClienteId" />
-            <div class="input-locked d-flex align-items-center gap-2 px-3 py-2 rounded bg-light border">
+            <div class="input-locked d-flex align-items-center gap-2 px-3 py-2 rounded border" style="background-color: rgba(15, 23, 42, .08);">
                 <i class="fa-solid fa-lock text-muted"></i>
-                <input value="@Model.ClienteNombreCompleto" type="text" class="form-control-plaintext mb-0 flex-grow-1" readonly />
+                <input value="@Model.ClienteNombreCompleto" type="text" class="form-control-plaintext mb-0 flex-grow-1 text-muted" readonly style="background-color: transparent;" />
             </div>
             <small class="text-muted">El cliente no se puede cambiar</small>
         </div>
