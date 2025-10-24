@@ -35,9 +35,9 @@
                     <dd class="col-sm-7">@Model.ClienteNombreCompleto</dd>
 
                     <dt class="col-sm-5">Tipo de Cliente</dt>
-                        @(Model.TipoCli == TipoCliente.PersonaFisica ? "Persona Fisica" : "Persona Juridica")
-                    </dd>
-
+ @(Model.TipoCli == TipoCliente.PersonaFisica ? "Persona Fisica" : "Persona Juridica")
+                    <dd></dd>
+                
                     <dt class="col-sm-5">Tipo de Evento</dt>
                     <dd class="col-sm-7">@Model.Tipo</dd>
 
@@ -46,6 +46,9 @@
 
                     <dt class="col-sm-5">Cantidad de Personas</dt>
                     <dd class="col-sm-7">@Model.CantidadPersonas</dd>
+
+                    <dt class="col-sm-5">Observaciones</dt>
+                    <dd class="col-sm-7">@Model.Observaciones</dd>
 
                 </dl>
 
