@@ -1,4 +1,5 @@
-﻿@model si_td_gestion_eventos.Models.ViewModels.EventoVM
+﻿@using si_td_gestion_eventos.Models.Enums
+@model si_td_gestion_eventos.Models.ViewModels.EventoVM
 
 @{
     ViewData["Title"] = $"Detalles del Evento: {Model.Tipo}";
@@ -34,7 +35,8 @@
                     <dd class="col-sm-7">@Model.ClienteNombreCompleto</dd>
 
                     <dt class="col-sm-5">Tipo de Cliente</dt>
-                    <dd class="col-sm-7">@Model.TipoCli</dd>
+                        @(Model.TipoCli == TipoCliente.PersonaFisica ? "Persona Fisica" : "Persona Juridica")
+                    </dd>
 
                     <dt class="col-sm-5">Tipo de Evento</dt>
                     <dd class="col-sm-7">@Model.Tipo</dd>
@@ -44,6 +46,7 @@
 
                     <dt class="col-sm-5">Cantidad de Personas</dt>
                     <dd class="col-sm-7">@Model.CantidadPersonas</dd>
+
                 </dl>
 
                 <h4>Fechas y Horarios</h4>
@@ -66,6 +69,7 @@
             <div class="col-md-6">
                 <h4>Información Financiera</h4>
                 <hr />
+                <div class="col-md-6">
                 <dl class="row">
                     <dt class="col-sm-5">Costo del Alquiler</dt>
                     <dd class="col-sm-7">@Model.CostoAlquiler.ToString("C")</dd>
@@ -83,6 +87,20 @@
                     <dd class="col-sm-7 fw-bold text-danger">@Model.SaldoRestante.ToString("C")</dd>
                 </dl>
             </div>
+
+            <h4>Informacion del Responsable</h4>
+            <hr />
+            <dl class="row">
+                <dt class="col-sm-5">Responsable</dt>
+                <dd class="col-sm-7">@Model.ResponsableNombre</dd>
+
+                <dt class="col-sm-5">Telefono del Responsable</dt>
+                <dd class="col-sm-7">@Model.ResponsableTelefono</dd>
+
+                <dt class="col-sm-5">CI del Responsable</dt>
+                <dd class="col-sm-7">@Model.ResponsableCedula</dd>
+            </dl>
+
         </div>
     </div>
     <div class="card-footer text-muted">

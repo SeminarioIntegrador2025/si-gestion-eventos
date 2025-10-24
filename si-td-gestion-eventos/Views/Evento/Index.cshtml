@@ -166,7 +166,7 @@
         <tr>
             <th>Cliente Responsable</th>
             <th>Tipo de Evento</th>
-            <th>Fecha Inicio</th>
+            <th>Fecha Inicio del Evento</th>
             <th>Estado</th>
             <th></th> @* Agregamos Saldo Pendiente? *@
         </tr>
@@ -198,12 +198,19 @@
                 <tr>
                     <td>@e.ClienteNombreCompleto</td>
                     <td>@e.Tipo</td>
-                    <td>@e.Inicio.ToShortDateString()</td>
+                    <td>@e.Inicio.ToLongDateString()</td>
                     <td><span class="badge bg-info text-dark">@e.Estado</span></td>
                     <td class="text-end">
                         <a asp-action="Details" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-info" title="Ver Detalles"><i class="fa-solid fa-eye"></i></a>
                         <a asp-action="Edit" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="fa-solid fa-pen"></i></a>
-                        <a asp-action="Cancel" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-danger" title="Cancelar Evento"><i class="fa-solid fa-ban"></i></a>
+                    @if (@e.Estado != si_td_gestion_eventos.Models.Enums.EventoEstado.Cancelado) 
+                        {
+                            <a asp-action="Cancel" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-danger" title="Cancelar Evento"><i class="fa-solid fa-ban"></i></a>
+                        }
+                        else
+                        {
+                            <a asp-action="Reprogramar" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-warning" title="Reprogramar Evento"><i class="fa-solid fa-clock"></i></a>
+                        }
                     </td>
                 </tr>
             }

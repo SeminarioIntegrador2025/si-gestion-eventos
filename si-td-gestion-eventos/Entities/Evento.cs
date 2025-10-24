@@ -43,6 +43,8 @@ namespace si_td_gestion_eventos.Entities
         [Required]
         public EventoEstado Estado { get; set; } = EventoEstado.Confirmado;
 
+        public String? Observaciones;
+
         // Propiedad Adueñada (Owned) para Responsable
         [Required]
         public ResponsableSalon ResponsableSalon { get; set; } = null!;

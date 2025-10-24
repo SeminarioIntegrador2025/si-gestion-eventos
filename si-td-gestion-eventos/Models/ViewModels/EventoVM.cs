@@ -76,6 +76,8 @@ namespace si_td_gestion_eventos.Models.ViewModels
         [Display(Name = "Cédula del Responsable")]
         public string ResponsableCedula { get; set; } = string.Empty;
 
+        public string? Observaciones { get; set; } = string.Empty;
+
         public string? OrdenPor { get; set; }
 
         public FianzaVM? DetalleFianza { get; set; }

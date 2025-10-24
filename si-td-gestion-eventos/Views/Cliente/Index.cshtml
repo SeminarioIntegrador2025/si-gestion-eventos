@@ -191,7 +191,7 @@
                                             {
                                                 <form asp-action="ToggleUnactive" asp-route-id="@cliente.ClienteId" method="post" class="d-inline">
                                                     @Html.AntiForgeryToken()
-                                                    <button type="submit" class="btn btn-danger" onclick="return confirm('¿Está seguro que desea dar de baja este cliente?');">
+                                                    <button type="submit" class="btn btn-sm btn-outline-info btn-danger" onclick="return confirm('¿Está seguro que desea dar de baja este cliente?');">
                                                         Dar de baja
                                                     </button>
                                                 </form>
@@ -200,7 +200,7 @@
                                             {
                                                 <form asp-action="ToggleActive" asp-route-id="@cliente.ClienteId" method="post" class="d-inline">
                                                     @Html.AntiForgeryToken()
-                                                    <button type="submit" class="btn btn-success" onclick="return confirm('¿Desea dar de alta este cliente?');">
+                                                    <button type="submit" class="btn btn-sm btn-outline-infon btn-success" onclick="return confirm('¿Desea dar de alta este cliente?');">
                                                         Dar de alta
                                                     </button>
                                                 </form>
