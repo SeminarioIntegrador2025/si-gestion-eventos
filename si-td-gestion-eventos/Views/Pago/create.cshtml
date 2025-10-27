@@ -1,68 +1,82 @@
-﻿@*@model si_td_gestion_eventos.Entities.Pago
+﻿@model si_td_gestion_eventos.Models.ViewModels.PagoVM
 
 @{
-    ViewData["Title"] = "Cargar Pago";
-    var eventos = ViewBag.Eventos as List<si_td_gestion_eventos.Entities.Evento>;
+    ViewData["Title"] = "Registrar Nuevo Pago";
+    // Verificamos si tenemos una lista de eventos en el ViewBag
+    bool showEventDropdown = ViewBag.Eventos != null;
+    var eventoId = ViewData["EventoId"]; // Para el botón "Cancelar"
 }
 
-<h2>Cargar Pago</h2>
+<h2>Registrar Nuevo Pago</h2>
+<hr />
 
-<form asp-action="Create" method="post">
-    <div class="mb-3">
-        <label asp-for="Fecha" class="form-label"></label>
-        <input asp-for="Fecha" class="form-control" type="date" />
-        <span asp-validation-for="Fecha" class="text-danger"></span>
-    </div>
-    <div class="mb-3">
-        <label asp-for="Monto" class="form-label"></label>
-        <input asp-for="Monto" class="form-control" type="number" step="0.01" />
-        <span asp-validation-for="Monto" class="text-danger"></span>
-    </div>
-    <div class="mb-3">
-        <label asp-for="Metodo" class="form-label"></label>
-        <select asp-for="Metodo" class="form-select">
-            <option value="">Seleccione método</option>
-            @foreach (var metodo in Enum.GetValues(typeof(si_td_gestion_eventos.Models.Enums.MetodoPago)))
+<div class="row">
+    <div class="col-md-8">
+        <form asp-action="Create" method="post" enctype="multipart/form-data">
+
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            @if (showEventDropdown)
             {
-                <option value="@metodo">@metodo</option>
+                <div class="form-group mb-3">
+                    <label asp-for="EventoId" class="control-label fw-semibold">Seleccionar Evento</label>
+                    <select asp-for="EventoId" asp-items="@ViewBag.Eventos" class="form-control">
+                        <option value="">-- Seleccione un evento... --</option>
+                    </select>
+                    <span asp-validation-for="EventoId" class="text-danger"></span>
+                </div>
             }
-        </select>
-        <span asp-validation-for="Metodo" class="text-danger"></span>
-    </div>
-    <div class="mb-3">
-        <label for="eventoId" class="form-label">Evento</label>
-        <select id="eventoId" name="eventoId" class="form-select">
-            <option value="">Seleccione evento</option>
-            @if (eventos != null)
+            else
             {
-                foreach (var evento in eventos)
-                {
-                    <option value="@evento.EventoId">@evento.ResponsableNombre - @evento.FechaInicio.ToShortDateString()</option>
-                }
+                <input type="hidden" asp-for="EventoId" />
             }
-        </select>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label asp-for="Monto" class="control-label"></label>
+                        <input asp-for="Monto" class="form-control" type="number" step="0.01" />
+                        <span asp-validation-for="Monto" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label asp-for="Fecha" class="control-label"></label>
+                        <input asp-for="Fecha" class="form-control" type="date" />
+                        <span asp-validation-for="Fecha" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Metodo" class="control-label"></label>
+                <select asp-for="Metodo" asp-items="Html.GetEnumSelectList<si_td_gestion_eventos.Models.Enums.MetodoPago>()" class="form-control">
+                    <option value="">Seleccione...</option>
+                </select>
+                <span asp-validation-for="Metodo" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="ReferenciaComprobante" class="control-label"></label>
+                <input asp-for="ReferenciaComprobante" class="form-control" />
+                <span asp-validation-for="ReferenciaComprobante" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="ArchivoComprobante" class="control-label"></label>
+                <input asp-for="ArchivoComprobante" type="file" class="form-control" />
+                <span asp-validation-for="ArchivoComprobante" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mt-4">
+                <input type="submit" value="Guardar Pago" class="btn btn-primary" />
+
+                <a asp-action="Index" asp-route-eventoId="@eventoId" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
     </div>
-    <div class="mb-3">
-        <label asp-for="ComprobanteRuta" class="form-label">Ruta del Comprobante</label>
-        <input asp-for="ComprobanteRuta" class="form-control" />
-        <span asp-validation-for="ComprobanteRuta" class="text-danger"></span>
-    </div>
-    <div class="mb-3">
-        <label asp-for="ComprobanteTipo" class="form-label"></label>
-        <select asp-for="ComprobanteTipo" class="form-select">
-            <option value="">Seleccione tipo de archivo</option>
-            @foreach (var tipo in Enum.GetValues(typeof(si_td_gestion_eventos.Models.Enums.TipoArchivo)))
-            {
-                <option value="@tipo">@tipo</option>
-            }
-        </select>
-        <span asp-validation-for="ComprobanteTipo" class="text-danger"></span>
-    </div>
-    <button type="submit" class="btn btn-success">Guardar</button>
-    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
-</form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 }
-*@

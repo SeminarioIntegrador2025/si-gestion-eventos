@@ -26,5 +26,7 @@ namespace si_td_gestion_eventos.Services.Contracts
         Task<IEnumerable<SelectListItem>> GetTiposEventoParaDropdownAsync();
         Task<bool> CanModifyEventoAsync(int eventoId);
         Task<bool> HasConflictingEventsAsync(DateTime inicio, DateTime fin, TimeSpan horaInicio, TimeSpan horaFin, int? excludeEventoId = null);
+
+        Task<IEnumerable<SelectListItem>> GetEventosActivosParaDropdownAsync();
     }
 }

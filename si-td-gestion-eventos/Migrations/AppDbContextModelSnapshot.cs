@@ -107,9 +107,15 @@ namespace si_td_gestion_eventos.Migrations
                     b.Property<int>("PagoId")
                         .HasColumnType("int");
 
-                    b.Property<string>("UrlArchivo")
+                    b.Property<string>("Referencia")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RutaArchivo")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TipoArchivo")
+                        .HasColumnType("int");
 
                     b.HasKey("ComprobanteExternoId");
 
@@ -159,6 +165,9 @@ namespace si_td_gestion_eventos.Migrations
 
                     b.Property<decimal>("MontoReserva")
                         .HasColumnType("decimal(18, 2)");
+
+                    b.Property<string>("Observaciones")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Tipo")
                         .HasColumnType("int");

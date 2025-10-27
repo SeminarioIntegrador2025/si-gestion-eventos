@@ -24,7 +24,9 @@ builder.Services.AddAutoMapper(cfg =>
 {
     // Se registran los perfiles para el mapeo de objetos
     cfg.AddProfile<ClienteProfile>();
-    cfg.AddProfile<EventoProfile>(); // <- AÑADIDO: Perfil para Evento <-> EventoVM
+    cfg.AddProfile<EventoProfile>();
+    cfg.AddProfile<PagoProfile>();
+
 });
 
 // Repositorios
@@ -32,7 +34,8 @@ builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepositor
 
 // Servicios de Negocio (Lógica de la aplicación)
 builder.Services.AddScoped<IClienteService, ClienteService>();
-builder.Services.AddScoped<IEventoService, EventoService>(); 
+builder.Services.AddScoped<IEventoService, EventoService>();
+builder.Services.AddScoped<IPagoService, PagoService>();
 
 // Reglas de Negocio (Validaciones complejas)
 builder.Services.AddScoped<IClienteBusinessRules, ClienteBusinessRules>();
@@ -40,7 +43,8 @@ builder.Services.AddScoped<IEventoBusinessRules, EventoBusinessRules>();
 
 // Validadores con FluentValidation
 builder.Services.AddScoped<IValidator<ClienteVM>, ClienteValidator>();
-builder.Services.AddScoped<IValidator<EventoVM>, EventoValidator>(); 
+builder.Services.AddScoped<IValidator<EventoVM>, EventoValidator>();
+builder.Services.AddScoped<IValidator<PagoVM>, PagoValidator>();
 
 var app = builder.Build();
 

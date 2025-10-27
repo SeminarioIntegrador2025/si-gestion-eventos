@@ -51,7 +51,7 @@ namespace si_td_gestion_eventos.Services.Implementation
 
                 var eventosQuery = (await _eventoRepository.FindWithIncludesAsync(
                                         textPredicate,
-                                        includes: q => q.Cliente
+                                        q => q.Cliente
                                     )).AsQueryable();
 
                 // Filtrar eventos pasados si no se solicita incluirlos
@@ -109,9 +109,9 @@ namespace si_td_gestion_eventos.Services.Implementation
         public async Task<ServiceResult<EventoVM>> CreateAsync(EventoVM eventoVM)
         {
             // Validar usando el RuleSet "Create" + reglas comunes
-            var validationResult = await _validator.ValidateAsync(eventoVM, options => 
+            var validationResult = await _validator.ValidateAsync(eventoVM, options =>
                 options.IncludeRuleSets("Create"));
-            
+
             if (!validationResult.IsValid)
             {
                 var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
@@ -141,9 +141,9 @@ namespace si_td_gestion_eventos.Services.Implementation
         public async Task<ServiceResult<EventoVM>> UpdateAsync(EventoVM eventoVM)
         {
             // Validar usando SOLO las reglas comunes (sin el RuleSet "Create")
-            var validationResult = await _validator.ValidateAsync(eventoVM, options => 
+            var validationResult = await _validator.ValidateAsync(eventoVM, options =>
                 options.IncludeRuleSets("default"));
-            
+
             if (!validationResult.IsValid)
             {
                 var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
@@ -309,8 +309,8 @@ namespace si_td_gestion_eventos.Services.Implementation
         public async Task<List<EventoVM>> GetLatestAsync(int count)
         {
             var eventos = await _eventoRepository.FindWithIncludesAsync(
-                predicate: null,
-                includes: e => e.Cliente
+                null, e => e.Cliente,
+                e => e.Cliente
             );
 
             var eventosOrdenados = eventos.OrderByDescending(e => e.EventoId).Take(count);
@@ -338,5 +338,28 @@ namespace si_td_gestion_eventos.Services.Implementation
         {
             return !await _businessRules.IsDateRangeAvailableAsync(inicio, fin, horaInicio, horaFin, excludeEventoId);
         }
+
+        public async Task<IEnumerable<SelectListItem>> GetEventosActivosParaDropdownAsync()
+        {
+
+            var eventosActivos = await _eventoRepository.FindWithIncludesAsync(
+
+                e => e.Estado == EventoEstado.Confirmado, //  despues pasa a ser pendiente  //AGREGAR TODOS LOS OTROS ESTADOS || e.Estado == EventoEstado.Pendiente, 
+                e => e.Cliente
+            );
+
+            if (eventosActivos == null || !eventosActivos.Any())
+            {
+                return new List<SelectListItem>();
+            }
+
+            return eventosActivos
+                .OrderBy(e => e.Inicio)
+                .Select(e => new SelectListItem
+                {
+                    Value = e.EventoId.ToString(),
+                    Text = $"{e.Cliente.Nombre} {e.Cliente?.Apellido} - {e.Tipo} - {e.Inicio:dd/MM/yyyy}"
+                });
+        }
     }
-}
+};
