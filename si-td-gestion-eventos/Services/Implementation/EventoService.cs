@@ -121,7 +121,7 @@ namespace si_td_gestion_eventos.Services.Implementation
             try
             {
                 var evento = _mapper.Map<Evento>(eventoVM);
-                evento.Estado = EventoEstado.Confirmado;
+                evento.Estado = EventoEstado.Pendiente;
 
                 await _eventoRepository.AddAsync(evento);
                 await _eventoRepository.SaveChangesAsync();
@@ -284,9 +284,9 @@ namespace si_td_gestion_eventos.Services.Implementation
                     return ServiceResult<bool>.FailureResult("No se puede confirmar un evento cancelado.");
                 }
 
-                if (evento.Estado == EventoEstado.Confirmado)
+                if (evento.Estado == EventoEstado.Pendiente)
                 {
-                    return ServiceResult<bool>.FailureResult("El evento ya se encuentra confirmado.");
+                    return ServiceResult<bool>.FailureResult("El evento ya se encuentra pendiente.");
                 }
 
                 if (!await _businessRules.IsEventoInFutureAsync(evento.Inicio))
@@ -294,7 +294,7 @@ namespace si_td_gestion_eventos.Services.Implementation
                     return ServiceResult<bool>.FailureResult("No se puede confirmar un evento que ya pasó.");
                 }
 
-                evento.Estado = EventoEstado.Confirmado;
+                evento.Estado = EventoEstado.Pendiente;
                 _eventoRepository.Update(evento);
                 await _eventoRepository.SaveChangesAsync();
 
@@ -344,7 +344,7 @@ namespace si_td_gestion_eventos.Services.Implementation
 
             var eventosActivos = await _eventoRepository.FindWithIncludesAsync(
 
-                e => e.Estado == EventoEstado.Confirmado, //  despues pasa a ser pendiente  //AGREGAR TODOS LOS OTROS ESTADOS || e.Estado == EventoEstado.Pendiente, 
+                e => e.Estado == EventoEstado.Pendiente, //AGREGAR TODOS LOS OTROS ESTADOS || e.Estado == EventoEstado.Pendiente, 
                 e => e.Cliente
             );
 

@@ -85,7 +85,7 @@ namespace si_td_gestion_eventos.Migrations
                             Domicilio = "calle",
                             Nombre = "test",
                             Telefono = "47832",
-                            Tipo = 1
+                            Tipo = 0
                         });
                 });
 

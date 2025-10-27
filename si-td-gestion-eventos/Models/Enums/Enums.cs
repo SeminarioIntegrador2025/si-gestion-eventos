@@ -5,18 +5,20 @@ namespace si_td_gestion_eventos.Models.Enums
     public enum TipoCliente
     {
         [Display(Name = "Persona Fisica")]
-        PersonaFisica = 1,
+        PersonaFisica,
         [Display(Name = "Persona Juridica")]
-        PersonaJuridica = 2
+        PersonaJuridica
     }
     public enum EventoEstado
     {
-        [Display(Name = "Confirmado")]
-        Confirmado,
+        [Display(Name = "Pendiente")]
+        Pendiente,
         [Display(Name = "Cancelado")]
         Cancelado,
         [Display(Name = "Reprogramado")]
         Reprogramado,
+        [Display(Name = "Realizado")]
+        Realizado,
     }
 
     public enum MetodoPago
