@@ -61,7 +61,29 @@
 </div>
 
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        $(document).ready(function () {
+
+            // Apunta al ID específico de este campo
+            $('#ResponsableCedula').on('input', function() {
+
+                let value = this.value.replace(/[^\d]/g, '');
+
+                // Trunca a 8 dígitos (X.XXX.XXX-N)
+                if (value.length > 8) {
+                    value = value.substring(0, 8);
+                }
+
+                // Aplica el formato
+                if (value.length >= 2) {
+                    value = value.substring(0, value.length - 1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') + '-' + value.substring(value.length - 1);
+                }
+
+                this.value = value;
+            });
+
+        });
+    </script>
 }

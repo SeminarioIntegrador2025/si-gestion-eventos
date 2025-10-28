@@ -134,13 +134,27 @@
             actualizarFormulario();
 
             // --- FORMATEAR CÉDULA ---
-            $('#CedulaIdentidad').on('input', function() {
-                let value = this.value.replace(/[^\d]/g, '');
-                if (value.length >= 7) {
-                    value = value.substring(0, value.length - 1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') + '-' + value.substring(value.length - 1);
-                }
-                this.value = value.substring(0, 12);
-            });
+                    $('#CedulaIdentidad').on('input', function() {
+            // 1. Limpia el valor (solo dígitos)
+            let value = this.value.replace(/[^\d]/g, '');
+
+            // 2. LA SOLUCIÓN: Trunca la *cantidad de dígitos* a un máximo de 8.
+            // (El formato X.XXX.XXX-N usa 8 dígitos en total)
+            if (value.length > 8) {
+                value = value.substring(0, 8);
+            }
+
+            // 3. Aplica el formato (la misma lógica que tenías)
+            // (Ej: "55094898" (8 dígitos) se formatea a "5.509.489-8" (11 chars))
+            if (value.length >= 7) {
+                value = value.substring(0, value.length - 1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') + '-' + value.substring(value.length - 1);
+            }
+
+            // 4. Asigna el valor.
+            // Ya no necesitas el .substring(0, 12) porque el tope de 8 dígitos
+            // previene que la cadena formateada supere los 11 caracteres.
+            this.value = value;
+        });
         });
     </script>
 }

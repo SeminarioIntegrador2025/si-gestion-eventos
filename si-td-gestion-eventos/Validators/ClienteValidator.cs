@@ -41,7 +41,7 @@ namespace si_td_gestion_eventos.Validators
                 RuleFor(x => x.CedulaIdentidad)
                     .NotEmpty().WithMessage("La cédula de identidad es obligatoria.")
                     .Must(BeValidCedulaFormat).WithMessage("La cédula debe tener formato válido (ej: 1.234.567-8).")
-                    .MustAsync(BeUniqueCedulaAsync).WithMessage("Ya existe un cliente con esta cédula de identidad.");
+                    .MustAsync(BeUniqueCedulaAsync).WithMessage("Ya existe un cliente con esta cédula de identidad.");                    
 
                 RuleFor(x => x.RUT).Empty().WithMessage("El RUT debe estar vacío para una persona física.");
             });

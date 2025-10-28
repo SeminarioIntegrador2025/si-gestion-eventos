@@ -8,8 +8,7 @@ namespace si_td_gestion_eventos.Models.ViewModels
         public int ClienteId { get; set; }
 
         [Display(Name = "Tipo de Cliente")]
-        [Required(ErrorMessage = "Debe seleccionar un tipo de cliente.")]
-        public TipoCliente Tipo { get; set; }
+        public TipoCliente? Tipo { get; set; }
 
         [Display(Name = "Nombre")] 
         [Required(ErrorMessage = "El nombre o razón social es obligatorio.")]

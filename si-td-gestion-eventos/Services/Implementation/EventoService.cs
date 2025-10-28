@@ -102,8 +102,17 @@ namespace si_td_gestion_eventos.Services.Implementation
 
         public async Task<EventoVM?> GetByIdAsync(int id)
         {
-            var evento = await _eventoRepository.GetByIdWithIncludesAsync(id, e => e.Cliente);
-            return evento != null ? _mapper.Map<EventoVM>(evento) : null;
+            var evento = await _eventoRepository.GetByIdWithIncludesAsync(id, e => e.Cliente, e => e.Pagos);
+
+            if (evento == null)
+                return null;
+            var eventoVM = _mapper.Map<EventoVM>(evento);
+
+                eventoVM.TotalPagado = (decimal)(evento.Pagos?.Sum(p => p.Monto) ?? 0);
+
+            eventoVM.SaldoRestante = eventoVM.CostoAlquiler - eventoVM.TotalPagado;
+
+            return eventoVM;
         }
 
         public async Task<ServiceResult<EventoVM>> CreateAsync(EventoVM eventoVM)
