@@ -11,14 +11,16 @@ namespace si_td_gestion_eventos.Models.Enums
     }
     public enum EventoEstado
     {
-        [Display(Name = "Pendiente")]
-        Pendiente,
+        [Display(Name = "Pendiente y Pagado")]
+        PendientePagado,
         [Display(Name = "Cancelado")]
         Cancelado,
         [Display(Name = "Reprogramado")]
         Reprogramado,
         [Display(Name = "Realizado")]
         Realizado,
+        [Display(Name = "Pendiente y Adeudado")]
+        PendienteAdeudado,
     }
 
     public enum MetodoPago

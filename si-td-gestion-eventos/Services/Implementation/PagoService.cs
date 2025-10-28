@@ -3,10 +3,12 @@ using AutoMapper;
 using FluentValidation; 
 using Microsoft.AspNetCore.Hosting; // Para saber dónde guardar archivos (wwwroot)
 using Microsoft.EntityFrameworkCore;
+using QuestPDF.Fluent;
 using si_td_gestion_eventos.Context;
 using si_td_gestion_eventos.Entities;
 using si_td_gestion_eventos.Models.Enums;
 using si_td_gestion_eventos.Models.ViewModels;
+using si_td_gestion_eventos.PDFTemplates;
 using si_td_gestion_eventos.Repositories;
 using si_td_gestion_eventos.Services.Common;
 using si_td_gestion_eventos.Services.Contracts;
@@ -77,8 +79,19 @@ namespace si_td_gestion_eventos.Services.Implementation
 
           
             pagoVM.EventoDescripcion = $"Evento {pago.Evento?.Tipo} - {pago.Evento?.Inicio:dd/MM/yyyy}";
-            pagoVM.ClienteNombre = pago.Evento?.Cliente != null ? $"{pago.Evento.Cliente.Nombre} {pago.Evento.Cliente.Apellido}?" : "N/A"; // Aquí sí usamos Apellido porque ya cargamos el Cliente. "??" sería otra opción.
             pagoVM.RutaArchivoExistente = pago.ComprobanteExterno?.RutaArchivo;
+            if (pago.Evento?.Cliente != null)
+            {
+                if (pago.Evento.Cliente.Tipo == TipoCliente.PersonaJuridica)
+                {
+                    pagoVM.ClienteNombre = pago.Evento.Cliente.Nombre;
+                }
+
+                else
+                {
+                    pagoVM.ClienteNombre = $"{pago.Evento.Cliente.Nombre} {pago.Evento.Cliente.Apellido}";
+                }
+            }
 
             return pagoVM;
         }
@@ -275,6 +288,19 @@ namespace si_td_gestion_eventos.Services.Implementation
                 // la operación principal (ej: el borrado del pago en la BD).
                 Console.WriteLine($"Error al borrar archivo {rutaRelativa}: {ex.Message}");
             }
+        }
+
+        public async Task<byte[]?> GenerarReciboPdfAsync(int pagoId)
+        {
+            var pagoVM = await GetByIdAsync(pagoId);
+
+            if (pagoVM == null)
+            {
+                return null; 
+            }
+
+            var documento = new ReciboPagoDocument(pagoVM);
+            return documento.GeneratePdf();
         }
     } 
 }

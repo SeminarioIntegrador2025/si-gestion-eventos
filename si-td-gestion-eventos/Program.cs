@@ -8,6 +8,9 @@ using si_td_gestion_eventos.Services;
 using si_td_gestion_eventos.Services.Contracts;
 using si_td_gestion_eventos.Services.Implementation;
 using si_td_gestion_eventos.Validators;
+using QuestPDF.Infrastructure;
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 

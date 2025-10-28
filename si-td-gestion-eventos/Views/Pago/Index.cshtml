@@ -8,10 +8,10 @@
     bool isFilteredByEvent = (bool)ViewData["IsFilteredByEvent"];
 
     // KPIs
-    int totalPagos = (int)ViewBag.TotalPagos;
-    decimal totalMonto = (decimal)ViewBag.TotalMonto;
-    int countTransfer = (int)ViewBag.CountTransferencias;
-    int countEfectivo = (int)ViewBag.CountEfectivo;
+    int totalPagosPmes = (int)ViewBag.TotalPagosPMes;
+    decimal totalMontoPMes = (decimal)ViewBag.TotalMontoPMes ;
+    int countTransferPMes = (int)ViewBag.CountTransferenciasPMes;
+    int countEfectivoPMes = (int)ViewBag.CountEfectivoPMes;
 
     // Encabezado (modo filtrado)
     var eventoId = ViewData["EventoId"];
@@ -53,32 +53,32 @@
             <div class="col-md-3">
                 <div class="card card-kpi text-center">
                     <div class="card-body">
-                        <div class="card-title mb-1">Monto Total</div>
-                        <div class="display-6 text-primary fw-bold">@totalMonto.ToString("C")</div>
+                        <div class="card-title mb-1">Monto Total Generado en el Mes</div>
+                        <div class="display-6 text-primary fw-bold">@totalMontoPMes.ToString("C")</div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="card card-kpi text-center">
                     <div class="card-body">
-                        <div class="card-title mb-1"># Pagos</div>
-                        <div class="display-6 text-info fw-bold">@totalPagos</div>
+                        <div class="card-title mb-1"># Pagos del mes</div>
+                        <div class="display-6 text-info fw-bold">@totalPagosPmes</div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="card card-kpi text-center">
                     <div class="card-body">
-                        <div class="card-title mb-1">Transferencias</div>
-                        <div class="display-6 text-success fw-bold">@countTransfer</div>
+                        <div class="card-title mb-1">Transferencias del Mes</div>
+                        <div class="display-6 text-success fw-bold">@countTransferPMes</div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="card card-kpi text-center">
                     <div class="card-body">
-                        <div class="card-title mb-1">Efectivo</div>
-                        <div class="display-6 text-warning fw-bold">@countEfectivo</div>
+                        <div class="card-title mb-1">Efectivo en el mes</div>
+                        <div class="display-6 text-warning fw-bold">@countEfectivoPMes</div>
                     </div>
                 </div>
             </div>
@@ -169,6 +169,13 @@
                                             </a>
                                             <a asp-action="Delete" asp-route-id="@pago.PagoId" class="btn btn-sm btn-outline-danger" title="Borrar">
                                                 <i class="fa-solid fa-trash"></i>
+                                            </a>
+                                            <a asp-action="DescargarRecibo"
+                                               asp-route-pagoId="@pago.PagoId"
+                                               class="btn btn-sm btn-info"
+                                               title="Descargar Recibo"
+                                               target="_blank">
+                                                <i class="fa-solid fa-file-pdf"></i> Recibo
                                             </a>
                                         </div>
                                     </td>

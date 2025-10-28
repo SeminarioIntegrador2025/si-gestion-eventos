@@ -1,10 +1,10 @@
-﻿// En: Controllers/PagoController.cs
+﻿
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering; // Para SelectList
 using si_td_gestion_eventos.Models.Enums;  // Para los KPIs
 using si_td_gestion_eventos.Models.ViewModels;
 using si_td_gestion_eventos.Services.Contracts;
-using System.Collections.Generic; // Para List<T>
+using System.Collections.Generic;
 using System.Linq; // Para .Sum(), .Count(), .FirstOrDefault()
 using System.Threading.Tasks; // Para async/await
 
@@ -15,15 +15,14 @@ namespace si_td_gestion_eventos.Controllers
         private readonly IPagoService _pagoService;
         private readonly IEventoService _eventoService;
 
-        // Inyectamos ambos servicios
+       
         public PagoController(IPagoService pagoService, IEventoService eventoService)
         {
             _pagoService = pagoService;
             _eventoService = eventoService;
         }
 
-        // --- MÉTODO INDEX (MODIFICADO) ---
-        // Maneja /Pago (global) Y /Pago?eventoId=5 (filtrado)
+        // /Pago (global) Y /Pago?eventoId=5 (filtrado)  (Para seguir el principio DRY (Don repeat yourself))
         public async Task<IActionResult> Index(int? eventoId, string q)
         {
             List<PagoVM> pagos;
@@ -31,8 +30,7 @@ namespace si_td_gestion_eventos.Controllers
             ViewData["IsFilteredByEvent"] = isFilteredByEvent;
 
             if (isFilteredByEvent)
-            {
-                // --- MODO 1: Filtrado por Evento ---
+            {               
                 pagos = await _pagoService.GetPagosByEventoIdAsync(eventoId.Value);
 
                 ViewData["EventoId"] = eventoId.Value;
@@ -41,10 +39,10 @@ namespace si_td_gestion_eventos.Controllers
             }
             else
             {
-                // --- MODO 2: Global (Estilo Clientes) ---
+
                 pagos = await _pagoService.GetAllAsync();
 
-                // Aplicar filtro de búsqueda
+
                 if (!string.IsNullOrEmpty(q))
                 {
                     string lowerQ = q.ToLower().Trim();
@@ -56,16 +54,19 @@ namespace si_td_gestion_eventos.Controllers
                     ).ToList();
                 }
 
-                // Cargar dropdown de Eventos para el FILTRO
-                ViewBag.EventosFilter = await _eventoService.GetEventosActivosParaDropdownAsync();
+
+                ViewBag.EventosFilter = await _eventoService.GetEventosAdeudadosParaDropdownAsync();
                 ViewData["CurrentFilterQ"] = q;
             }
 
-            // --- KPIs (Se calculan para ambos modos) ---
-            ViewBag.TotalPagos = pagos.Count;
-            ViewBag.TotalMonto = pagos.Sum(p => p.Monto);
-            ViewBag.CountTransferencias = pagos.Count(p => p.Metodo == MetodoPago.Transferencia);
-            ViewBag.CountEfectivo = pagos.Count(p => p.Metodo == MetodoPago.Efectivo);
+            //KPIs 
+            var today = DateTime.Today;
+            var firstDayOfMonth = new DateTime(today.Year, today.Month, 1);
+            var pagosDelMes = pagos.Where(p => p.Fecha.Date >= firstDayOfMonth).ToList();
+            ViewBag.TotalPagosPMes = pagosDelMes.Count;
+            ViewBag.TotalMontoPMes = pagosDelMes.Sum(p => p.Monto);
+            ViewBag.CountTransferenciasPMes = pagosDelMes.Count(p => p.Metodo == MetodoPago.Transferencia);
+            ViewBag.CountEfectivoPMes = pagosDelMes.Count(p => p.Metodo == MetodoPago.Efectivo);
 
             return View(pagos);
         }
@@ -91,7 +92,7 @@ namespace si_td_gestion_eventos.Controllers
             {
                 // MODO 2: Se crea desde la página global
                 // (Este es tu "getEventosParaDropdown")
-                ViewBag.Eventos = await _eventoService.GetEventosActivosParaDropdownAsync();
+                ViewBag.Eventos = await _eventoService.GetEventosAdeudadosParaDropdownAsync();
             }
 
             return View(pagoVM);
@@ -132,8 +133,22 @@ namespace si_td_gestion_eventos.Controllers
                 // Recargamos el dropdown, igual que en el fallo de ModelState
                 await PrepararDropdownEventosAsync(pagoVM.EventoId);
                 return View(pagoVM);
-                // --------------------------------------------------------
             }
+        }
+
+        // GET: /Pago/DescargarRecibo
+       public async Task<IActionResult> DescargarRecibo(int pagoId)
+        {
+           
+            var pdfBytes = await _pagoService.GenerarReciboPdfAsync(pagoId);
+
+            if (pdfBytes == null)
+            {
+                return NotFound("No se encontró el pago.");
+            }
+
+            string nombreArchivo = $"Recibo-Pago-{pagoId}-{DateTime.Now:yyyyMMdd}.pdf";
+            return File(pdfBytes, "application/pdf", nombreArchivo);
         }
 
         private async Task PrepararDropdownEventosAsync(int eventoId)
@@ -141,7 +156,7 @@ namespace si_td_gestion_eventos.Controllers
             // Solo recargamos el dropdown si el EventoId es 0 (formulario global)
             if (eventoId == 0)
             {
-                ViewBag.Eventos = await _eventoService.GetEventosActivosParaDropdownAsync();
+                ViewBag.Eventos = await _eventoService.GetEventosAdeudadosParaDropdownAsync();
             }
         }
     }

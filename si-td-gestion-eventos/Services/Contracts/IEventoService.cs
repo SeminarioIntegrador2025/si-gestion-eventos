@@ -8,11 +8,11 @@ namespace si_td_gestion_eventos.Services.Contracts
     public interface IEventoService
     {
         Task<PaginatedList<EventoVM>> GetAllPaginatedAsync(
-            string? searchQuery, 
-            DateTime? fechaDesde, 
-            DateTime? fechaHasta, 
-            string ordenarPor, 
-            int page, 
+            string? searchQuery,
+            DateTime? fechaDesde,
+            DateTime? fechaHasta,
+            string ordenarPor,
+            int page,
             int pageSize,
             bool incluirPasados = false,
             bool incluirCancelados = false);
@@ -26,7 +26,6 @@ namespace si_td_gestion_eventos.Services.Contracts
         Task<IEnumerable<SelectListItem>> GetTiposEventoParaDropdownAsync();
         Task<bool> CanModifyEventoAsync(int eventoId);
         Task<bool> HasConflictingEventsAsync(DateTime inicio, DateTime fin, TimeSpan horaInicio, TimeSpan horaFin, int? excludeEventoId = null);
-
-        Task<IEnumerable<SelectListItem>> GetEventosActivosParaDropdownAsync();
+        Task<IEnumerable<SelectListItem>> GetEventosAdeudadosParaDropdownAsync();
     }
 }

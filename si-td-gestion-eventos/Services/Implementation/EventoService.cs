@@ -130,7 +130,7 @@ namespace si_td_gestion_eventos.Services.Implementation
             try
             {
                 var evento = _mapper.Map<Evento>(eventoVM);
-                evento.Estado = EventoEstado.Pendiente;
+                evento.Estado = EventoEstado.PendienteAdeudado;
 
                 await _eventoRepository.AddAsync(evento);
                 await _eventoRepository.SaveChangesAsync();
@@ -293,9 +293,15 @@ namespace si_td_gestion_eventos.Services.Implementation
                     return ServiceResult<bool>.FailureResult("No se puede confirmar un evento cancelado.");
                 }
 
-                if (evento.Estado == EventoEstado.Pendiente)
+                if (evento.Estado == EventoEstado.PendienteAdeudado)
                 {
-                    return ServiceResult<bool>.FailureResult("El evento ya se encuentra pendiente.");
+                    return ServiceResult<bool>.FailureResult("El evento ya se encuentra pendiente y adeudado.");
+                }
+
+
+                if (evento.Estado == EventoEstado.PendientePagado)
+                {
+                    return ServiceResult<bool>.FailureResult("El evento ya se encuentra pendiente y pagado.");
                 }
 
                 if (!await _businessRules.IsEventoInFutureAsync(evento.Inicio))
@@ -303,7 +309,7 @@ namespace si_td_gestion_eventos.Services.Implementation
                     return ServiceResult<bool>.FailureResult("No se puede confirmar un evento que ya pasó.");
                 }
 
-                evento.Estado = EventoEstado.Pendiente;
+                evento.Estado = EventoEstado.PendienteAdeudado;
                 _eventoRepository.Update(evento);
                 await _eventoRepository.SaveChangesAsync();
 
@@ -348,21 +354,21 @@ namespace si_td_gestion_eventos.Services.Implementation
             return !await _businessRules.IsDateRangeAvailableAsync(inicio, fin, horaInicio, horaFin, excludeEventoId);
         }
 
-        public async Task<IEnumerable<SelectListItem>> GetEventosActivosParaDropdownAsync()
+        public async Task<IEnumerable<SelectListItem>> GetEventosAdeudadosParaDropdownAsync()
         {
 
-            var eventosActivos = await _eventoRepository.FindWithIncludesAsync(
+            var eventosAdeudado = await _eventoRepository.FindWithIncludesAsync(
 
-                e => e.Estado == EventoEstado.Pendiente, //AGREGAR TODOS LOS OTROS ESTADOS || e.Estado == EventoEstado.Pendiente, 
+                e => e.Estado == EventoEstado.PendienteAdeudado, //AGREGAR TODOS LOS OTROS ESTADOS DONDE SERIA Adeudado
                 e => e.Cliente
             );
 
-            if (eventosActivos == null || !eventosActivos.Any())
+            if (eventosAdeudado == null || !eventosAdeudado.Any())
             {
                 return new List<SelectListItem>();
             }
 
-            return eventosActivos
+            return eventosAdeudado
                 .OrderBy(e => e.Inicio)
                 .Select(e => new SelectListItem
                 {

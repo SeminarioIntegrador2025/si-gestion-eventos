@@ -41,7 +41,7 @@ namespace si_td_gestion_eventos.Entities
         public float? MontoAireAcondicionado { get; set; }
 
         [Required]
-        public EventoEstado Estado { get; set; } = EventoEstado.Pendiente;
+        public EventoEstado Estado { get; set; } = EventoEstado.PendienteAdeudado;
 
         public String? Observaciones { get; set; }
 

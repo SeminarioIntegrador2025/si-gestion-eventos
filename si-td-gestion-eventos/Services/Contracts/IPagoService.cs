@@ -8,9 +8,8 @@ namespace si_td_gestion_eventos.Services.Contracts
         Task<List<PagoVM>> GetPagosByEventoIdAsync(int eventoId);
         Task<PagoVM?> GetByIdAsync(int id);
         Task<ServiceResult<PagoVM>> CreateAsync(PagoVM pagoVM);
-
         Task<List<PagoVM>> GetAllAsync();
-
+        Task<byte[]?> GenerarReciboPdfAsync(int pagoId);
         // Futuros metodos
         // Task<ServiceResult<PagoVM>> UpdateAsync(PagoVM pagoVM);
         // Task<ServiceResult> DeleteAsync(int pagoId);
