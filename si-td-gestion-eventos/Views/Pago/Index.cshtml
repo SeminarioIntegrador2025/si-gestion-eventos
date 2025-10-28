@@ -53,8 +53,8 @@
             <div class="col-md-3">
                 <div class="card card-kpi text-center">
                     <div class="card-body">
-                        <div class="card-title mb-1">Monto Total Generado en el Mes</div>
-                        <div class="display-6 text-primary fw-bold">@totalMontoPMes.ToString("C")</div>
+                        <div class="card-title mb-1">Monto Generado en el Mes</div>
+                        <div class="h3 text-primary fw-bold">@totalMontoPMes.ToString("N1")</div>
                     </div>
                 </div>
             </div>
@@ -69,7 +69,7 @@
             <div class="col-md-3">
                 <div class="card card-kpi text-center">
                     <div class="card-body">
-                        <div class="card-title mb-1">Transferencias del Mes</div>
+                        <div class="card-title mb-1"># Transferencias del Mes</div>
                         <div class="display-6 text-success fw-bold">@countTransferPMes</div>
                     </div>
                 </div>
@@ -77,7 +77,7 @@
             <div class="col-md-3">
                 <div class="card card-kpi text-center">
                     <div class="card-body">
-                        <div class="card-title mb-1">Efectivo en el mes</div>
+                        <div class="card-title mb-1"># Efectivo en el mes</div>
                         <div class="display-6 text-warning fw-bold">@countEfectivoPMes</div>
                     </div>
                 </div>
@@ -170,12 +170,8 @@
                                             <a asp-action="Delete" asp-route-id="@pago.PagoId" class="btn btn-sm btn-outline-danger" title="Borrar">
                                                 <i class="fa-solid fa-trash"></i>
                                             </a>
-                                            <a asp-action="DescargarRecibo"
-                                               asp-route-pagoId="@pago.PagoId"
-                                               class="btn btn-sm btn-info"
-                                               title="Descargar Recibo"
-                                               target="_blank">
-                                                <i class="fa-solid fa-file-pdf"></i> Recibo
+                                            <a asp-action="DescargarRecibo" asp-route-pagoId="@pago.PagoId" class="btn btn-sm btn-outline-info" title="Descargar Recibo">
+                                                <i class="fa-solid fa-file-pdf"></i>
                                             </a>
                                         </div>
                                     </td>

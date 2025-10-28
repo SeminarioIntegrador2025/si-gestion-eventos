@@ -55,60 +55,63 @@ namespace si_td_gestion_eventos.PDFTemplates
                         });
 
 
-                    page.Content().PaddingVertical(20).Column(col =>
-                    {
-                        col.Item().AlignCenter().PaddingBottom(10).Text("Detalles del Pago").Bold().FontSize(16);
+                    page.Content()
+    .PaddingVertical(20) 
+    .AlignCenter()      
+    .Column(col =>      
+    {
+ 
+        col.Item().PaddingBottom(10).Text("Detalles del Pago").Bold().FontSize(16);
 
-                        col.Item().AlignCenter().Table(table =>
-                        {
-                            table.ColumnsDefinition(columns =>
-                            {
-                                columns.ConstantColumn(150);
-                                columns.RelativeColumn();
-                            });
+ 
+        col.Item().Table(table =>
+        {
+            table.ColumnsDefinition(columns =>
+            {
 
-                            table.Cell().Text("Evento:");
-                            table.Cell().Text(_pago.EventoDescripcion);
+                columns.ConstantColumn(150);
+                columns.RelativeColumn();
+            });
 
-                            table.Cell().Text("Cliente:");
-                            table.Cell().Text(_pago.ClienteNombre);
+            table.Cell().Text("Evento:");
+            table.Cell().Text(_pago.EventoDescripcion);
 
-                            table.Cell().Text("Fecha de Pago:");
-                            table.Cell().Text(_pago.Fecha.ToString("dd/MM/yyyy"));
+            table.Cell().Text("Cliente:");
+            table.Cell().Text(_pago.ClienteNombre);
 
-                            table.Cell().Text("Método de Pago:");
-                            table.Cell().Text(_pago.Metodo.ToString());
+            table.Cell().Text("Fecha de Pago:");
+            table.Cell().Text(_pago.Fecha.ToString("dd/MM/yyyy"));
 
-                            table.Cell().PaddingTop(10).Text("Monto Pagado:").Bold();
-                            table.Cell().PaddingTop(10).Text($"{_pago.Monto:C}").Bold().FontSize(14);
-                        });
+            table.Cell().Text("Método de Pago:");
+            table.Cell().Text(_pago.Metodo.ToString());
 
-                        col.Item().PaddingTop(40).Row(row =>
-                        {
-
-                            row.RelativeItem().Column(colEmpresa =>
-                            {
-                                colEmpresa.Item().AlignCenter().Text("_________________________");
-                                colEmpresa.Item().AlignCenter().Text("Firma Tata David");
-                                colEmpresa.Item().AlignCenter().Text("Fiestas y Eventos");
-                            });
-
-                            row.RelativeItem().Column(colCliente =>
-                            {
-                                colCliente.Item().AlignCenter().Text("_________________________");
-                                colCliente.Item().AlignCenter().Text("Firma Cliente");
-                                colCliente.Item().AlignCenter().Text($"{_pago.ClienteNombre}");
-                            });
-                        });
-                    });
+            table.Cell().PaddingTop(10).Text("Monto Pagado:").Bold();
+            table.Cell().PaddingTop(10).Text($"{_pago.Monto:C}").Bold().FontSize(14);
+        }); 
+        col.Item().PaddingTop(80).Row(row =>
+        {
+            row.RelativeItem().Column(colEmpresa =>
+            {
+                colEmpresa.Item().AlignCenter().Text("_________________________"); 
+                colEmpresa.Item().AlignCenter().Text("Firma Tata David");
+                colEmpresa.Item().AlignCenter().Text("Fiestas y Eventos");
+            });
+            row.RelativeItem().Column(colCliente =>
+            {
+                colCliente.Item().AlignCenter().Text("_________________________"); 
+                colCliente.Item().AlignCenter().Text("Firma Cliente");
+                colCliente.Item().AlignCenter().Text($"{_pago.ClienteNombre}");
+            });
+        }); 
+    });
 
 
                     page.Footer()
-                        .AlignCenter()
                         .Column(col =>
                         {
-                            col.Item().Text("Gracias por su pago."); 
-                            col.Item().Text("Tata David - Fiestas y Eventos"); 
+                        
+                            col.Item().AlignCenter().Text("Gracias por su pago."); 
+                            col.Item().AlignCenter().Text("Tata David - Fiestas y Eventos"); 
                         });
                 });
         }

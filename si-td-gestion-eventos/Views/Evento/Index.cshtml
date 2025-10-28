@@ -1,4 +1,5 @@
-﻿@model si_td_gestion_eventos.Infrastructure.PaginatedList<si_td_gestion_eventos.Models.ViewModels.EventoVM>
+﻿@using si_td_gestion_eventos.Models.Enums
+@model si_td_gestion_eventos.Infrastructure.PaginatedList<si_td_gestion_eventos.Models.ViewModels.EventoVM>
 
 @{
     ViewData["Title"] = "Gestión de Eventos";
@@ -168,7 +169,9 @@
             <th>Tipo de Evento</th>
             <th>Fecha Inicio del Evento</th>
             <th>Estado</th>
-            <th></th> @* Agregamos Saldo Pendiente? *@
+            <th>Observaciones</th>
+            <th>Acciones Rapidas</th>
+            @* Agregamos Saldo Pendiente? *@
         </tr>
     </thead>
 
@@ -195,12 +198,63 @@
         {
             @foreach (var e in Model)
             {
+                // --- Lógica para el estado (CORREGIDA PARA TU ENUM) ---
+                string estadoClass = "bg-secondary"; // Color por defecto
+                string estadoIcon = "fa-question-circle"; // Icono por defecto
+                string estadoTexto = e.Estado.ToString(); // Texto por defecto (nombre del enum)
+
+                switch (e.Estado)
+                {
+                    case EventoEstado.PendientePagado:
+                        estadoClass = "bg-success"; // Verde para pagado
+                        estadoIcon = "fa-check-circle";
+                        estadoTexto = "Pendiente (Pagado)"; // Texto más claro
+                        break;
+                    case EventoEstado.PendienteAdeudado:
+                        estadoClass = "bg-warning text-dark"; // Amarillo/Naranja para adeudado
+                        estadoIcon = "fa-exclamation-triangle";
+                        estadoTexto = "Pendiente (Adeudado)"; // Texto más claro
+                        break;
+                    case EventoEstado.Realizado:
+                        estadoClass = "bg-secondary"; // Gris para ya realizado
+                        estadoIcon = "fa-check";
+                        estadoTexto = "Realizado";
+                        break;
+                    case EventoEstado.Cancelado:
+                        estadoClass = "bg-danger"; // Rojo para cancelado
+                        estadoIcon = "fa-ban";
+                        estadoTexto = "Cancelado";
+                        break;
+                    case EventoEstado.Reprogramado:
+                        estadoClass = "bg-info text-dark"; // Azul claro para reprogramado
+                        estadoIcon = "fa-clock-rotate-left";
+                        estadoTexto = "Reprogramado";
+                        break;
+                        // No necesitamos 'default' si cubrimos todos los casos
+                }
                 <tr>
                     <td>@e.ClienteNombreCompleto</td>
                     <td>@e.Tipo</td>
                     <td>@e.Inicio.ToLongDateString()</td>
-                    <td><span class="badge bg-info text-dark">@e.Estado</span></td>
-                    <td class="text-end">
+                    <td>
+                        <span class="badge @estadoClass">
+                            <i class="fa-solid @estadoIcon me-1"></i> @estadoTexto
+                        </span>
+                    </td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(e.Observaciones))
+                        {
+                            <span title="@e.Observaciones" class="d-inline-block text-truncate" style="max-width: 150px;">
+                                @e.Observaciones
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="text-muted fst-italic">N/A</span>
+                        }
+                    </td>
+
+                    <td class="text-center">
                         <a asp-action="Details" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-info" title="Ver Detalles"><i class="fa-solid fa-eye"></i></a>
                         <a asp-action="Edit" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="fa-solid fa-pen"></i></a>
                     @if (@e.Estado != si_td_gestion_eventos.Models.Enums.EventoEstado.Cancelado) 
@@ -211,6 +265,8 @@
                         {
                             <a asp-action="Reprogramar" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-warning" title="Reprogramar Evento"><i class="fa-solid fa-clock"></i></a>
                         }
+                        <a asp-controller="Pago" asp-action="Create" asp-route-eventoId="@e.EventoId" class="btn btn-sm btn-outline-success" title="Agregar Pago"><i class="fa-solid fa-dollar-sign"></i>
+                        </a>
                     </td>
                 </tr>
             }
