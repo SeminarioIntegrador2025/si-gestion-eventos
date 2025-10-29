@@ -39,6 +39,7 @@ builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepositor
 builder.Services.AddScoped<IClienteService, ClienteService>();
 builder.Services.AddScoped<IEventoService, EventoService>();
 builder.Services.AddScoped<IPagoService, PagoService>();
+builder.Services.AddScoped<IReporteService, ReporteService>();
 
 // Reglas de Negocio (Validaciones complejas)
 builder.Services.AddScoped<IClienteBusinessRules, ClienteBusinessRules>();

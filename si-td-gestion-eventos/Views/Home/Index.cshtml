@@ -1,119 +1,247 @@
-﻿@{
+﻿@using si_td_gestion_eventos.Models.ViewModels
+@{
     ViewData["Title"] = "Inicio";
+    var reportes = ViewBag.Reportes as ReportesVM;
+    var proximosEventos = ViewBag.ProximosEventos as List<EventoVM> ?? new List<EventoVM>();
 }
 <div>
     <div class="container-fluid">
         <div class="d-flex align-items-center justify-content-between mb-3">
             <h1 class="h4 mb-0">Panel general</h1>
             <div class="d-flex gap-2">
+                <a class="btn btn-sm btn-primary" asp-controller="Reporte" asp-action="Index">
+                    <i class="fa-solid fa-chart-line me-1"></i>
+                    Ver reportes completos
+                </a>
             </div>
         </div>
 
-        <!-- KPIs -->
-        <div class="row g-3">
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="card card-kpi p-3">
-                    <div class="card-title">Eventos del mes</div>
-                    <div class="d-flex align-items-baseline gap-2">
-                        <span class="display-6 fw-semibold">12</span>
-                        <span class="text-success small"><i class="fa-solid fa-arrow-up-right me-1"></i>+3</span>
+        @if (reportes != null)
+        {
+            <!-- KPIs -->
+            <div class="row g-3">
+                <!-- Eventos del mes -->
+                <div class="col-12 col-md-6 col-lg-3">
+                    <div class="card card-kpi p-3">
+                        <div class="card-title">Eventos del mes</div>
+                        <div class="d-flex align-items-baseline gap-2">
+                            <span class="display-6 fw-semibold">@reportes.Eventos.EventosEsteMes</span>
+                            @if (reportes.Eventos.CrecimientoPositivo)
+                            {
+                                <span class="text-success small">
+                                    <i class="fa-solid fa-arrow-up-right me-1"></i>
+                                    +@reportes.Eventos.PorcentajeCambioEventos%
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="text-danger small">
+                                    <i class="fa-solid fa-arrow-down-right me-1"></i>
+                                    @reportes.Eventos.PorcentajeCambioEventos%
+                                </span>
+                            }
+                        </div>
+                        <div class="small text-muted">vs. mes anterior (@reportes.Eventos.EventosMesAnterior)</div>
                     </div>
-                    <div class="small text-muted">vs. mes anterior</div>
+                </div>
+
+                <!-- Ingresos del mes -->
+                <div class="col-12 col-md-6 col-lg-3">
+                    <div class="card card-kpi p-3">
+                        <div class="card-title">Ingresos recibidos (UYU)</div>
+                        <div class="d-flex align-items-baseline gap-2">
+                            <span class="display-6 fw-semibold">$ @reportes.Ingresos.TotalIngresosEsteMes.ToString("N0")</span>
+                            @if (reportes.Ingresos.CrecimientoPositivo)
+                            {
+                                <span class="text-success small">
+                                    <i class="fa-solid fa-arrow-up-right me-1"></i>
+                                    +@reportes.Ingresos.PorcentajeCambioIngresos%
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="text-danger small">
+                                    <i class="fa-solid fa-arrow-down-right me-1"></i>
+                                    @reportes.Ingresos.PorcentajeCambioIngresos%
+                                </span>
+                            }
+                        </div>
+                        <div class="small text-muted">Este mes</div>
+                    </div>
+                </div>
+
+                <!-- Adeudos pendientes -->
+                <div class="col-12 col-md-6 col-lg-3">
+                    <div class="card card-kpi p-3">
+                        <div class="card-title">Adeudos pendientes</div>
+                        <div class="display-6 fw-semibold text-warning">$ @reportes.Pagos.TotalAdeudado.ToString("N0")</div>
+                        <div class="small text-muted">@reportes.Pagos.EventosConAdeudo evento(s) adeudado(s)</div>
+                    </div>
+                </div>
+
+                <!-- Clientes activos -->
+                <div class="col-12 col-md-6 col-lg-3">
+                    <div class="card card-kpi p-3">
+                        <div class="card-title">Clientes activos</div>
+                        <div class="display-6 fw-semibold">@reportes.Clientes.ClientesActivos</div>
+                        <div class="small text-muted">
+                            Total: @reportes.Clientes.TotalClientes | 
+                            Promedio: @reportes.Clientes.PromedioEventosPorCliente eventos/cliente
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="card card-kpi p-3">
-                    <div class="card-title">Ingresos (UYU)</div>
-                    <div class="display-6 fw-semibold">$ 10.250</div>
-                    <div class="small text-muted">Últimos 30 días</div>
-                </div>
+        }
+        else
+        {
+            <div class="alert alert-info">
+                <i class="fa-solid fa-info-circle me-2"></i>
+                Cargando información del dashboard...
             </div>
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="card card-kpi p-3">
-                    <div class="card-title">Pagos pendientes</div>
-                    <div class="display-6 fw-semibold">7</div>
-                    <div class="small text-muted">A vencer esta semana</div>
-                </div>
-            </div>
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="card card-kpi p-3">
-                    <div class="card-title">Clientes activos</div>
-                    <div class="display-6 fw-semibold">214</div>
-                    <div class="small text-muted">Base actual</div>
-                </div>
-            </div>
-        </div>
+        }
 
         <!-- Próximos eventos -->
         <div class="card mt-4">
             <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between">
-                    <h2 class="h6 mb-0">Próximos eventos</h2>
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h2 class="h6 mb-0">
+                        <i class="fa-solid fa-calendar-days me-2 text-primary"></i>
+                        Próximos eventos
+                    </h2>
                     <a class="btn btn-sm btn-outline-secondary" asp-controller="Evento" asp-action="Index">
-                        Ver todos
+                        Ver todos <i class="fa-solid fa-arrow-right ms-1"></i>
                     </a>
                 </div>
-                <div class="table-responsive mt-3">
-                    <table class="table align-middle">
-                        <thead>
-                            <tr>
-                                <th>Fecha</th>
-                                <th>Cliente</th>
-                                <th>Tipo</th>
-                                <th>Personas</th>
-                                <th>Estado</th>
-                                <th class="text-end">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Ejemplos; reemplazar por tu modelo -->
-                            <tr>
-                                <td class="table-date">20/10 20:00</td>
-                                <td>Martínez, Ana</td>
-                                <td>Casamiento</td>
-                                <td>120</td>
-                                <td><span class="badge text-bg-warning">Reservado</span></td>
-                                <td class="text-end">
-                                    <a class="btn btn-sm btn-outline-secondary" asp-controller="Evento" asp-action="Details" asp-route-id="1">
-                                        <i class="fa-regular fa-eye"></i>
-                                    </a>
-                                    <a class="btn btn-sm btn-outline-secondary" asp-controller="Evento" asp-action="Edit" asp-route-id="1">
-                                        <i class="fa-regular fa-pen-to-square"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="table-date">28/10 18:00</td>
-                                <td>Pérez, Juan</td>
-                                <td>Cumpleaños</td>
-                                <td>80</td>
-                                <td><span class="badge text-bg-info">Confirmado</span></td>
-                                <td class="text-end">
-                                    <a class="btn btn-sm btn-outline-secondary"><i class="fa-regular fa-eye"></i></a>
-                                    <a class="btn btn-sm btn-outline-secondary"><i class="fa-regular fa-pen-to-square"></i></a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="table-date">02/11 21:00</td>
-                                <td>Gómez, Lucía</td>
-                                <td>Fiesta 15</td>
-                                <td>150</td>
-                                <td><span class="badge text-bg-success">Pagado</span></td>
-                                <td class="text-end">
-                                    <a class="btn btn-sm btn-outline-secondary"><i class="fa-regular fa-eye"></i></a>
-                                    <a class="btn btn-sm btn-outline-secondary"><i class="fa-regular fa-pen-to-square"></i></a>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+
+                @if (proximosEventos.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Cliente</th>
+                                    <th>Tipo</th>
+                                    <th class="text-center">Personas</th>
+                                    <th class="text-center">Estado</th>
+                                    <th class="text-end">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var evento in proximosEventos)
+                                {
+                                    <tr>
+                                        <td class="table-date">
+                                            <strong>@evento.Inicio.ToString("dd/MM")</strong>
+                                            <small class="d-block text-muted">@evento.HoraInicio.ToString(@"hh\:mm")</small>
+                                        </td>
+                                        <td>
+                                            <strong>@evento.ClienteNombreCompleto</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info-subtle text-info">
+                                                @evento.Tipo?.ToString()
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <i class="fa-solid fa-users text-muted me-1"></i>
+                                            @evento.CantidadPersonas
+                                        </td>
+                                        <td class="text-center">
+                                            @switch (evento.Estado)
+                                            {
+                                                case si_td_gestion_eventos.Models.Enums.EventoEstado.PendientePagado:
+                                                    <span class="badge bg-success">Pagado</span>
+                                                    break;
+                                                case si_td_gestion_eventos.Models.Enums.EventoEstado.PendienteAdeudado:
+                                                    <span class="badge bg-warning">Adeudado</span>
+                                                    break;
+                                                case si_td_gestion_eventos.Models.Enums.EventoEstado.Realizado:
+                                                    <span class="badge bg-primary">Realizado</span>
+                                                    break;
+                                                case si_td_gestion_eventos.Models.Enums.EventoEstado.Reprogramado:
+                                                    <span class="badge bg-secondary">Reprogramado</span>
+                                                    break;
+                                                case si_td_gestion_eventos.Models.Enums.EventoEstado.Cancelado:
+                                                    <span class="badge bg-danger">Cancelado</span>
+                                                    break;
+                                                default:
+                                                    <span class="badge bg-secondary">@evento.Estado</span>
+                                                    break;
+                                            }
+                                        </td>
+                                        <td class="text-end">
+                                            <a class="btn btn-sm btn-outline-secondary" 
+                                               asp-controller="Evento" 
+                                               asp-action="Details" 
+                                               asp-route-id="@evento.EventoId"
+                                               title="Ver detalles">
+                                                <i class="fa-regular fa-eye"></i>
+                                            </a>
+                                            <a class="btn btn-sm btn-outline-secondary" 
+                                               asp-controller="Evento" 
+                                               asp-action="Edit" 
+                                               asp-route-id="@evento.EventoId"
+                                               title="Editar">
+                                                <i class="fa-regular fa-pen-to-square"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="fa-solid fa-calendar-xmark fa-3x text-muted mb-3"></i>
+                        <p class="text-muted mb-3">No hay eventos próximos programados</p>
+                        <a class="btn btn-primary" asp-controller="Evento" asp-action="Create">
+                            <i class="fa-solid fa-plus me-2"></i>
+                            Crear primer evento
+                        </a>
+                    </div>
+                }
             </div>
         </div>
-    </div>
 
-
-    <div class="text-center">
-        <h1 class="display-4">Tata David - Fiestas y Eventos</h1>
-        <p><i class="fa-solid fa-hashtag"></i> Redes: <a href="https://www.instagram.com/tata_david_?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="> Instagram</a>.</p>
+        <!-- Información adicional -->
+        <div class="text-center mt-4">
+            <h2 class="h5 mb-2">
+                <i class="fa-solid fa-champagne-glasses me-2 text-primary"></i>
+                Tata David - Fiestas y Eventos
+            </h2>
+            <p class="text-muted">
+                <i class="fa-brands fa-instagram me-1"></i>
+                Síguenos en <a href="https://www.instagram.com/tata_david_?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" class="text-decoration-none">Instagram</a>
+            </p>
+        </div>
     </div>
 </div>
+
+<style>
+    .card-kpi {
+        border-left: 4px solid var(--primary);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card-kpi:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px var(--shadow);
+    }
+
+    .card-kpi .card-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.75rem;
+    }
+
+    .table-date {
+        color: var(--primary);
+        font-weight: 500;
+    }
+</style>
