@@ -115,7 +115,7 @@ namespace si_td_gestion_eventos.Controllers
                 TempData["Error"] = string.Join(", ", result.Errors);
             }
 
-            return RedirectToAction("Details", new { id });
+            return RedirectToAction("Index");
         }
 
         [HttpPost]
@@ -133,7 +133,7 @@ namespace si_td_gestion_eventos.Controllers
                 TempData["Error"] = string.Join(", ", result.Errors);
             }
 
-            return RedirectToAction("Details", new { id });
+            return RedirectToAction("Index");
         }
     }
 }

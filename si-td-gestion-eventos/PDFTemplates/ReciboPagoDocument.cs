@@ -85,14 +85,16 @@ namespace si_td_gestion_eventos.PDFTemplates
             table.Cell().Text("Método de Pago:");
             table.Cell().Text(_pago.Metodo.ToString());
 
-            table.Cell().PaddingTop(10).Text("Monto Pagado:").Bold();
-            table.Cell().PaddingTop(10).Text($"{_pago.Monto:C}").Bold().FontSize(14);
-
             if (!string.IsNullOrEmpty(_pago.Observaciones))
             {
                 table.Cell().Text("Observaciones:");
                 table.Cell().Text(_pago.Observaciones);
             }
+
+            table.Cell().PaddingTop(10).Text("Monto Pagado:").Bold();
+            table.Cell().PaddingTop(10).Text($"{_pago.Monto:C}").Bold().FontSize(14);
+
+            
         });
         //   col.Item().PaddingTop(80).Row(row =>  ESTO ES PARA PONER UN CAMPO PARA FIRMAS PERO TENDRIAMOS QUE PERSISTIR EL ARCHIVO Y NO HACERLO ON DEMAND
         //   {
