@@ -6,16 +6,12 @@ namespace si_td_gestion_eventos.Context
 {
     public class AppDbContext : DbContext
     {
-        // --- AQUÍ ESTÁ EL CONSTRUCTOR QUE FALTA ---
-        // Este constructor recibe las 'options' (como la cadena de conexión)
-        // desde Program.cs y las pasa a la clase base DbContext.
+      
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
-            // No necesita nada adentro
-        }
-        // --- FIN DEL CONSTRUCTOR ---
 
-        // Tus DbSets (Cliente, Evento, etc.)
+        }
+      
         public virtual DbSet<Cliente> Cliente { get; set; }
         public virtual DbSet<Evento> Evento { get; set; }
         public virtual DbSet<Pago> Pago { get; set; }

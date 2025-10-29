@@ -238,6 +238,9 @@ namespace si_td_gestion_eventos.Migrations
                     b.Property<float>("Monto")
                         .HasColumnType("real");
 
+                    b.Property<string>("Observaciones")
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("PagoId");
 
                     b.HasIndex("EventoId");

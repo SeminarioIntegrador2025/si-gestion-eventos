@@ -87,22 +87,28 @@ namespace si_td_gestion_eventos.PDFTemplates
 
             table.Cell().PaddingTop(10).Text("Monto Pagado:").Bold();
             table.Cell().PaddingTop(10).Text($"{_pago.Monto:C}").Bold().FontSize(14);
-        }); 
-        col.Item().PaddingTop(80).Row(row =>
-        {
-            row.RelativeItem().Column(colEmpresa =>
+
+            if (!string.IsNullOrEmpty(_pago.Observaciones))
             {
-                colEmpresa.Item().AlignCenter().Text("_________________________"); 
-                colEmpresa.Item().AlignCenter().Text("Firma Tata David");
-                colEmpresa.Item().AlignCenter().Text("Fiestas y Eventos");
-            });
-            row.RelativeItem().Column(colCliente =>
-            {
-                colCliente.Item().AlignCenter().Text("_________________________"); 
-                colCliente.Item().AlignCenter().Text("Firma Cliente");
-                colCliente.Item().AlignCenter().Text($"{_pago.ClienteNombre}");
-            });
-        }); 
+                table.Cell().Text("Observaciones:");
+                table.Cell().Text(_pago.Observaciones);
+            }
+        });
+        //   col.Item().PaddingTop(80).Row(row =>  ESTO ES PARA PONER UN CAMPO PARA FIRMAS PERO TENDRIAMOS QUE PERSISTIR EL ARCHIVO Y NO HACERLO ON DEMAND
+        //   {
+        //       row.RelativeItem().Column(colEmpresa =>
+        //       {
+        //                colEmpresa.Item().AlignCenter().Text("_________________________"); 
+        //        colEmpresa.Item().AlignCenter().Text("Firma Tata David");
+        //       colEmpresa.Item().AlignCenter().Text("Fiestas y Eventos");
+        //  });
+        //       row.RelativeItem().Column(colCliente =>
+        //  {
+        //     colCliente.Item().AlignCenter().Text("_________________________"); 
+        //     colCliente.Item().AlignCenter().Text("Firma Cliente");
+        //      colCliente.Item().AlignCenter().Text($"{_pago.ClienteNombre}");
+        //  });
+        //  }); 
     });
 
 

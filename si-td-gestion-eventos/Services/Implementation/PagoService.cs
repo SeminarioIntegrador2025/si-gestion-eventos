@@ -63,7 +63,7 @@ namespace si_td_gestion_eventos.Services.Implementation
 
                 pvm.EventoDescripcion = $"Evento {evento?.Tipo} - {evento?.Inicio:dd/MM/yyyy}"; // '$"{...}"' es interpolación de strings. '?' evita error si evento es null. ':dd/MM/yyyy' formatea la fecha.
                 pvm.ClienteNombre = evento?.ClienteNombreCompleto;
-                pvm.RutaArchivoExistente = pagos.FirstOrDefault(p => p.PagoId == pvm.PagoId)?.ComprobanteExterno?.RutaArchivo; // 'FirstOrDefault' busca el primero que coincida. '?' evita error si no hay comprobante.
+                pvm.RutaArchivoExistente = pagos.FirstOrDefault(p => p.PagoId == pvm.PagoId)?.ComprobanteExterno?.RutaArchivo;
             }
             return pagosVM;
         }
