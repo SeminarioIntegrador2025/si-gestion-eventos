@@ -14,23 +14,43 @@ namespace si_td_gestion_eventos.Services.Implementation
             _context = context;
         }
 
-        public async Task<bool> IsDateRangeAvailableAsync(DateTime inicio, DateTime fin, TimeSpan horaInicio, TimeSpan horaFin, int? excludeEventoId = null)
+
+    public async Task<bool> IsDateRangeAvailableAsync(DateTime inicio, DateTime fin, TimeSpan horaInicio, TimeSpan horaFin, int? excludeEventoId = null)
+    {
+
+        var inicioNuevo = inicio.Date + horaInicio;
+        var finNuevo = fin.Date + horaFin;
+
+      
+        var query = _context.Evento.AsNoTracking().Where(e => e.Estado != EventoEstado.Cancelado);
+
+        if (excludeEventoId.HasValue)
         {
-            var inicioNuevo = inicio.Date + horaInicio;
-            var finNuevo = fin.Date + horaFin;
-
-            var query = _context.Evento.AsNoTracking().Where(e => e.Estado != EventoEstado.Cancelado);
-
-            if (excludeEventoId.HasValue)
-            {
-                query = query.Where(e => e.EventoId != excludeEventoId.Value);
-            }
-            bool hayConflicto = await query.AnyAsync(e =>
-            (inicioNuevo < (e.Fin.Date + e.HoraFin)) && (finNuevo > (e.Inicio.Date + e.HoraInicio))); 
-            return !hayConflicto;
+            query = query.Where(e => e.EventoId != excludeEventoId.Value);
         }
 
-        public async Task<bool> CanCancelEventoAsync(int eventoId)
+        var potentialConflicts = await query.Where(e =>
+                inicio.Date <= e.Fin.Date && 
+                fin.Date >= e.Inicio.Date    
+            )
+            .ToListAsync(); 
+
+        foreach (var e in potentialConflicts)
+        {
+          
+            var inicioExistente = e.Inicio.Date + e.HoraInicio;
+            var finExistente = e.Fin.Date + e.HoraFin;
+
+            if (inicioNuevo < finExistente && finNuevo > inicioExistente)
+            {
+           
+                return false;
+            }
+        }
+        return true; 
+    }
+
+    public async Task<bool> CanCancelEventoAsync(int eventoId)
         {
             var evento = await _context.Evento.FirstOrDefaultAsync(e => e.EventoId == eventoId);
             if (evento == null) return false;
