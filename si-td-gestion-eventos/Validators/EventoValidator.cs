@@ -15,7 +15,9 @@ namespace si_td_gestion_eventos.Validators
         {
             _businessRules = businessRules;
 
-            // ========== REGLAS COMUNES (aplican a Create y Edit) ==========
+            // ==========================================================
+            // REGLAS COMUNES (Aplican siempre: Create y Edit)
+            // ==========================================================
 
             // --- Cliente ---
             RuleFor(e => e.ClienteId)
@@ -25,23 +27,26 @@ namespace si_td_gestion_eventos.Validators
 
             // --- Detalles del Evento ---
             RuleFor(e => e.Tipo)
-                .NotEmpty().WithMessage("Debe seleccionar un tipo de evento.");
+                .IsInEnum().WithMessage("Debe seleccionar un tipo de evento válido."); // IsInEnum es más robusto que NotEmpty para enums
 
             RuleFor(e => e.CantidadPersonas)
                 .GreaterThan(0).WithMessage("La cantidad de personas debe ser mayor a cero.")
-                .LessThanOrEqualTo(500).WithMessage("La cantidad de personas no puede exceder 500.")
+                .LessThanOrEqualTo(400).WithMessage("La cantidad de personas no puede exceder 400.")
+                // La validación de entero es implícita si el tipo en VM es int, pero Must es una doble verificación
                 .Must(c => c % 1 == 0).WithMessage("La cantidad de personas debe ser un número entero.");
 
-            // --- Fechas y Horas (presencia + coherencia básica) ---
+            // --- Fechas y Horas (Presencia y Coherencia Básica) ---
             RuleFor(x => x.FechaContrato)
                 .NotEmpty().WithMessage("La fecha del contrato es obligatoria.");
+            // La regla LessThanOrEqualTo(Today) se movió al RuleSet "Create" porque al editar podrías ver un contrato viejo.
 
             RuleFor(x => x.Inicio)
                 .NotEmpty().WithMessage("La fecha de inicio es obligatoria.");
+            // La regla de que sea futura se movió al RuleSet "Create".
 
             RuleFor(x => x.Fin)
                 .NotEmpty().WithMessage("La fecha de fin es obligatoria.")
-                .GreaterThanOrEqualTo(x => x.Inicio)
+                .GreaterThanOrEqualTo(x => x.Inicio) // Fin >= Inicio siempre debe cumplirse
                 .WithMessage("La fecha de fin no puede ser anterior a la fecha de inicio.");
 
             RuleFor(x => x.HoraInicio)
@@ -49,20 +54,18 @@ namespace si_td_gestion_eventos.Validators
 
             RuleFor(x => x.HoraFin)
                 .NotEmpty().WithMessage("La hora de fin es obligatoria.")
+                // Si el evento dura solo un día, la hora de fin debe ser posterior a la de inicio
                 .GreaterThan(x => x.HoraInicio)
-                .When(x => x.Fin.Date == x.Inicio.Date)
+                .When(x => x.Fin.Date == x.Inicio.Date, ApplyConditionTo.CurrentValidator) // ApplyConditionTo es más explícito
                 .WithMessage("Si es el mismo día, la hora de fin debe ser posterior a la hora de inicio.");
 
-            // --- Validaciones de rango y disponibilidad (negocio/BD) ---
-            RuleFor(x => x)
-                .MustAsync(async (evento, ct) =>
-                    await _businessRules.IsValidDateRangeAsync(
-                        evento.Inicio, evento.Fin, evento.HoraInicio, evento.HoraFin))
-                .WithMessage("El rango de fechas y horarios no es válido.")
-                .MustAsync(async (evento, ct) =>
-                    await _businessRules.IsDateRangeAvailableAsync(
-                        evento.Inicio, evento.Fin, evento.HoraInicio, evento.HoraFin,
-                        evento.EventoId == 0 ? null : evento.EventoId))
+            // --- Validaciones de Rango y Disponibilidad (Reglas de Negocio / BD) ---
+            // Valida que el rango Inicio/Fin/HoraInicio/HoraFin sea lógicamente posible y esté disponible
+            RuleFor(x => x) // Valida el objeto completo
+                .Cascade(CascadeMode.Stop) // Si falla la primera, no sigue con la segunda
+                .MustAsync(async (evento, ct) => await _businessRules.IsValidDateRangeAsync(evento.Inicio, evento.Fin, evento.HoraInicio, evento.HoraFin))
+                .WithMessage("El rango de fechas y horarios no es válido (ej: duración negativa o excesiva).")
+                .MustAsync(async (evento, ct) => await _businessRules.IsDateRangeAvailableAsync(evento.Inicio, evento.Fin, evento.HoraInicio, evento.HoraFin, evento.EventoId == 0 ? null : evento.EventoId))
                 .WithMessage("Ya existe otro evento programado en este horario. Por favor, seleccione otra fecha u horario.");
 
             // --- Costos y Montos ---
@@ -76,9 +79,9 @@ namespace si_td_gestion_eventos.Validators
 
             RuleFor(x => x.MontoAireAcondicionado)
                 .GreaterThanOrEqualTo(0).WithMessage("El monto del aire acondicionado no puede ser negativo.")
-                .When(x => x.MontoAireAcondicionado.HasValue);
+                .When(x => x.MontoAireAcondicionado.HasValue); // Solo valida si se ingresó un valor
 
-            // --- Responsable: NOMBRE ---
+            // --- Responsable del Salón (Validaciones detalladas) ---
             RuleFor(x => x.ResponsableNombre)
                 .NotEmpty().WithMessage("El nombre del responsable es obligatorio.")
                 .Length(2, 100).WithMessage("El nombre del responsable debe tener entre 2 y 100 caracteres.")
@@ -86,56 +89,64 @@ namespace si_td_gestion_eventos.Validators
                 .Must(NotContainConsecutiveSpaces).WithMessage("El nombre no puede contener espacios consecutivos.")
                 .Must(NotStartOrEndWithSpace).WithMessage("El nombre no puede comenzar o terminar con espacios.");
 
-            // --- Responsable: TELÉFONO ---
             RuleFor(x => x.ResponsableTelefono)
                 .NotEmpty().WithMessage("El teléfono del responsable es obligatorio.")
                 .Length(8, 30).WithMessage("El teléfono debe tener entre 8 y 30 caracteres.")
-                .Must(BeValidPhoneNumber).WithMessage("El teléfono debe contener solo números, espacios, guiones, paréntesis o '+'.")
+                .Must(BeValidPhoneNumber).WithMessage("El teléfono debe contener solo números y caracteres válidos (+, -, (, ), espacio).")
                 .Must(HaveMinimumDigits).WithMessage("El teléfono debe contener al menos 8 dígitos.");
 
-            // --- Responsable: CÉDULA ---
             RuleFor(x => x.ResponsableCedula)
                 .NotEmpty().WithMessage("La cédula del responsable es obligatoria.")
-                .Length(7, 30).WithMessage("La cédula debe tener entre 7 y 30 caracteres.")
-                .Must(BeValidCedulaFormat).WithMessage("La cédula debe tener formato válido (ej: 1.234.567-8 o 12345678).");
+                // .Length(7, 30).WithMessage("La cédula debe tener entre 7 y 30 caracteres.") // El formato ya valida la longitud implícitamente
+                .Must(BeValidCedulaFormat).WithMessage("La cédula debe tener formato válido (ej: 1.234.567-8 o solo números 7-8 dígitos).");
 
-            // ========== RULESET: CREATE (validaciones específicas de creación) ==========
+
+            // ==========================================================
+            // RULESET: CREATE (Validaciones *adicionales* solo al crear)
+            // ==========================================================
             RuleSet("Create", () =>
             {
-                // Fecha del contrato no futura
+                // -- REGLA REDUNDANTE ELIMINADA --
+                // La regla Fin >= Inicio ya está en las comunes.
+                // Fecha del contrato no puede ser futura al crear
                 RuleFor(x => x.FechaContrato)
                     .LessThanOrEqualTo(DateTime.Today)
                     .WithMessage("La fecha del contrato no puede ser futura.");
 
-                // Inicio debe ser futuro (regla de negocio)
+                // Fecha de inicio debe ser futura al crear (puede ser hoy)
                 RuleFor(x => x.Inicio)
-                    .MustAsync(async (inicio, ct) => await _businessRules.IsEventoInFutureAsync(inicio))
-                    .WithMessage("La fecha de inicio debe ser futura.");
+                    .GreaterThanOrEqualTo(DateTime.Today) // Permite crear eventos para hoy
+                    .WithMessage("La fecha de inicio debe ser hoy o una fecha futura.");
+                // Nota: La regla MustAsync(IsEventoInFutureAsync) que tenías antes podría ser demasiado estricta si quieres permitir crear eventos el mismo día. GreaterThanOrEqualTo(Today) es más común.
 
-                // Si es hoy, hora de inicio no puede ser anterior a la hora actual
+                // Si es hoy, la hora de inicio no puede ser pasada
                 RuleFor(x => x.HoraInicio)
-                    .GreaterThanOrEqualTo(_ => DateTime.Now.TimeOfDay)
-                    .When(x => x.Inicio.Date == DateTime.Today)
+                    .GreaterThanOrEqualTo(DateTime.Now.TimeOfDay)
+                    .When(x => x.Inicio.Date == DateTime.Today, ApplyConditionTo.CurrentValidator)
                     .WithMessage("Si el evento es hoy, la hora de inicio no puede ser anterior a la hora actual.");
 
-                // Monto Reserva validado contra reglas de negocio (porcentaje/mínimos, etc.)
-                RuleFor(x => x)
-                    .MustAsync(async (evento, ct) =>
-                        await _businessRules.IsReservationAmountValidAsync(evento.MontoReserva, evento.CostoAlquiler))
-                    .WithMessage("El monto de reserva no es válido en relación al costo del alquiler.");
+                // Validación específica del Monto de Reserva al crear
+                RuleFor(x => x) // Valida el objeto completo
+                    .MustAsync(async (evento, ct) => await _businessRules.IsReservationAmountValidAsync(evento.MontoReserva, evento.CostoAlquiler))
+                    .WithMessage("El monto de reserva no cumple con el mínimo requerido para el costo del alquiler.");
             });
 
-            // ========== RULESET: EDIT (validaciones específicas de edición) ==========
+            // ==========================================================
+            // RULESET: EDIT (Validaciones *adicionales* solo al editar)
+            // ==========================================================
             RuleSet("Edit", () =>
             {
-                // En edición NO forzamos que Inicio sea futuro (podrías editar otros campos),
-                // pero mantenemos coherencias ya cubiertas en las reglas comunes (rango, disponibilidad, etc.)
+                // Al editar, NO forzamos que Inicio sea futuro (podrías estar editando otros campos de un evento pasado).
+                // Las reglas comunes ya cubren la coherencia de fechas y disponibilidad si se cambian las fechas/horas.
+                // Podrías agregar reglas específicas aquí si fueran necesarias, por ejemplo:
+                // RuleFor(x => x.AlgunCampoEditable).NotEmpty()...
             });
         }
 
-        // ===== Helpers para validación del Responsable =====
-        
-        private bool BeOnlyLettersAndSpaces(string value)
+
+// ===== Helpers para validación del Responsable =====
+
+private bool BeOnlyLettersAndSpaces(string value)
         {
             if (string.IsNullOrWhiteSpace(value)) return false;
             // Permite letras (incluidas tildes), espacios, apóstrofes y guiones (para nombres compuestos)

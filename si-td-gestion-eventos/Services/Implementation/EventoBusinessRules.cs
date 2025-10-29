@@ -16,23 +16,18 @@ namespace si_td_gestion_eventos.Services.Implementation
 
         public async Task<bool> IsDateRangeAvailableAsync(DateTime inicio, DateTime fin, TimeSpan horaInicio, TimeSpan horaFin, int? excludeEventoId = null)
         {
+            var inicioNuevo = inicio.Date + horaInicio;
+            var finNuevo = fin.Date + horaFin;
+
             var query = _context.Evento.AsNoTracking().Where(e => e.Estado != EventoEstado.Cancelado);
 
             if (excludeEventoId.HasValue)
             {
                 query = query.Where(e => e.EventoId != excludeEventoId.Value);
             }
-
-            return !await query.AnyAsync(e => 
-                // Verificar solapamiento de fechas
-                (inicio.Date <= e.Fin.Date && fin.Date >= e.Inicio.Date) &&
-                // Si es el mismo día, verificar solapamiento de horarios
-                (inicio.Date != e.Inicio.Date || (horaInicio < e.HoraFin && horaFin > e.HoraInicio)) &&
-                (fin.Date != e.Fin.Date || (horaInicio < e.HoraFin && horaFin > e.HoraInicio))
-            );
-
-
-            
+            bool hayConflicto = await query.AnyAsync(e =>
+            (inicioNuevo < (e.Fin.Date + e.HoraFin)) && (finNuevo > (e.Inicio.Date + e.HoraInicio))); 
+            return !hayConflicto;
         }
 
         public async Task<bool> CanCancelEventoAsync(int eventoId)
@@ -49,8 +44,6 @@ namespace si_td_gestion_eventos.Services.Implementation
                 .FirstOrDefaultAsync(e => e.EventoId == eventoId);
 
             if (evento == null) return false;
-
-            // No se puede modificar si está cancelado o ya pasó
             return evento.Estado != EventoEstado.Cancelado && 
                    evento.Inicio > DateTime.Now.AddHours(48); 
         }

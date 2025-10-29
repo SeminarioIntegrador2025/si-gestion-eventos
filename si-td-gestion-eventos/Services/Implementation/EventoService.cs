@@ -18,13 +18,16 @@ namespace si_td_gestion_eventos.Services.Implementation
         private readonly IValidator<EventoVM> _validator;
         private readonly IEventoBusinessRules _businessRules;
         private readonly IMapper _mapper;
+        private readonly IGenericRepository<Pago> _pagoRepository;
 
         public EventoService(
             IGenericRepository<Evento> eventoRepository,
+            IGenericRepository<Pago> pagoRepository,
             IValidator<EventoVM> validator,
             IEventoBusinessRules businessRules,
             IMapper mapper)
         {
+            _pagoRepository = pagoRepository;
             _eventoRepository = eventoRepository;
             _validator = validator;
             _businessRules = businessRules;
@@ -127,6 +130,14 @@ namespace si_td_gestion_eventos.Services.Implementation
                 return ServiceResult<EventoVM>.FailureResult(errors);
             }
 
+            bool isAvailable = await _businessRules.IsDateRangeAvailableAsync(
+            eventoVM.Inicio, eventoVM.Fin, eventoVM.HoraInicio, eventoVM.HoraFin, null);
+
+            if (!isAvailable)
+            {
+                return ServiceResult<EventoVM>.FailureResult("El horario seleccionado ya no está disponible. Por favor, intente con otra fecha u horario.");
+            }
+
             try
             {
                 var evento = _mapper.Map<Evento>(eventoVM);
@@ -134,10 +145,15 @@ namespace si_td_gestion_eventos.Services.Implementation
 
                 await _eventoRepository.AddAsync(evento);
                 await _eventoRepository.SaveChangesAsync();
+                await _pagoRepository.SaveChangesAsync();
 
                 var eventoCreado = await _eventoRepository.GetByIdWithIncludesAsync(evento.EventoId, e => e.Cliente);
                 var eventoVM_Creado = _mapper.Map<EventoVM>(eventoCreado);
-
+                
+                if (eventoCreado == null)
+                {
+                    return ServiceResult<EventoVM>.FailureResult("Error al recuperar el evento recién creado.");
+                }
                 return ServiceResult<EventoVM>.SuccessResult(eventoVM_Creado, "Evento creado exitosamente.");
             }
             catch (Exception ex)
