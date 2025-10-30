@@ -406,7 +406,7 @@ namespace si_td_gestion_eventos.Services.Implementation
 
         public async Task<ServiceResult<EventoVM>> CreateEventWithPaymentAsync(EventoVM eventoVM, PagoReservaVM pagoVM)
         {
-            // 1. Validar el EventoVM (igual que en tu CreateAsync)
+            // 1. Validar el EventoVM (sin cambios)
             var validationResult = await _validator.ValidateAsync(eventoVM, options =>
                 options.IncludeRuleSets("Create"));
 
@@ -416,7 +416,7 @@ namespace si_td_gestion_eventos.Services.Implementation
                 return ServiceResult<EventoVM>.FailureResult(errors);
             }
 
-            // 2. Validar Reglas de Negocio (igual que en tu CreateAsync)
+            // 2. Validar Reglas de Negocio (sin cambios)
             bool isAvailable = await _businessRules.IsDateRangeAvailableAsync(
                 eventoVM.Inicio, eventoVM.Fin, eventoVM.HoraInicio, eventoVM.HoraFin, null);
 
@@ -425,24 +425,13 @@ namespace si_td_gestion_eventos.Services.Implementation
                 return ServiceResult<EventoVM>.FailureResult("El horario seleccionado ya no está disponible.");
             }
 
-            // --- LÓGICA DE TRANSACCIÓN ---
-            string urlComprobante = string.Empty;
+            // --- LÓGICA DE TRANSACCIÓN MODIFICADA ---
+            string urlComprobante = string.Empty; // Para el 'catch'
             await using (var transaction = await _context.Database.BeginTransactionAsync())
             {
                 try
                 {
-                    // 3. Guardar el archivo comprobante
-                    urlComprobante = await _fileStorageService.GuardarArchivoAsync(
-                        pagoVM.ArchivoComprobante,
-                        "uploads/comprobantes" // Carpeta de destino
-                    );
-
-                    if (string.IsNullOrEmpty(urlComprobante))
-                    {
-                        return ServiceResult<EventoVM>.FailureResult("Ocurrió un error al guardar el archivo comprobante.");
-                    }
-
-                    // 4. Crear y Guardar el Evento
+                    // 3. Crear y Guardar el Evento (SIN CAMBIOS)
                     var evento = _mapper.Map<Evento>(eventoVM);
                     if (eventoVM.MontoReserva >= eventoVM.CostoAlquiler)
                     {
@@ -456,49 +445,79 @@ namespace si_td_gestion_eventos.Services.Implementation
                     await _eventoRepository.AddAsync(evento);
                     await _eventoRepository.SaveChangesAsync(); // <-- Guardamos para obtener el Evento.Id
 
-                    // 5. Crear y Guardar el Pago
+                    // 4. Validar y Crear el Pago (SIN CAMBIOS, usa la lógica de prefijo)
+                    const string prefijoObservacion = "Por Reserva";
+                    string observacionesFinales = pagoVM.Observaciones;
+
+                    if (string.IsNullOrWhiteSpace(observacionesFinales))
+                    {
+                        observacionesFinales = prefijoObservacion;
+                    }
+                    else if (!observacionesFinales.StartsWith(prefijoObservacion, StringComparison.OrdinalIgnoreCase))
+                    {
+                        observacionesFinales = $"{prefijoObservacion} - {observacionesFinales}";
+                    }
+
                     var pago = new Pago
                     {
-                        EventoId = evento.EventoId, // <-- Se asigna el ID del evento recién creado
-                        Monto = pagoVM.Monto,
-                        Fecha = pagoVM.Fecha,
-                        Observaciones = pagoVM.Observaciones,
+                        EventoId = evento.EventoId,
+                        Monto = (float)eventoVM.MontoReserva,
+                        Fecha = eventoVM.FechaContrato,
+                        Observaciones = observacionesFinales,
                         Metodo = pagoVM.Metodo
-                        // Aún no tenemos el ComprobanteExternoId
+                        // El ComprobanteExternoId es null por ahora
                     };
 
                     await _pagoRepository.AddAsync(pago);
                     await _pagoRepository.SaveChangesAsync(); // <-- Guardamos para obtener el Pago.Id
 
-                    // 6. Crear y Guardar el ComprobanteExterno
-                    var comprobante = new ComprobanteExterno
-                    {
-                        NombreArchivo = pagoVM.ArchivoComprobante.FileName,
-                        RutaArchivo = urlComprobante,
-                        FechaComprobante = DateTime.UtcNow,
-                        TipoArchivo = ConvertExtensionToTipoArchivo(pagoVM.ArchivoComprobante.ContentType),
-                        Referencia = null,
-                        PagoId = pago.PagoId,
-                        Pago = pago
-                    };
 
-                    await _comprobanteRepository.AddAsync(comprobante);
-                    await _comprobanteRepository.SaveChangesAsync(); // <-- Guardamos el comprobante
+                    // --- INICIO DE LA LÓGICA CONDICIONAL (EL CAMBIO) ---
 
-                    // 7. (Opcional pero recomendado) Actualizar el Pago con el Id del Comprobante
-                    // para tener la referencia en ambas direcciones
-                    if (pago.ComprobanteExternoId == null) // (Tu entidad Pago tiene 'ComprobanteExternoId?')
+                    // 5. SI (y solo si) el usuario subió un archivo, lo procesamos
+                    if (pagoVM.ArchivoComprobante != null && pagoVM.ArchivoComprobante.Length > 0)
                     {
-                        // Si tu entidad Pago tiene 'ComprobanteExternoId', descomenta estas líneas:
-                        // pago.ComprobanteExternoId = comprobante.ComprobanteExternoId;
-                        // _pagoRepository.Update(pago);
-                        // await _pagoRepository.SaveChangesAsync();
+                        // 5a. Guardar el archivo en el disco
+                        urlComprobante = await _fileStorageService.GuardarArchivoAsync(
+                            pagoVM.ArchivoComprobante,
+                            "uploads/comprobantes"
+                        );
+
+                        if (string.IsNullOrEmpty(urlComprobante))
+                        {
+                            // Si el usuario subió un archivo PERO falló al guardar,
+                            // debemos revertir todo.
+                            throw new InvalidOperationException("Se adjuntó un archivo, pero ocurrió un error al guardarlo.");
+                        }
+
+                        // 5b. Crear y Guardar el ComprobanteExterno
+                        // (Esto lanzará una excepción si el tipo de archivo es inválido,
+                        // lo cual es correcto y será capturado por el 'catch')
+                        var comprobante = new ComprobanteExterno
+                        {
+                            NombreArchivo = pagoVM.ArchivoComprobante.FileName,
+                            RutaArchivo = urlComprobante,
+                            FechaComprobante = DateTime.UtcNow,
+                            TipoArchivo = ConvertExtensionToTipoArchivo(pagoVM.ArchivoComprobante.FileName),
+                            Referencia = null,
+                            PagoId = pago.PagoId,
+                            Pago = pago
+                        };
+
+                        await _comprobanteRepository.AddAsync(comprobante);
+                        await _comprobanteRepository.SaveChangesAsync();
+
+                        // 5c. (Opcional) Actualizar el Pago con el Id del Comprobante
+                        pago.ComprobanteExternoId = comprobante.ComprobanteExternoId;
+                        _pagoRepository.Update(pago);
+                        await _pagoRepository.SaveChangesAsync();
                     }
+                    // --- FIN DE LA LÓGICA CONDICIONAL ---
 
-                    // 8. Si todo salió bien, confirmar la transacción
+                    // 6. Si todo salió bien, confirmar la transacción
                     await transaction.CommitAsync();
 
-                    // 9. Devolver el resultado exitoso
+                    // 7. Devolver el resultado exitoso (sin cambios)
                     var eventoCreado = await _eventoRepository.GetByIdWithIncludesAsync(evento.EventoId, e => e.Cliente);
                     var eventoVM_Creado = _mapper.Map<EventoVM>(eventoCreado);
 
@@ -506,16 +525,17 @@ namespace si_td_gestion_eventos.Services.Implementation
                 }
                 catch (Exception ex)
                 {
-                    // 10. Si algo falló, revertir la transacción
+                    // 8. Rollback (sin cambios)
                     await transaction.RollbackAsync();
 
-                    // Borrar el archivo que se subió
+                    // Borrar el archivo SOLO SI se llegó a guardar
                     if (!string.IsNullOrEmpty(urlComprobante))
                     {
                         await _fileStorageService.BorrarArchivoAsync(urlComprobante);
                     }
 
-                    return ServiceResult<EventoVM>.FailureResult($"Ocurrió un error inesperado en la transacción: {ex.Message}");
+                    // Devolvemos el mensaje de error (ej. "Tipo de archivo no permitido...")
+                    return ServiceResult<EventoVM>.FailureResult($"Ocurrió un error: {ex.Message}");
                 }
             }
         }

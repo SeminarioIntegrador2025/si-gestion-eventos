@@ -16,7 +16,7 @@ namespace si_td_gestion_eventos.Models.ViewModels
         [DataType(DataType.Date)]
         public DateTime Fecha { get; set; }
 
-        public string Observaciones { get; set; }
+        public string? Observaciones { get; set; }
 
 
         // --- Campos a Rellenar por el Usuario ---
@@ -25,8 +25,7 @@ namespace si_td_gestion_eventos.Models.ViewModels
         [Required(ErrorMessage = "Debe seleccionar un método de pago.")]
         public MetodoPago Metodo { get; set; } 
 
-        [Display(Name = "Comprobante de Pago")]
-        [Required(ErrorMessage = "Debe adjuntar un comprobante.")]
-        public IFormFile ArchivoComprobante { get; set; } 
+        [Display(Name = "Comprobante Externo de Pago")]
+        public IFormFile? ArchivoComprobante { get; set; } 
     }
 }

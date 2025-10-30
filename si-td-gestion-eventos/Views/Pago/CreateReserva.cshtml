@@ -14,19 +14,15 @@
 
             <div asp-validation-summary="All" class="text-danger mb-3"></div>
 
-            <fieldset disabled class="mb-3">
+            <fieldset class="mb-3">
                 <legend style="font-size: 1.1em;">Datos de la Reserva (Bloqueados)</legend>
                 <div class="form-group mb-2">
                     <label asp-for="Monto" class="control-label"></label>
-                    <input asp-for="Monto" class="form-control" />
+                    <input asp-for="Monto" class="form-control" readonly />
                 </div>
                 <div class="form-group mb-2">
                     <label asp-for="Fecha" class="control-label"></label>
-                    <input asp-for="Fecha" class="form-control" />
-                </div>
-                <div class="form-group mb-2">
-                    <label asp-for="Observaciones" class="control-label"></label>
-                    <input asp-for="Observaciones" class="form-control" />
+                    <input asp-for="Fecha" class="form-control" readonly />
                 </div>
             </fieldset>
 
@@ -39,10 +35,13 @@
                     </select>
                     <span asp-validation-for="Metodo" class="text-danger"></span>
                 </div>
+                <div class="form-group mb-2">
+                    <label asp-for="Observaciones" class="control-label"></label>
+                    <input asp-for="Observaciones" type="text" class="form-control" />
+                </div>
                 <div class="form-group mb-3">
                     <label asp-for="ArchivoComprobante" class="control-label"></label>
                     <input asp-for="ArchivoComprobante" type="file" class="form-control" />
-                    <span asp-validation-for="ArchivoComprobante" class="text-danger"></span>
                 </div>
             </fieldset>
 
@@ -62,15 +61,10 @@
 
     <script>
         document.getElementById("btnCancelar").addEventListener("click", function(e) {
-            // Prevenir la navegación inmediata
             e.preventDefault();
-
-            // Esta es la alerta que pediste al principio
             if (confirm("Si cancela, se perderán los datos del evento y no podrá darse de alta. ¿Está seguro?")) {
-                // Si confirma, redirigir a la acción de cancelar
                 window.location.href = this.href;
             }
-            // Si no confirma, no hace nada y se queda en la página
         });
     </script>
 }
