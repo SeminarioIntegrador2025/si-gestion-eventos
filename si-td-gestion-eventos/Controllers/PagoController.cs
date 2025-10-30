@@ -1,6 +1,7 @@
 ﻿
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering; // Para SelectList
+using Newtonsoft.Json;
 using si_td_gestion_eventos.Models.Enums;  // Para los KPIs
 using si_td_gestion_eventos.Models.ViewModels;
 using si_td_gestion_eventos.Services.Contracts;
@@ -71,27 +72,24 @@ namespace si_td_gestion_eventos.Controllers
             return View(pagos);
         }
 
-        // --- MÉTODO CREATE (GET - MODIFICADO) ---
+        // --- MÉTODO CREATE (GET) ---
         // Maneja /Pago/Create Y /Pago/Create?eventoId=5
         public async Task<IActionResult> Create(int? eventoId)
         {
             var pagoVM = new PagoVM
             {
-                // Usamos FechaPago por consistencia (tu snippet original usaba 'Fecha')
+    
                 Fecha = DateTime.Now
             };
 
             if (eventoId.HasValue)
             {
-                // MODO 1: Se crea desde un evento específico
                 pagoVM.EventoId = eventoId.Value;
-                // Pasamos el ID para el botón "Cancelar"
+
                 ViewData["EventoId"] = eventoId.Value;
             }
             else
             {
-                // MODO 2: Se crea desde la página global
-                // (Este es tu "getEventosParaDropdown")
                 ViewBag.Eventos = await _eventoService.GetEventosAdeudadosParaDropdownAsync();
             }
 
@@ -103,19 +101,14 @@ namespace si_td_gestion_eventos.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(PagoVM pagoVM)
         {
-            // 1. Validación del Modelo (Tu línea 107)
+
             if (!ModelState.IsValid)
             {
-                // Si la validación falla, recargamos el dropdown
                 await PrepararDropdownEventosAsync(pagoVM.EventoId); // (Llama al helper)
                 return View(pagoVM);
             }
 
-            // 2. Llama al servicio (Tu línea 117)
             var result = await _pagoService.CreateAsync(pagoVM);
-
-            // 3. Verifica el resultado del servicio
-            // Asumiendo que tu ServiceResult tiene la propiedad 'Success' (tal como en tu foto)
             if (result.Success)
             {
                 TempData["SuccessMessage"] = result.Message;
@@ -123,14 +116,12 @@ namespace si_td_gestion_eventos.Controllers
             }
             else
             {
-                // --- ESTE ES EL CÓDIGO QUE TE FALTA (Arregla CS0161) ---
                 // Falla del servicio. Agrega los errores.
                 foreach (var error in result.Errors)
                 {
                     ModelState.AddModelError(string.Empty, error);
                 }
 
-                // Recargamos el dropdown, igual que en el fallo de ModelState
                 await PrepararDropdownEventosAsync(pagoVM.EventoId);
                 return View(pagoVM);
             }
@@ -159,6 +150,102 @@ namespace si_td_gestion_eventos.Controllers
                 ViewBag.Eventos = await _eventoService.GetEventosAdeudadosParaDropdownAsync();
             }
         }
+        // GET: Pago/CreateReserva (Llamado desde EventoController)
+        [HttpGet]
+        public IActionResult CreateReserva()
+        {
+            if (TempData["PendingPaymentDetails"] is not string paymentJson)
+            {
+
+                TempData["Error"] = "Sesión expirada. Inicie de nuevo.";
+                return RedirectToAction("Create", "Evento");
+            }
+
+            var pagoVm = JsonConvert.DeserializeObject<PagoReservaVM>(paymentJson);
+
+     
+            TempData.Keep("PendingEvent");
+            TempData.Keep("PendingPaymentDetails");
+
+            return View(pagoVm);
+        }
+
+        // POST: Pago/CreateReserva
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateReserva(PagoReservaVM pagoVm)
+        {
+
+            if (TempData["PendingEvent"] is not string eventJson)
+            {
+               
+                TempData["Error"] = "La sesión ha expirado. Por favor, intente crear el evento de nuevo.";
+                return RedirectToAction("Create", "Evento");
+            }
+
+
+            if (TempData["PendingPaymentDetails"] is not string paymentJson)
+            {
+                TempData["Error"] = "Sesión expirada. Inicie de nuevo.";
+                return RedirectToAction("Create", "Evento");
+            }
+
+            var eventoVm = JsonConvert.DeserializeObject<EventoVM>(eventJson);
+            var originalPagoVm = JsonConvert.DeserializeObject<PagoReservaVM>(paymentJson);
+
+            if (!ModelState.IsValid)
+            {
+                pagoVm.Monto = originalPagoVm.Monto;
+                pagoVm.Fecha = originalPagoVm.Fecha;
+                pagoVm.Observaciones = originalPagoVm.Observaciones;
+
+                TempData.Keep("PendingEvent");
+                TempData.Keep("PendingPaymentDetails");
+
+                return View(pagoVm); 
+            }
+
+            var result = await _eventoService.CreateEventWithPaymentAsync(eventoVm, pagoVm);
+
+            if (result.Success)
+            {
+                TempData["Ok"] = result.Message;
+                return RedirectToAction("Index", "Evento");
+            }
+            else
+            {
+                // 5. Si la transacción falla (ej. error de DB), mostrar error
+                foreach (var error in result.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error);
+                }
+
+                TempData.Keep("PendingEvent");
+                TempData.Keep("PendingPaymentDetails");
+
+                pagoVm.Monto = originalPagoVm.Monto;
+                pagoVm.Fecha = originalPagoVm.Fecha;
+                pagoVm.Observaciones = originalPagoVm.Observaciones;
+
+                return View(pagoVm); 
+            }
+        }
+
+        // GET: Pago/CancelCreate
+
+        [HttpGet]
+        public IActionResult CancelCreate()
+        {
+            TempData.Remove("PendingEvent");
+            TempData.Remove("PendingPaymentDetails");
+
+            TempData["Info"] = "Creación de evento cancelada.";
+            return RedirectToAction("Index", "Evento");
+        }
+
+
+
+
     }
 
 }

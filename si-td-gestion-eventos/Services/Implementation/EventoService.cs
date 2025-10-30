@@ -9,6 +9,8 @@ using si_td_gestion_eventos.Repositories;
 using si_td_gestion_eventos.Services.Common;
 using si_td_gestion_eventos.Services.Contracts;
 using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore;
+using si_td_gestion_eventos.Context;
 
 namespace si_td_gestion_eventos.Services.Implementation
 {
@@ -19,19 +21,28 @@ namespace si_td_gestion_eventos.Services.Implementation
         private readonly IEventoBusinessRules _businessRules;
         private readonly IMapper _mapper;
         private readonly IGenericRepository<Pago> _pagoRepository;
+        private readonly AppDbContext _context;
+        private readonly IFileStorageService _fileStorageService;
+        private readonly IGenericRepository<ComprobanteExterno> _comprobanteRepository;
 
         public EventoService(
             IGenericRepository<Evento> eventoRepository,
             IGenericRepository<Pago> pagoRepository,
             IValidator<EventoVM> validator,
             IEventoBusinessRules businessRules,
-            IMapper mapper)
+            IMapper mapper,
+            AppDbContext context,
+            IFileStorageService fileStorageService,
+            IGenericRepository<ComprobanteExterno> comprobanteRepository)
         {
             _pagoRepository = pagoRepository;
             _eventoRepository = eventoRepository;
             _validator = validator;
             _businessRules = businessRules;
             _mapper = mapper;
+            _context = context;
+            _fileStorageService = fileStorageService;
+            _comprobanteRepository = comprobanteRepository;
         }
 
         public async Task<PaginatedList<EventoVM>> GetAllPaginatedAsync(
@@ -391,6 +402,144 @@ namespace si_td_gestion_eventos.Services.Implementation
                     Value = e.EventoId.ToString(),
                     Text = $"{e.Cliente.Nombre} {e.Cliente?.Apellido} - {e.Tipo} - {e.Inicio:dd/MM/yyyy}"
                 });
+        }
+
+        public async Task<ServiceResult<EventoVM>> CreateEventWithPaymentAsync(EventoVM eventoVM, PagoReservaVM pagoVM)
+        {
+            // 1. Validar el EventoVM (igual que en tu CreateAsync)
+            var validationResult = await _validator.ValidateAsync(eventoVM, options =>
+                options.IncludeRuleSets("Create"));
+
+            if (!validationResult.IsValid)
+            {
+                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+                return ServiceResult<EventoVM>.FailureResult(errors);
+            }
+
+            // 2. Validar Reglas de Negocio (igual que en tu CreateAsync)
+            bool isAvailable = await _businessRules.IsDateRangeAvailableAsync(
+                eventoVM.Inicio, eventoVM.Fin, eventoVM.HoraInicio, eventoVM.HoraFin, null);
+
+            if (!isAvailable)
+            {
+                return ServiceResult<EventoVM>.FailureResult("El horario seleccionado ya no está disponible.");
+            }
+
+            // --- LÓGICA DE TRANSACCIÓN ---
+            string urlComprobante = string.Empty;
+            await using (var transaction = await _context.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // 3. Guardar el archivo comprobante
+                    urlComprobante = await _fileStorageService.GuardarArchivoAsync(
+                        pagoVM.ArchivoComprobante,
+                        "uploads/comprobantes" // Carpeta de destino
+                    );
+
+                    if (string.IsNullOrEmpty(urlComprobante))
+                    {
+                        return ServiceResult<EventoVM>.FailureResult("Ocurrió un error al guardar el archivo comprobante.");
+                    }
+
+                    // 4. Crear y Guardar el Evento
+                    var evento = _mapper.Map<Evento>(eventoVM);
+                    if (eventoVM.MontoReserva >= eventoVM.CostoAlquiler)
+                    {
+                        evento.Estado = EventoEstado.PendientePagado;
+                    }
+                    else
+                    {
+                        evento.Estado = EventoEstado.PendienteAdeudado;
+                    }
+
+                    await _eventoRepository.AddAsync(evento);
+                    await _eventoRepository.SaveChangesAsync(); // <-- Guardamos para obtener el Evento.Id
+
+                    // 5. Crear y Guardar el Pago
+                    var pago = new Pago
+                    {
+                        EventoId = evento.EventoId, // <-- Se asigna el ID del evento recién creado
+                        Monto = pagoVM.Monto,
+                        Fecha = pagoVM.Fecha,
+                        Observaciones = pagoVM.Observaciones,
+                        Metodo = pagoVM.Metodo
+                        // Aún no tenemos el ComprobanteExternoId
+                    };
+
+                    await _pagoRepository.AddAsync(pago);
+                    await _pagoRepository.SaveChangesAsync(); // <-- Guardamos para obtener el Pago.Id
+
+                    // 6. Crear y Guardar el ComprobanteExterno
+                    var comprobante = new ComprobanteExterno
+                    {
+                        NombreArchivo = pagoVM.ArchivoComprobante.FileName,
+                        RutaArchivo = urlComprobante,
+                        FechaComprobante = DateTime.UtcNow,
+                        TipoArchivo = ConvertExtensionToTipoArchivo(pagoVM.ArchivoComprobante.ContentType),
+                        Referencia = null,
+                        PagoId = pago.PagoId,
+                        Pago = pago
+                    };
+
+                    await _comprobanteRepository.AddAsync(comprobante);
+                    await _comprobanteRepository.SaveChangesAsync(); // <-- Guardamos el comprobante
+
+                    // 7. (Opcional pero recomendado) Actualizar el Pago con el Id del Comprobante
+                    // para tener la referencia en ambas direcciones
+                    if (pago.ComprobanteExternoId == null) // (Tu entidad Pago tiene 'ComprobanteExternoId?')
+                    {
+                        // Si tu entidad Pago tiene 'ComprobanteExternoId', descomenta estas líneas:
+                        // pago.ComprobanteExternoId = comprobante.ComprobanteExternoId;
+                        // _pagoRepository.Update(pago);
+                        // await _pagoRepository.SaveChangesAsync();
+                    }
+
+                    // 8. Si todo salió bien, confirmar la transacción
+                    await transaction.CommitAsync();
+
+                    // 9. Devolver el resultado exitoso
+                    var eventoCreado = await _eventoRepository.GetByIdWithIncludesAsync(evento.EventoId, e => e.Cliente);
+                    var eventoVM_Creado = _mapper.Map<EventoVM>(eventoCreado);
+
+                    return ServiceResult<EventoVM>.SuccessResult(eventoVM_Creado, "Evento y pago de reserva creados exitosamente.");
+                }
+                catch (Exception ex)
+                {
+                    // 10. Si algo falló, revertir la transacción
+                    await transaction.RollbackAsync();
+
+                    // Borrar el archivo que se subió
+                    if (!string.IsNullOrEmpty(urlComprobante))
+                    {
+                        await _fileStorageService.BorrarArchivoAsync(urlComprobante);
+                    }
+
+                    return ServiceResult<EventoVM>.FailureResult($"Ocurrió un error inesperado en la transacción: {ex.Message}");
+                }
+            }
+        }
+
+        private TipoArchivo ConvertExtensionToTipoArchivo(string fileName)
+        {
+            if (string.IsNullOrEmpty(fileName))
+                throw new InvalidOperationException("El archivo no tiene nombre o extensión.");
+
+            string extension = System.IO.Path.GetExtension(fileName).ToLower();
+
+            switch (extension)
+            {
+                case ".pdf":
+                    return TipoArchivo.PDF;
+                case ".png":
+                    return TipoArchivo.PNG;
+                case ".jpeg":
+                    return TipoArchivo.JPEG;
+                case ".jpg":
+                    return TipoArchivo.JPG;
+                default:
+                    throw new InvalidOperationException($"Tipo de archivo no permitido: {extension}. Solo se aceptan PDF, PNG, JPEG o JPG.");
+            }
         }
     }
 };

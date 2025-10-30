@@ -4,6 +4,8 @@ using si_td_gestion_eventos.Infrastructure;
 using si_td_gestion_eventos.Models.ViewModels;
 using si_td_gestion_eventos.Services.Contracts;
 using FluentValidation;
+using Newtonsoft.Json;
+
 
 namespace si_td_gestion_eventos.Controllers
 {
@@ -89,28 +91,31 @@ namespace si_td_gestion_eventos.Controllers
             return View(viewModel);
         }
 
-        // POST: Evento/Create
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(EventoVM eventoVM)
         {
+
             if (ModelState.IsValid)
             {
-                var result = await _eventoService.CreateAsync(eventoVM);
-                if (result.Success)
+
+                TempData["PendingEvent"] = JsonConvert.SerializeObject(eventoVM);
+
+
+                var pagoVm = new PagoReservaVM
                 {
-                   
-                    TempData["Ok"] = result.Message;
-                    return RedirectToAction(nameof(Index));
-                }
-                else
-                {
-                    foreach (var error in result.Errors)
-                    {
-                        ModelState.AddModelError(string.Empty, error);
-                    }
-                }
+                    Monto = (float)eventoVM.MontoReserva,
+                    Fecha = eventoVM.FechaContrato,
+                    Observaciones = "Por Reserva"
+                };
+
+
+                TempData["PendingPaymentDetails"] = JsonConvert.SerializeObject(pagoVm);
+
+                return RedirectToAction("CreateReserva", "Pago");
             }
+
             await PopulateClientesDropdown();
             return View(eventoVM);
         }
