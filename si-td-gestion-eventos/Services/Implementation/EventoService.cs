@@ -124,7 +124,7 @@ namespace si_td_gestion_eventos.Services.Implementation
 
                 eventoVM.TotalPagado = (decimal)(evento.Pagos?.Sum(p => p.Monto) ?? 0);
 
-            eventoVM.SaldoRestante = eventoVM.CostoAlquiler - eventoVM.TotalPagado;
+            eventoVM.SaldoRestante = eventoVM.CostoAlquiler - eventoVM.TotalPagado + (eventoVM.MontoAireAcondicionado ?? 0);
 
             return eventoVM;
         }

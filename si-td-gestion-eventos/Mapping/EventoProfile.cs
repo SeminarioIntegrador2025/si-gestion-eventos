@@ -32,6 +32,9 @@ namespace si_td_gestion_eventos.Mapping
                     (src.CostoAlquiler + (src.MontoAireAcondicionado ?? 0f)) -
                     (src.Pagos != null ? src.Pagos.Sum(p => p.Monto) : 0f))) // Usamos 0f para float
 
+                .ForMember(dest => dest.TipoCli,
+                       opt => opt.MapFrom(src => src.Cliente.Tipo))
+
                 // --- ARREGLO 2: Mapeo de Fianza/Fianzas ---
                 // Asumimos que EventoVM tiene una sola propiedad 'Fianza' o 'FianzaVM'.
                 // Mapeamos la primera fianza encontrada en la colección. Si no hay, será null.

@@ -8,20 +8,37 @@
 <dl class="row">
     <dt class="col-sm-3">Nombre</dt>
     <dd class="col-sm-9">@Model.Nombre</dd>
-    <dt class="col-sm-3">Apellido</dt>
-    <dd class="col-sm-9">@Model.Apellido</dd>
+
+    @if (Model.Tipo == si_td_gestion_eventos.Models.Enums.TipoCliente.PersonaFisica)
+    {
+        <dt class="col-sm-3">Apellido</dt>
+        <dd class="col-sm-9">@Model.Apellido</dd>
+    }
+
+    <dt class="col-sm-3">Tipo de Cliente</dt>
+    @if (Model.Tipo == si_td_gestion_eventos.Models.Enums.TipoCliente.PersonaFisica)
+    {
+        <dd class="col-sm-9">Persona Fisica</dd>
+    }
+    else
+    {
+        <dd class="col-sm-9">Persona Juridica</dd>
+    }
+
     <dt class="col-sm-3">Cédula</dt>
     <dd class="col-sm-9">@Model.CedulaIdentidad</dd>
+
     <dt class="col-sm-3">Domicilio</dt>
     <dd class="col-sm-9">@Model.Domicilio</dd>
+
     <dt class="col-sm-3">Teléfono</dt>
     <dd class="col-sm-9">@Model.Telefono</dd>
+
     <dt class="col-sm-3">Activo</dt>
     <dd class="col-sm-9">
         @if (Model.Activo)
         {
             <i class="fa-solid fa-check text-success"></i>
-        
             <span class="text-success">Sí</span>
         }
         else

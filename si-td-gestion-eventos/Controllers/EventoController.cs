@@ -91,11 +91,23 @@ namespace si_td_gestion_eventos.Controllers
             return View(viewModel);
         }
 
-
+        // POST: Evento/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(EventoVM eventoVM)
         {
+            var validationResult = await _validator.ValidateAsync(eventoVM, options =>
+            {
+                options.IncludeRuleSets("default", "Create");
+            });
+
+            if (!validationResult.IsValid)
+            {
+                foreach (var error in validationResult.Errors)
+                {
+                    ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
+                }
+            }
 
             if (ModelState.IsValid)
             {
