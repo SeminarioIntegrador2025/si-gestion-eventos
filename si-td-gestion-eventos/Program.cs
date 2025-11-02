@@ -4,7 +4,6 @@ using si_td_gestion_eventos.Context;
 using si_td_gestion_eventos.Mapping;
 using si_td_gestion_eventos.Models.ViewModels;
 using si_td_gestion_eventos.Repositories;
-using si_td_gestion_eventos.Services;
 using si_td_gestion_eventos.Services.Contracts;
 using si_td_gestion_eventos.Services.Implementation;
 using si_td_gestion_eventos.Validators;

@@ -5,7 +5,7 @@ using si_td_gestion_eventos.Models.Enums;
 using si_td_gestion_eventos.Models.ViewModels;
 using si_td_gestion_eventos.Services.Contracts;
 
-namespace si_td_gestion_eventos.Services
+namespace si_td_gestion_eventos.Services.Implementation
 {
     public class ReporteService : IReporteService
     {
@@ -60,7 +60,7 @@ namespace si_td_gestion_eventos.Services
             var cancelados = eventosEsteMes.Count(e => e.Estado == EventoEstado.Cancelado);
 
             var porcentajeCambio = eventosMesAnterior > 0
-                ? ((decimal)(totalEsteMes - eventosMesAnterior) / eventosMesAnterior) * 100
+                ? (decimal)(totalEsteMes - eventosMesAnterior) / eventosMesAnterior * 100
                 : 0;
 
             // Calcular ocupación general
@@ -158,7 +158,7 @@ namespace si_td_gestion_eventos.Services
             var promedioMensual = mesesTranscurridos > 0 ? totalAnio / mesesTranscurridos : 0;
 
             var porcentajeCambio = totalMesAnterior > 0
-                ? ((totalEsteMes - totalMesAnterior) / totalMesAnterior) * 100
+                ? (totalEsteMes - totalMesAnterior) / totalMesAnterior * 100
                 : 0;
 
             return new ReporteIngresosVM
@@ -172,9 +172,9 @@ namespace si_td_gestion_eventos.Services
                 CrecimientoPositivo = porcentajeCambio >= 0,
                 TotalIngresosAnioActual = Math.Round(totalAnio, 2),
                 PromedioIngresosMensual = Math.Round(promedioMensual, 2),
-                PorcentajeReservas = totalEsteMes > 0 ? Math.Round((totalReservas / totalEsteMes) * 100, 2) : 0,
-                PorcentajeAlquileres = totalEsteMes > 0 ? Math.Round((totalAlquileres / totalEsteMes) * 100, 2) : 0,
-                PorcentajeAireAcondicionado = totalEsteMes > 0 ? Math.Round((totalAire / totalEsteMes) * 100, 2) : 0
+                PorcentajeReservas = totalEsteMes > 0 ? Math.Round(totalReservas / totalEsteMes * 100, 2) : 0,
+                PorcentajeAlquileres = totalEsteMes > 0 ? Math.Round(totalAlquileres / totalEsteMes * 100, 2) : 0,
+                PorcentajeAireAcondicionado = totalEsteMes > 0 ? Math.Round(totalAire / totalEsteMes * 100, 2) : 0
             };
         }
 
@@ -218,10 +218,10 @@ namespace si_td_gestion_eventos.Services
 
             var totalEsperado = eventos.Sum(e => (decimal)(e.MontoReserva + e.CostoAlquiler + (e.MontoAireAcondicionado ?? 0)));
             var totalPagadoGeneral = eventos.Sum(e => e.Pagos.Sum(p => (decimal)p.Monto));
-            var porcentajeRecuperacion = totalEsperado > 0 ? (totalPagadoGeneral / totalEsperado) * 100 : 0;
+            var porcentajeRecuperacion = totalEsperado > 0 ? totalPagadoGeneral / totalEsperado * 100 : 0;
 
             var porcentajeCambio = pagosMesAnterior > 0
-                ? ((decimal)(pagosEsteMes.Count - pagosMesAnterior) / pagosMesAnterior) * 100
+                ? (decimal)(pagosEsteMes.Count - pagosMesAnterior) / pagosMesAnterior * 100
                 : 0;
 
             return new ReportePagosVM
@@ -259,7 +259,7 @@ namespace si_td_gestion_eventos.Services
                 .Where(f => f.Estado == EstadoFianza.Registrada || f.Estado == EstadoFianza.DevueltaParcialmente)
                 .Sum(f => f.Monto - f.MontoDevuelto);
 
-            var porcentajeDevolucion = totalRegistradas > 0 ? (totalDevueltas / totalRegistradas) * 100 : 0;
+            var porcentajeDevolucion = totalRegistradas > 0 ? totalDevueltas / totalRegistradas * 100 : 0;
             var montoPromedio = todasFianzas.Count > 0 ? todasFianzas.Average(f => f.Monto) : 0;
 
             // Fianzas vencidas: registradas o parcialmente devueltas con fecha de devolución pasada
