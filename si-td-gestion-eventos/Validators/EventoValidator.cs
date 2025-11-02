@@ -15,6 +15,12 @@ namespace si_td_gestion_eventos.Validators
         {
             _businessRules = businessRules;
 
+            Func<EventoVM, bool> isWithin48Hours = (evento) => {
+                var deadline = DateTime.Now.AddHours(48);
+                var now = DateTime.Now;
+                return evento.Inicio < deadline && evento.Inicio > now;
+            };
+
             // ==========================================================
             // REGLAS COMUNES (Aplican siempre: Create y Edit)
             // ==========================================================
@@ -75,11 +81,12 @@ namespace si_td_gestion_eventos.Validators
             RuleFor(x => x.MontoReserva)
                 .GreaterThanOrEqualTo(0).WithMessage("El monto de reserva no puede ser negativo.")
                 .LessThanOrEqualTo(x => x.CostoAlquiler)
-                .WithMessage("El monto de reserva no puede ser mayor al costo del alquiler.");
+                .WithMessage("El monto de reserva no puede ser mayor al costo del alquiler.")
+                .Unless(isWithin48Hours);
 
             RuleFor(x => x.MontoAireAcondicionado)
                 .GreaterThanOrEqualTo(0).WithMessage("El monto del aire acondicionado no puede ser negativo.")
-                .When(x => x.MontoAireAcondicionado.HasValue); // Solo valida si se ingresó un valor
+                .When(x => x.MontoAireAcondicionado.HasValue); 
 
             // --- Responsable del Salón (Validaciones detalladas) ---
             RuleFor(x => x.ResponsableNombre)
@@ -106,8 +113,7 @@ namespace si_td_gestion_eventos.Validators
             // ==========================================================
             RuleSet("Create", () =>
             {
-                // -- REGLA REDUNDANTE ELIMINADA --
-                // La regla Fin >= Inicio ya está en las comunes.
+
                 // Fecha del contrato no puede ser futura al crear
                 RuleFor(x => x.FechaContrato)
                     .LessThanOrEqualTo(DateTime.Today)
@@ -117,7 +123,7 @@ namespace si_td_gestion_eventos.Validators
                 RuleFor(x => x.Inicio)
                     .GreaterThanOrEqualTo(DateTime.Today) // Permite crear eventos para hoy
                     .WithMessage("La fecha de inicio debe ser hoy o una fecha futura.");
-                // Nota: La regla MustAsync(IsEventoInFutureAsync) que tenías antes podría ser demasiado estricta si quieres permitir crear eventos el mismo día. GreaterThanOrEqualTo(Today) es más común.
+
 
                 // Si es hoy, la hora de inicio no puede ser pasada
                 RuleFor(x => x.HoraInicio)
@@ -125,10 +131,17 @@ namespace si_td_gestion_eventos.Validators
                     .When(x => x.Inicio.Date == DateTime.Today, ApplyConditionTo.CurrentValidator)
                     .WithMessage("Si el evento es hoy, la hora de inicio no puede ser anterior a la hora actual.");
 
-                // Validación específica del Monto de Reserva al crear
-                RuleFor(x => x) // Valida el objeto completo
+                // Validación específica del Monto de Reserva al crear y sin ser el evento en las 48hs proximas
+                RuleFor(x => x)
                     .MustAsync(async (evento, ct) => await _businessRules.IsReservationAmountValidAsync(evento.MontoReserva, evento.CostoAlquiler))
-                    .WithMessage("El monto de reserva no cumple con el mínimo requerido para el costo del alquiler.");
+                    .WithMessage("El monto de reserva no cumple con el mínimo requerido para el costo del alquiler.")
+                    .Unless(isWithin48Hours);
+
+                // Validación específica del Monto de Reserva al crear y siendo el evento en las 48hs proximas
+                RuleFor(x => x.MontoReserva)
+                .Equal(x => x.CostoAlquiler + (x.MontoAireAcondicionado ?? 0))
+                .WithMessage("Para eventos en < 48hs, el monto debe ser igual al Costo Total (Alquiler + Aire).")
+                .When(isWithin48Hours);
             });
 
             // ==========================================================

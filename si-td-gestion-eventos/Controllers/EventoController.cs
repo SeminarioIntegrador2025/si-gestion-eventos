@@ -100,7 +100,6 @@ namespace si_td_gestion_eventos.Controllers
             {
                 options.IncludeRuleSets("default", "Create");
             });
-
             if (!validationResult.IsValid)
             {
                 foreach (var error in validationResult.Errors)
@@ -108,21 +107,33 @@ namespace si_td_gestion_eventos.Controllers
                     ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
                 }
             }
+    
+            var deadline = DateTime.Now.AddHours(48);
+            var now = DateTime.Now;
+            bool esDentroDe48Hs = (eventoVM.Inicio < deadline && eventoVM.Inicio > now);
+
+            string observacionTexto;
+            if (esDentroDe48Hs)
+            {
+
+                observacionTexto = "Pago completo del salón (Evento < 48hs)";
+            }
+            else
+            {
+                observacionTexto = "Por Reserva";
+            }
 
             if (ModelState.IsValid)
             {
 
                 TempData["PendingEvent"] = JsonConvert.SerializeObject(eventoVM);
 
-
                 var pagoVm = new PagoReservaVM
                 {
                     Monto = (float)eventoVM.MontoReserva,
                     Fecha = eventoVM.FechaContrato,
-                    Observaciones = "Por Reserva"
+                    Observaciones = observacionTexto 
                 };
-
-
                 TempData["PendingPaymentDetails"] = JsonConvert.SerializeObject(pagoVm);
 
                 return RedirectToAction("CreateReserva", "Pago");

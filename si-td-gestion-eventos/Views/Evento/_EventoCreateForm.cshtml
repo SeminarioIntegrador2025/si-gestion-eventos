@@ -26,7 +26,7 @@
     <div class="col-md-6">
         <div class="form-group mb-3">
             <label asp-for="Inicio" class="form-label">Fecha de Inicio del Evento</label>
-            <input asp-for="Inicio" class="form-control" type="date" />
+            <input asp-for="Inicio" class="form-control" type="date" id="FechaInicio" />
             <span asp-validation-for="Inicio" class="text-danger"></span>
         </div>
     </div>
@@ -43,7 +43,7 @@
     <div class="col-md-6">
         <div class="form-group mb-3">
             <label asp-for="HoraInicio" class="form-label">Hora de Inicio del Evento</label>
-            <input asp-for="HoraInicio" class="form-control" type="time" />
+            <input asp-for="HoraInicio" class="form-control" type="time" id="HoraInicio" />
             <span asp-validation-for="HoraInicio" class="text-danger"></span>
         </div>
     </div>
@@ -69,7 +69,7 @@
     <div class="col-md-6">
         <div class="form-group mb-3">
             <label asp-for="CantidadPersonas" class="form-label"></label>
-            <input asp-for="CantidadPersonas" class="form-control" type="number"/>
+            <input asp-for="CantidadPersonas" class="form-control" type="number" />
             <span asp-validation-for="CantidadPersonas" class="text-danger"></span>
         </div>
     </div>
@@ -79,13 +79,13 @@
     <div class="col-md-6">
         <div class="form-group mb-3">
             <label asp-for="CostoAlquiler" class="form-label"></label>
-            <input asp-for="CostoAlquiler" class="form-control" type="number" step="0.01" min="0" />
+            <input asp-for="CostoAlquiler" class="form-control" type="number" step="0.01" min="0" id="CostoAlquiler" />
             <span asp-validation-for="CostoAlquiler" class="text-danger"></span>
         </div>
     </div>
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="MontoReserva" class="form-label"></label>
+            <label asp-for="MontoReserva" class="form-label" id="MontoReservaLabel"></label>
             <input asp-for="MontoReserva" id="MontoReserva" class="form-control" type="number" step="0.01" min="0" />
             <span asp-validation-for="MontoReserva" class="text-danger"></span>
         </div>
@@ -96,18 +96,18 @@
     <div class="col-md-6">
         <div class="form-group mb-3">
             <label asp-for="MontoAireAcondicionado" class="form-label"></label>
-            <input asp-for="MontoAireAcondicionado" class="form-control" type="number" step="0.01" min="0" />
+            <input asp-for="MontoAireAcondicionado" class="form-control" type="number" step="0.01" min="0" id="MontoAire" />
             <span asp-validation-for="MontoAireAcondicionado" class="text-danger"></span>
         </div>
     </div>
-        <div class="col-md-6">
-            <div class="form-group mb-3">
-                <label asp-for="Observaciones" class="form-label"></label>
-                <input asp-for="Observaciones" class="form-control" />
-                <span asp-validation-for="Observaciones" class="text-danger"></span>
-            </div>
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="Observaciones" class="form-label"></label>
+            <input asp-for="Observaciones" class="form-control" />
+            <span asp-validation-for="Observaciones" class="text-danger"></span>
         </div>
-   
+    </div>
+
 
 </div>
 

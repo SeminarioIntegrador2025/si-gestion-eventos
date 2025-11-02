@@ -425,13 +425,12 @@ namespace si_td_gestion_eventos.Services.Implementation
                 return ServiceResult<EventoVM>.FailureResult("El horario seleccionado ya no está disponible.");
             }
 
-            // --- LÓGICA DE TRANSACCIÓN MODIFICADA ---
             string urlComprobante = string.Empty; // Para el 'catch'
             await using (var transaction = await _context.Database.BeginTransactionAsync())
             {
                 try
                 {
-                    // 3. Crear y Guardar el Evento (SIN CAMBIOS)
+
                     var evento = _mapper.Map<Evento>(eventoVM);
                     if (eventoVM.MontoReserva >= eventoVM.CostoAlquiler)
                     {
@@ -443,41 +442,30 @@ namespace si_td_gestion_eventos.Services.Implementation
                     }
 
                     await _eventoRepository.AddAsync(evento);
-                    await _eventoRepository.SaveChangesAsync(); // <-- Guardamos para obtener el Evento.Id
+                    await _eventoRepository.SaveChangesAsync(); 
 
-                    // 4. Validar y Crear el Pago (SIN CAMBIOS, usa la lógica de prefijo)
-                    const string prefijoObservacion = "Por Reserva";
-                    string observacionesFinales = pagoVM.Observaciones;
 
-                    if (string.IsNullOrWhiteSpace(observacionesFinales))
-                    {
-                        observacionesFinales = prefijoObservacion;
-                    }
-                    else if (!observacionesFinales.StartsWith(prefijoObservacion, StringComparison.OrdinalIgnoreCase))
-                    {
-                        observacionesFinales = $"{prefijoObservacion} - {observacionesFinales}";
-                    }
+                   
 
                     var pago = new Pago
                     {
                         EventoId = evento.EventoId,
                         Monto = (float)eventoVM.MontoReserva,
                         Fecha = eventoVM.FechaContrato,
-                        Observaciones = observacionesFinales,
+                        Observaciones = pagoVM.Observaciones,
                         Metodo = pagoVM.Metodo
-                        // El ComprobanteExternoId es null por ahora
+
                     };
 
                     await _pagoRepository.AddAsync(pago);
-                    await _pagoRepository.SaveChangesAsync(); // <-- Guardamos para obtener el Pago.Id
+                    await _pagoRepository.SaveChangesAsync(); 
 
 
-                    // --- INICIO DE LA LÓGICA CONDICIONAL (EL CAMBIO) ---
 
-                    // 5. SI (y solo si) el usuario subió un archivo, lo procesamos
+
                     if (pagoVM.ArchivoComprobante != null && pagoVM.ArchivoComprobante.Length > 0)
                     {
-                        // 5a. Guardar el archivo en el disco
+
                         urlComprobante = await _fileStorageService.GuardarArchivoAsync(
                             pagoVM.ArchivoComprobante,
                             "uploads/comprobantes"
@@ -485,14 +473,10 @@ namespace si_td_gestion_eventos.Services.Implementation
 
                         if (string.IsNullOrEmpty(urlComprobante))
                         {
-                            // Si el usuario subió un archivo PERO falló al guardar,
-                            // debemos revertir todo.
                             throw new InvalidOperationException("Se adjuntó un archivo, pero ocurrió un error al guardarlo.");
                         }
 
-                        // 5b. Crear y Guardar el ComprobanteExterno
-                        // (Esto lanzará una excepción si el tipo de archivo es inválido,
-                        // lo cual es correcto y será capturado por el 'catch')
+                      
                         var comprobante = new ComprobanteExterno
                         {
                             NombreArchivo = pagoVM.ArchivoComprobante.FileName,
@@ -507,17 +491,15 @@ namespace si_td_gestion_eventos.Services.Implementation
                         await _comprobanteRepository.AddAsync(comprobante);
                         await _comprobanteRepository.SaveChangesAsync();
 
-                        // 5c. (Opcional) Actualizar el Pago con el Id del Comprobante
+                      
                         pago.ComprobanteExternoId = comprobante.ComprobanteExternoId;
                         _pagoRepository.Update(pago);
                         await _pagoRepository.SaveChangesAsync();
                     }
-                    // --- FIN DE LA LÓGICA CONDICIONAL ---
 
-                    // 6. Si todo salió bien, confirmar la transacción
+
                     await transaction.CommitAsync();
 
-                    // 7. Devolver el resultado exitoso (sin cambios)
                     var eventoCreado = await _eventoRepository.GetByIdWithIncludesAsync(evento.EventoId, e => e.Cliente);
                     var eventoVM_Creado = _mapper.Map<EventoVM>(eventoCreado);
 
@@ -525,18 +507,68 @@ namespace si_td_gestion_eventos.Services.Implementation
                 }
                 catch (Exception ex)
                 {
-                    // 8. Rollback (sin cambios)
+
                     await transaction.RollbackAsync();
 
-                    // Borrar el archivo SOLO SI se llegó a guardar
+
                     if (!string.IsNullOrEmpty(urlComprobante))
                     {
                         await _fileStorageService.BorrarArchivoAsync(urlComprobante);
                     }
 
-                    // Devolvemos el mensaje de error (ej. "Tipo de archivo no permitido...")
                     return ServiceResult<EventoVM>.FailureResult($"Ocurrió un error: {ex.Message}");
                 }
+            }
+        }
+
+        public async Task<ServiceResult<int>> CheckAndCancelUnpaidEventsAsync()
+        {         
+            var deadline = DateTime.Now.AddHours(48);
+            var now = DateTime.Now; 
+            int cancelledCount = 0;
+
+            try
+            {               
+                var eventsToCancelQuery = await _eventoRepository.FindWithIncludesAsync(
+                    e => e.Estado != EventoEstado.Cancelado && 
+                         e.Inicio < deadline,
+                    e => e.Pagos 
+                );
+
+                var eventsToCancel = eventsToCancelQuery.ToList();
+                if (!eventsToCancel.Any())
+                {
+                    return ServiceResult<int>.SuccessResult(0, "No hay eventos por vencer.");
+                }
+                foreach (var evento in eventsToCancel)
+                {
+                    float costoTotal = evento.CostoAlquiler + (evento.MontoAireAcondicionado ?? 0);
+                    float totalPagado = evento.Pagos?.Sum(p => p.Monto) ?? 0;
+                    float saldoRestante = costoTotal - totalPagado;
+
+                    if (saldoRestante > 0)
+                    {
+                        evento.Estado = EventoEstado.Cancelado;
+
+                        evento.Observaciones = (evento.Observaciones ?? "") +
+                            $" [Cancelado automáticamente por falta de pago 48hs antes. Saldo pendiente: ${saldoRestante:N2}]";
+
+                        _eventoRepository.Update(evento);
+                        cancelledCount++;
+                    }
+                }
+                if (cancelledCount > 0)
+                {                 
+                    await _eventoRepository.SaveChangesAsync();
+                    return ServiceResult<int>.SuccessResult(cancelledCount, $"Se cancelaron {cancelledCount} eventos.");
+                }
+
+                
+                return ServiceResult<int>.SuccessResult(0, "Eventos por vencer están todos pagos.");
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<int>.FailureResult($"Error en el servicio de cancelación: {ex.Message}");
             }
         }
 

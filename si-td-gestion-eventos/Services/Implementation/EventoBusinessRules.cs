@@ -95,10 +95,10 @@ namespace si_td_gestion_eventos.Services.Implementation
 
         public async Task<bool> IsValidDateRangeAsync(DateTime inicio, DateTime fin, TimeSpan horaInicio, TimeSpan horaFin)
         {
-            // Verificar que la fecha de fin no sea anterior a la de inicio
+
             if (fin.Date < inicio.Date) return false;
 
-            // Si es el mismo día, verificar que la hora de fin sea posterior a la de inicio
+        
             if (inicio.Date == fin.Date && horaFin <= horaInicio) return false;
 
             return await Task.FromResult(true);
@@ -116,9 +116,8 @@ namespace si_td_gestion_eventos.Services.Implementation
 
             if (evento == null) return false;
 
-            // Se puede reprogramar si no está cancelado y es en el futuro
             return evento.Estado != EventoEstado.Cancelado && 
-                   evento.Inicio > DateTime.Now.AddHours(48); // Al menos 48 horas de anticipación
+                   evento.Inicio > DateTime.Now.AddHours(48);
         }
 
         public async Task<int> GetActiveEventsCountForClienteAsync(int clienteId)

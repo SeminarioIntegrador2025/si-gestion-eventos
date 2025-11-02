@@ -37,7 +37,9 @@
                 </div>
                 <div class="form-group mb-2">
                     <label asp-for="Observaciones" class="control-label"></label>
-                    <input asp-for="Observaciones" type="text" class="form-control" />
+
+                    <input asp-for="Observaciones" type="text" class="form-control" id="observacionesInput" />
+
                 </div>
                 <div class="form-group mb-3">
                     <label asp-for="ArchivoComprobante" class="control-label"></label>
@@ -47,7 +49,6 @@
 
             <div class="form-group mt-4">
                 <input type="submit" value="Confirmar y Guardar Evento" class="btn btn-success" />
-
                 <a id="btnCancelar" href="@Url.Action("CancelCreate", "Pago")" class="btn btn-danger">Cancelar</a>
             </div>
         </form>
@@ -65,6 +66,59 @@
             if (confirm("Si cancela, se perderán los datos del evento y no podrá darse de alta. ¿Está seguro?")) {
                 window.location.href = this.href;
             }
+        });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+
+            const obsInput = document.getElementById("observacionesInput");
+            if (!obsInput) return; // Salir si no se encuentra
+
+            // ¡LA SOLUCIÓN! Lee el prefijo desde el valor inicial del campo,
+            // (que fue puesto por el EventoController)
+            const prefix = obsInput.value;
+
+            // --- El resto del script es para proteger ese prefijo ---
+
+            obsInput.addEventListener("focus", function() {
+                if(obsInput.value === prefix) {
+                    obsInput.value = prefix + " "; // Añade un espacio para escribir
+                    obsInput.setSelectionRange(obsInput.value.length, obsInput.value.length);
+                }
+            });
+
+            obsInput.addEventListener("keydown", function(e) {
+                const cursorPosition = e.target.selectionStart;
+                const prefixLength = prefix.length;
+
+                if (e.key === "Backspace" && cursorPosition <= prefixLength) {
+                    e.preventDefault();
+                }
+
+                if (e.key === "Delete" && cursorPosition < prefixLength) {
+                    e.preventDefault();
+                }
+            });
+
+            obsInput.addEventListener("cut", function(e) {
+                if (e.target.selectionStart < prefix.length) {
+                    e.preventDefault();
+                }
+            });
+
+             obsInput.addEventListener("paste", function(e) {
+                if (e.target.selectionStart < prefix.length) {
+                    e.preventDefault();
+                }
+            });
+
+            obsInput.addEventListener("input", function(e) {
+                if (!e.target.value.startsWith(prefix)) {
+                    // Si el usuario logra borrarlo, lo resetea
+                    e.target.value = prefix + " ";
+                }
+            });
         });
     </script>
 }

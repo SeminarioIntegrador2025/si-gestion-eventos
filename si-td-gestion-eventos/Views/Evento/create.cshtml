@@ -26,19 +26,20 @@
                     </h5>
                 </div>
 
-                    <form asp-action="Create" method="post" novalidate>
+                <form asp-action="Create" method="post" novalidate>
+                    <div class="card-body">
                         <partial name="_EventoCreateForm" model="Model" />
-                        
-                        <div class="d-flex justify-content-between mt-4">
-                            <a asp-action="Index" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left me-2"></i>Volver
-                            </a>
-                            <button type="submit" class="btn btn-success btn-lg">
-                                <i class="fas fa-check-circle me-2"></i>Crear Evento
-                            </button>
-                        </div>
-                    </form>
-                </div>
+                    </div>
+
+                    <div class="card-footer bg-light d-flex justify-content-between align-items-center">
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Volver
+                        </a>
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-check-circle me-2"></i>Crear Evento
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -49,25 +50,78 @@
 
     <script>
         $(document).ready(function () {
-
-            // Apunta al ID específico de este campo
+    
             $('#ResponsableCedula').on('input', function() {
-
                 let value = this.value.replace(/[^\d]/g, '');
-
-                // Trunca a 8 dígitos (X.XXX.XXX-N)
                 if (value.length > 8) {
                     value = value.substring(0, 8);
                 }
-
-                // Aplica el formato
                 if (value.length >= 2) {
                     value = value.substring(0, value.length - 1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') + '-' + value.substring(value.length - 1);
                 }
-
                 this.value = value;
             });
 
+            const fechaInicioInput = $("#FechaInicio");
+            const costoAlquilerInput = $("#CostoAlquiler");
+            const horaInicioInput = $("#HoraInicio"); 
+            const montoAireInput = $("#MontoAire");
+            const montoReservaInput = $("#MontoReserva");
+            const montoReservaLabel = $("#MontoReservaLabel");
+
+            // Salir si los elementos no existen (medida de seguridad)
+           if (!fechaInicioInput.length || !horaInicioInput.length || !costoAlquilerInput.length || !montoAireInput.length || !montoReservaInput.length || !montoReservaLabel.length) {
+            console.warn("Script de 48hs: No se encontraron todos los IDs necesarios.");
+            return;
+        }
+
+            
+            const labelOriginal = montoReservaLabel.text();
+
+          
+               function revisarLogica48Hs() {
+
+                const costoAlquiler = parseFloat(costoAlquilerInput.val()) || 0;
+                const montoAire = parseFloat(montoAireInput.val()) || 0;
+                const fechaVal = fechaInicioInput.val(); 
+                const horaVal = horaInicioInput.val();   
+
+
+                if (!fechaVal || !horaVal) {
+
+                    montoReservaLabel.text(labelOriginal);
+                    montoReservaInput.prop("readonly", false);
+                    return; 
+                }
+
+
+                const fechaInicio = new Date(fechaVal + "T" + horaVal);
+
+
+                const ahora = new Date();
+                const deadline48hs = new Date(ahora.getTime() + 48 * 60 * 60 * 1000);
+
+                if (fechaInicio > ahora && fechaInicio < deadline48hs) {
+
+                    const costoTotal = costoAlquiler + montoAire;
+                    montoReservaLabel.text("Monto Total (Pago Requerido)");
+                    montoReservaInput.val(costoTotal.toFixed(2));
+                    montoReservaInput.prop("readonly", true);
+
+                } else {
+
+                    montoReservaLabel.text(labelOriginal);
+                    montoReservaInput.prop("readonly", false);
+                }
+            }
+
+            fechaInicioInput.on("change", revisarLogica48Hs);
+            horaInicioInput.on("change", revisarLogica48Hs); 
+            costoAlquilerInput.on("input", revisarLogica48Hs);
+            montoAireInput.on("input", revisarLogica48Hs);
+
+          
+            revisarLogica48Hs();
         });
     </script>
 }

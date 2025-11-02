@@ -28,5 +28,6 @@ namespace si_td_gestion_eventos.Services.Contracts
         Task<bool> HasConflictingEventsAsync(DateTime inicio, DateTime fin, TimeSpan horaInicio, TimeSpan horaFin, int? excludeEventoId = null);
         Task<IEnumerable<SelectListItem>> GetEventosAdeudadosParaDropdownAsync();
         Task<ServiceResult<EventoVM>> CreateEventWithPaymentAsync(EventoVM eventoVM, PagoReservaVM pagoVM);
+        Task<ServiceResult<int>> CheckAndCancelUnpaidEventsAsync();
     }
 }
