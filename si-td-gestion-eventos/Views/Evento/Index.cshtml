@@ -3,28 +3,13 @@
 
 @{
     ViewData["Title"] = "Gestión de Eventos";
-    var ultimos = ViewBag.Ultimos as List<si_td_gestion_eventos.Models.ViewModels.EventoVM>;
+
+    // Obtenemos los filtros actuales para la paginación
     string q = ViewBag.Search as string ?? "";
-    int pageSize = ViewBag.PageSize ?? 10;
-    int? clienteIdBusqueda = ViewBag.ClienteIdSeleccionado as int?;
+    int pageSize = (int)(ViewBag.PageSizeList.SelectedValue ?? 10);
     DateTime? fechaDesde = ViewBag.FechaDesde as DateTime?;
     DateTime? fechaHasta = ViewBag.FechaHasta as DateTime?;
-}
-
-@if (TempData["Ok"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        @TempData["Ok"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
-
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        @TempData["Error"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
+    EventoEstado? estado = ViewBag.Estado as EventoEstado?;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -33,262 +18,72 @@
 </div>
 
 <form method="get" class="row g-3 mb-3 align-items-end">
-    <div class="col-sm-4">
+
+    <div class="col-md-3">
         <label for="q" class="form-label">Buscar por Cliente</label>
         <input type="text" name="q" id="q" class="form-control" value="@q" placeholder="Nombre cliente o CI" />
     </div>
 
-    <div class="col-sm-3">
+    <div class="col-md-2">
         <label for="fechaDesde" class="form-label">Fecha Desde</label>
         <input type="date" name="fechaDesde" id="fechaDesde" class="form-control" value="@fechaDesde?.ToString("yyyy-MM-dd")" />
     </div>
 
-    <div class="col-sm-3">
+    <div class="col-md-2">
         <label for="fechaHasta" class="form-label">Fecha Hasta</label>
         <input type="date" name="fechaHasta" id="fechaHasta" class="form-control" value="@fechaHasta?.ToString("yyyy-MM-dd")" />
     </div>
 
-
-
-        <div class="row">
-
-            <div class="col-md-3">
-                <label for="pageSize" class="form-label">Por Página</label>
-                <select name="pageSize" id="pageSize" class="form-select" onchange="this.form.submit()">
-                    @if (ViewBag.PageSize == 10)
-                    {
-                        <option value="10" selected>10</option>
-                    }
-                    else
-                    {
-                        <option value="10">10</option>
-                    }
-
-                    @if (ViewBag.PageSize == 25)
-                    {
-                        <option value="25" selected>25</option>
-                    }
-                    else
-                    {
-                        <option value="25">25</option>
-                    }
-
-                    @if (ViewBag.PageSize == 50)
-                    {
-                        <option value="50" selected>50</option>
-                    }
-                    else
-                    {
-                        <option value="50">50</option>
-                    }
-                </select>
-            </div>
-
-            <div class="col-md-3">
-                <label for="ordenPor" class="form-label">Ordenar por</label>
-                <select name="ordenPor" id="ordenPor" class="form-select" onchange="this.form.submit()">
-
-                    @if (ViewBag.OrdenPor == "fecha_inicio_asc")
-                    {
-                        <option value="fecha_inicio_asc" selected>Fecha de inicio (más cercana)</option>
-                    }
-                    else
-                    {
-                        <option value="fecha_inicio_asc">Fecha de inicio (más cercana)</option>
-                    }
-
-                    @if (ViewBag.OrdenPor == "fecha_inicio_desc")
-                    {
-                        <option value="fecha_inicio_desc" selected>Fecha de inicio (más lejana)</option>
-                    }
-                    else
-                    {
-                        <option value="fecha_inicio_desc">Fecha de inicio (más lejana)</option>
-                    }
-
-                    @if (ViewBag.OrdenPor == "fecha_contrato_asc")
-                    {
-                        <option value="fecha_contrato_asc" selected>Fecha de contrato (más cercana)</option>
-                    }
-                    else
-                    {
-                        <option value="fecha_contrato_asc">Fecha de contrato (más cercana)</option>
-                    }
-
-                    @if (ViewBag.OrdenPor == "fecha_contrato_desc")
-                    {
-                        <option value="fecha_contrato_desc" selected>Fecha de contrato (más lejana)</option>
-                    }
-                    else
-                    {
-                        <option value="fecha_contrato_desc">Fecha de contrato (más lejana)</option>
-                    }
-
-                    @if (ViewBag.OrdenPor == "cantidad_personas_desc")
-                    {
-                        <option value="cantidad_personas_desc" selected>Cantidad de Personas (Mayor)</option>
-                    }
-                    else
-                    {
-                        <option value="cantidad_personas_desc">Cantidad de Personas (Mayor)</option>
-                    }
-
-                    @if (ViewBag.OrdenPor == "cantidad_personas_asc")
-                    {
-                        <option value="cantidad_personas_asc" selected>Cantidad de Personas (Menor)</option>
-                    }
-                    else
-                    {
-                        <option value="cantidad_personas_asc">Cantidad de Personas (Menor)</option>
-                    }
-
-                    @if (ViewBag.OrdenPor == "tipo_evento")
-                    {
-                        <option value="tipo_evento" selected>Tipo de Evento (A-Z)</option>
-                    }
-                    else
-                    {
-                        <option value="tipo_evento">Tipo de Evento (A-Z)</option>
-                    }
-                </select>
-            </div>
-
-        </div>
-
-
-    <div class="col-12 mt-2">
-        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-magnifying-glass"></i>Buscar Eventos</button>
+    <div class="col-md-3">
+        <label for="estado" class="form-label">Estado</label>
+        <select name="estado" id="estado" class="form-select" asp-items="ViewBag.EstadosList">
+            <option value="">-- Mostrar Todos --</option>
+        </select>
     </div>
 
+    <div class="col-md-3">
+        <label for="pageSize" class="form-label">Por Página</label>
+        <select name="pageSize" id="pageSize" class="form-select" asp-items="ViewBag.PageSizeList" onchange="this.form.submit()">
+        </select>
+    </div>
+
+    <div class="col-md-4">
+        <label for="ordenPor" class="form-label">Ordenar por</label>
+        <select name="ordenPor" id="ordenPor" class="form-select" asp-items="ViewBag.OrdenPorList" onchange="this.form.submit()">
+        </select>
+    </div>
+
+    <div class="col-md-2 align-self-end">
+        <button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-magnifying-glass"></i> Buscar</button>
+    </div>
 </form>
 
 <table class="table table-striped table-hover">
-    <thead>
-        <tr>
-            <th>Cliente Responsable</th>
-            <th>Tipo de Evento</th>
-            <th>Fecha Inicio del Evento</th>
-            <th>Estado</th>
-            <th>Observaciones</th>
-            <th>Acciones Rapidas</th>
-            @* Agregamos Saldo Pendiente? *@
-        </tr>
-    </thead>
-
     <tbody>
-        @if (!Model.Any())
-        {
-            <tr>
-                <td colspan="5" class="text-center">
-                    <div class="alert alert-warning my-3" role="alert">
-                        <i class="fa-solid fa-circle-info me-2"></i>
-                        @if (!string.IsNullOrEmpty(q))
-                        {
-                            @:No se encontraron eventos para "@q".
-                        }
-                        else 
-                        {
-                            @:No se encontraron eventos que coincidan con las fechas.
-                        }
-                    </div>
-                </td>
-            </tr>
-        }
-        else
-        {
-            @foreach (var e in Model)
-            {
-                // --- Lógica para el estado (CORREGIDA PARA TU ENUM) ---
-                string estadoClass = "bg-secondary"; // Color por defecto
-                string estadoIcon = "fa-question-circle"; // Icono por defecto
-                string estadoTexto = e.Estado.ToString(); // Texto por defecto (nombre del enum)
-
-                switch (e.Estado)
-                {
-                    case EventoEstado.PendientePagado:
-                        estadoClass = "bg-success"; // Verde para pagado
-                        estadoIcon = "fa-check-circle";
-                        estadoTexto = "Pendiente (Pagado)"; // Texto más claro
-                        break;
-                    case EventoEstado.PendienteAdeudado:
-                        estadoClass = "bg-warning text-dark"; // Amarillo/Naranja para adeudado
-                        estadoIcon = "fa-exclamation-triangle";
-                        estadoTexto = "Pendiente (Adeudado)"; // Texto más claro
-                        break;
-                    case EventoEstado.Realizado:
-                        estadoClass = "bg-secondary"; // Gris para ya realizado
-                        estadoIcon = "fa-check";
-                        estadoTexto = "Realizado";
-                        break;
-                    case EventoEstado.Cancelado:
-                        estadoClass = "bg-danger"; // Rojo para cancelado
-                        estadoIcon = "fa-ban";
-                        estadoTexto = "Cancelado";
-                        break;
-                    case EventoEstado.Reprogramado:
-                        estadoClass = "bg-info text-dark"; // Azul claro para reprogramado
-                        estadoIcon = "fa-clock-rotate-left";
-                        estadoTexto = "Reprogramado";
-                        break;
-                        // No necesitamos 'default' si cubrimos todos los casos
-                }
-                <tr>
-                    <td>@e.ClienteNombreCompleto</td>
-                    <td>@e.Tipo</td>
-                    <td>@e.Inicio.ToLongDateString()</td>
-                    <td>
-                        <span class="badge @estadoClass">
-                            <i class="fa-solid @estadoIcon me-1"></i> @estadoTexto
-                        </span>
-                    </td>
-                    <td>
-                        @if (!string.IsNullOrEmpty(e.Observaciones))
-                        {
-                            <span title="@e.Observaciones" class="d-inline-block text-truncate" style="max-width: 150px;">
-                                @e.Observaciones
-                            </span>
-                        }
-                        else
-                        {
-                            <span class="text-muted fst-italic">N/A</span>
-                        }
-                    </td>
-
-                    <td class="text-center">
-                        <a asp-action="Details" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-info" title="Ver Detalles"><i class="fa-solid fa-eye"></i></a>
-                        <a asp-action="Edit" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="fa-solid fa-pen"></i></a>
-                    @if (@e.Estado != si_td_gestion_eventos.Models.Enums.EventoEstado.Cancelado) 
-                        {
-                            <a asp-action="Cancel" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-danger" title="Cancelar Evento"><i class="fa-solid fa-ban"></i></a>
-                        }
-                        else
-                        {
-                            <a asp-action="Reprogramar" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-warning" title="Reprogramar Evento"><i class="fa-solid fa-clock"></i></a>
-                        }
-                        <a asp-controller="Pago" asp-action="Create" asp-route-eventoId="@e.EventoId" class="btn btn-sm btn-outline-success" title="Agregar Pago"><i class="fa-solid fa-dollar-sign"></i>
-                        </a>
-                    </td>
-                </tr>
-            }
-        }
     </tbody>
 </table>
 
-<div class="d-flex justify-content-between align-items-center mt-3">
 
+<div class="d-flex justify-content-between align-items-center mt-3">
     <nav aria-label="Paginación">
         <ul class="pagination mb-0">
             <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
-                <a class="page-link" asp-action="Index" asp-route-q="@q" asp-route-fechaDesde="@fechaDesde?.ToString("yyyy-MM-dd")" asp-route-fechaHasta="@fechaHasta?.ToString("yyyy-MM-dd")" asp-route-page="@(Model.PageIndex - 1)" asp-route-pageSize="@pageSize">Anterior</a>
+                <a class="page-link" asp-action="Index"
+                   asp-route-q="@q" asp-route-fechaDesde="@fechaDesde?.ToString("yyyy-MM-dd")" asp-route-fechaHasta="@fechaHasta?.ToString("yyyy-MM-dd")"
+                   asp-route-estado="@estado" asp-route-page="@(Model.PageIndex - 1)" asp-route-pageSize="@pageSize">Anterior</a>
             </li>
             @for (int i = 1; i <= Model.TotalPages; i++)
             {
                 <li class="page-item @(i == Model.PageIndex ? "active" : "")">
-                    <a class="page-link" asp-action="Index" asp-route-q="@q" asp-route-fechaDesde="@fechaDesde?.ToString("yyyy-MM-dd")" asp-route-fechaHasta="@fechaHasta?.ToString("yyyy-MM-dd")" asp-route-page="@i" asp-route-pageSize="@pageSize">@i</a>
+                    <a class="page-link" asp-action="Index"
+                       asp-route-q="@q" asp-route-fechaDesde="@fechaDesde?.ToString("yyyy-MM-dd")" asp-route-fechaHasta="@fechaHasta?.ToString("yyyy-MM-dd")"
+                       asp-route-estado="@estado" asp-route-page="@i" asp-route-pageSize="@pageSize">@i</a>
                 </li>
             }
             <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
-                <a class="page-link" asp-action="Index" asp-route-q="@q" asp-route-fechaDesde="@fechaDesde?.ToString("yyyy-MM-dd")" asp-route-fechaHasta="@fechaHasta?.ToString("yyyy-MM-dd")" asp-route-page="@(Model.PageIndex + 1)" asp-route-pageSize="@pageSize">Siguiente</a>
+                <a class="page-link" asp-action="Index"
+                   asp-route-q="@q" asp-route-fechaDesde="@fechaDesde?.ToString("yyyy-MM-dd")" asp-route-fechaHasta="@fechaHasta?.ToString("yyyy-MM-dd")"
+                   asp-route-estado="@estado" asp-route-page="@(Model.PageIndex + 1)" asp-route-pageSize="@pageSize">Siguiente</a>
             </li>
         </ul>
     </nav>

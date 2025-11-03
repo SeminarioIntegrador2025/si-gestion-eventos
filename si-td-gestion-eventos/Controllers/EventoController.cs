@@ -1,11 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using FluentValidation;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Newtonsoft.Json;
 using si_td_gestion_eventos.Infrastructure;
+using si_td_gestion_eventos.Models.Enums;
 using si_td_gestion_eventos.Models.ViewModels;
 using si_td_gestion_eventos.Services.Contracts;
-using FluentValidation;
-using Newtonsoft.Json;
-
+using System; 
+using System.Collections.Generic; 
+using System.Linq; 
+using System.Threading.Tasks; 
 
 namespace si_td_gestion_eventos.Controllers
 {
@@ -16,7 +20,7 @@ namespace si_td_gestion_eventos.Controllers
         private readonly IValidator<EventoVM> _validator;
 
         public EventoController(
-            IEventoService eventoService, 
+            IEventoService eventoService,
             IClienteService clienteService,
             IValidator<EventoVM> validator)
         {
@@ -25,47 +29,52 @@ namespace si_td_gestion_eventos.Controllers
             _validator = validator;
         }
 
-        // GET: Evento/Index (eventos actuales)
+        // GET: Evento/Index
         public async Task<IActionResult> Index(
             string q,
             DateTime? fechaDesde,
             DateTime? fechaHasta,
+            EventoEstado? estado,
             string ordenPor = "fecha_inicio_asc",
             int page = 1,
             int pageSize = 10)
-        {     
+        {
             if (fechaDesde.HasValue && fechaHasta.HasValue && fechaHasta.Value < fechaDesde.Value)
             {
-                ModelState.AddModelError("Fechas", "La 'Fecha Hasta' no puede ser anterior a la 'Fecha Desde'.");                
+                ModelState.AddModelError("Fechas", "La 'Fecha Hasta' no puede ser anterior a la 'Fecha Desde'.");
                 ViewBag.Search = q;
                 ViewBag.FechaDesde = fechaDesde;
                 ViewBag.FechaHasta = fechaHasta;
-                ViewBag.OrdenPor = ordenPor;
-                ViewBag.PageSize = pageSize;
+
+                ViewBag.EstadosList = new SelectList(Enum.GetValues(typeof(EventoEstado)), estado);
+                ViewBag.PageSizeList = new SelectList(new[] { 10, 25, 50 }, pageSize);
+                ViewBag.OrdenPorList = new SelectList(GetOrdenPorOpciones(), "Value", "Text", ordenPor);
+
                 var emptyList = new PaginatedList<EventoVM>(new List<EventoVM>(), 0, page, pageSize);
                 return View(emptyList);
             }
-
             var paginatedList = await _eventoService.GetAllPaginatedAsync(
                 q,
                 fechaDesde,
                 fechaHasta,
+                estado,
                 ordenPor,
                 page,
-                pageSize,
-                incluirPasados: false,
-                incluirCancelados: true);
-
+                pageSize);
             ViewBag.Search = q;
             ViewBag.FechaDesde = fechaDesde;
             ViewBag.FechaHasta = fechaHasta;
-            ViewBag.PageSize = pageSize;
-            ViewBag.Ultimos = await _eventoService.GetLatestAsync(5);
-            ViewBag.OrdenPor = ordenPor;
+            ViewBag.Estado = estado; 
+
+            // --- Listas para los Dropdowns ---
+            ViewBag.EstadosList = new SelectList(Enum.GetValues(typeof(EventoEstado)), estado);
+            ViewBag.PageSizeList = new SelectList(new[] { 10, 25, 50 }, pageSize);
+            ViewBag.OrdenPorList = new SelectList(GetOrdenPorOpciones(), "Value", "Text", ordenPor);
+
             return View(paginatedList);
         }
 
-        // GET: Evento/Details/{id}
+        // GET: Evento/Details/{id} 
         public async Task<IActionResult> Details(int id)
         {
             var eventoVM = await _eventoService.GetByIdAsync(id);
@@ -76,7 +85,7 @@ namespace si_td_gestion_eventos.Controllers
             return View(eventoVM);
         }
 
-        // GET: Evento/Create
+        // GET: Evento/Create 
         public async Task<IActionResult> Create()
         {
             var viewModel = new EventoVM
@@ -84,14 +93,12 @@ namespace si_td_gestion_eventos.Controllers
                 FechaContrato = DateTime.Today,
                 Inicio = DateTime.Today.AddDays(1),
                 Fin = DateTime.Today.AddDays(1)
-               
             };
-
-            await PopulateClientesDropdown(); 
+            await PopulateClientesDropdown();
             return View(viewModel);
         }
 
-        // POST: Evento/Create
+        // POST: Evento/Create 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(EventoVM eventoVM)
@@ -107,15 +114,16 @@ namespace si_td_gestion_eventos.Controllers
                     ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
                 }
             }
-    
             var deadline = DateTime.Now.AddHours(48);
             var now = DateTime.Now;
-            bool esDentroDe48Hs = (eventoVM.Inicio < deadline && eventoVM.Inicio > now);
+
+            DateTime fechaInicioReal = eventoVM.Inicio.Date.Add(eventoVM.HoraInicio);
+
+            bool esDentroDe48Hs = (fechaInicioReal < deadline && fechaInicioReal > now);
 
             string observacionTexto;
             if (esDentroDe48Hs)
             {
-
                 observacionTexto = "Pago completo del salón (Evento < 48hs)";
             }
             else
@@ -138,96 +146,13 @@ namespace si_td_gestion_eventos.Controllers
 
                 return RedirectToAction("CreateReserva", "Pago");
             }
-
             await PopulateClientesDropdown();
             return View(eventoVM);
         }
 
-        // GET: Evento/Historial (eventos pasados)
-        public async Task<IActionResult> Historial(
-            string q,
-            DateTime? fechaDesde,
-            DateTime? fechaHasta,
-            string ordenPor = "fecha_inicio_desc",
-            int page = 1,
-            int pageSize = 10)
-        {
-            if (fechaDesde.HasValue && fechaHasta.HasValue && fechaHasta.Value < fechaDesde.Value)
-            {
-                ModelState.AddModelError("Fechas", "La 'Fecha Hasta' no puede ser anterior a la 'Fecha Desde'.");
-                ViewBag.Search = q;
-                ViewBag.FechaDesde = fechaDesde;
-                ViewBag.FechaHasta = fechaHasta;
-                ViewBag.OrdenPor = ordenPor;
-                ViewBag.PageSize = pageSize;
-                var emptyList = new PaginatedList<EventoVM>(new List<EventoVM>(), 0, page, pageSize);
-                return View("Index", emptyList);
-            }
 
-            var paginatedList = await _eventoService.GetAllPaginatedAsync(
-                q,
-                fechaDesde,
-                fechaHasta,
-                ordenPor,
-                page,
-                pageSize,
-                incluirPasados: true,
-                incluirCancelados: false);
 
-            ViewBag.Search = q;
-            ViewBag.FechaDesde = fechaDesde;
-            ViewBag.FechaHasta = fechaHasta;
-            ViewBag.PageSize = pageSize;
-            ViewBag.OrdenPor = ordenPor;
-            ViewBag.TituloVista = "Historial de Eventos";
-            return View("Index", paginatedList);
-        }
-
-        // GET: Evento/Cancelados
-        public async Task<IActionResult> Cancelados(
-            string q,
-            DateTime? fechaDesde,
-            DateTime? fechaHasta,
-            string ordenPor = "fecha_inicio_desc",
-            int page = 1,
-            int pageSize = 10)
-        {
-            if (fechaDesde.HasValue && fechaHasta.HasValue && fechaHasta.Value < fechaDesde.Value)
-            {
-                ModelState.AddModelError("Fechas", "La 'Fecha Hasta' no puede ser anterior a la 'Fecha Desde'.");
-                ViewBag.Search = q;
-                ViewBag.FechaDesde = fechaDesde;
-                ViewBag.FechaHasta = fechaHasta;
-                ViewBag.OrdenPor = ordenPor;
-                ViewBag.PageSize = pageSize;
-                var emptyList = new PaginatedList<EventoVM>(new List<EventoVM>(), 0, page, pageSize);
-                return View("Index", emptyList);
-            }
-
-            var paginatedList = await _eventoService.GetAllPaginatedAsync(
-                q,
-                fechaDesde,
-                fechaHasta,
-                ordenPor,
-                page,
-                pageSize,
-                incluirPasados: true,
-                incluirCancelados: true);
-
-            var eventosCancelados = paginatedList.Where(e => e.Estado == Models.Enums.EventoEstado.Cancelado).ToList();
-            var totalCancelados = eventosCancelados.Count;
-            var result = new PaginatedList<EventoVM>(eventosCancelados, totalCancelados, page, pageSize);
-
-            ViewBag.Search = q;
-            ViewBag.FechaDesde = fechaDesde;
-            ViewBag.FechaHasta = fechaHasta;
-            ViewBag.PageSize = pageSize;
-            ViewBag.OrdenPor = ordenPor;
-            ViewBag.TituloVista = "Eventos Cancelados";
-            return View("Index", result);
-        }
-
-        // GET: Evento/Edit/{id}
+        // GET: Evento/Edit/{id} 
         public async Task<IActionResult> Edit(int id)
         {
             var eventoVM = await _eventoService.GetByIdAsync(id);
@@ -235,16 +160,13 @@ namespace si_td_gestion_eventos.Controllers
             {
                 return NotFound();
             }
-
             var canModify = await _eventoService.CanModifyEventoAsync(id);
             ViewBag.CanModify = canModify;
-
             await PopulateClientesDropdown();
-
             return View(eventoVM);
         }
 
-        // POST: Evento/Edit/{id}
+        // POST: Evento/Edit/{id} 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, EventoVM eventoVM)
@@ -254,13 +176,11 @@ namespace si_td_gestion_eventos.Controllers
                 return NotFound();
             }
 
-            // Validar con FluentValidation incluyendo reglas comunes + RuleSet "Edit"
-            var validationResult = await _validator.ValidateAsync(eventoVM, options => 
+            var validationResult = await _validator.ValidateAsync(eventoVM, options =>
             {
                 options.IncludeRuleSets("default", "Edit");
             });
 
-            // Agregar errores de validación al ModelState manualmente
             if (!validationResult.IsValid)
             {
                 foreach (var error in validationResult.Errors)
@@ -272,21 +192,17 @@ namespace si_td_gestion_eventos.Controllers
             if (ModelState.IsValid)
             {
                 var result = await _eventoService.UpdateAsync(eventoVM);
-
                 if (result.Success)
                 {
                     TempData["Ok"] = result.Message;
                     return RedirectToAction(nameof(Index));
                 }
-                
                 foreach (var error in result.Errors)
                 {
                     ModelState.AddModelError(string.Empty, error);
                 }
             }
-            
-            // IMPORTANTE: Recargar los datos del evento desde la BD para recuperar ClienteNombreCompleto
-            // Si hay errores de validación, necesitamos mantener los datos del cliente
+
             if (!ModelState.IsValid)
             {
                 var eventoOriginal = await _eventoService.GetByIdAsync(id);
@@ -296,12 +212,12 @@ namespace si_td_gestion_eventos.Controllers
                     eventoVM.ClienteId = eventoOriginal.ClienteId;
                 }
             }
-            
+
             await PopulateClientesDropdown();
-            return View(eventoVM); 
+            return View(eventoVM);
         }
 
-        // GET: Evento/Cancel/{id}
+        // GET: Evento/Cancel/{id} 
         public async Task<IActionResult> Cancel(int id)
         {
             var eventoVM = await _eventoService.GetByIdAsync(id);
@@ -309,10 +225,10 @@ namespace si_td_gestion_eventos.Controllers
             {
                 return NotFound();
             }
-            return View(eventoVM); 
+            return View(eventoVM);
         }
 
-        // POST: Evento/Cancel/{id}
+        // POST: Evento/Cancel/{id} 
         [HttpPost, ActionName("Cancel")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CancelConfirmed(int id)
@@ -329,10 +245,26 @@ namespace si_td_gestion_eventos.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // --- Métodos Helper ---
+
         private async Task PopulateClientesDropdown()
         {
             var clientes = await _clienteService.GetClientesActivosParaDropdownAsync();
             ViewBag.Clientes = new SelectList(clientes, "Value", "Text");
+        }
+
+        private List<SelectListItem> GetOrdenPorOpciones()
+        {
+            return new List<SelectListItem>
+            {
+                new SelectListItem { Value = "fecha_inicio_asc", Text = "Fecha de inicio (más cercana)" },
+                new SelectListItem { Value = "fecha_inicio_desc", Text = "Fecha de inicio (más lejana)" },
+                new SelectListItem { Value = "fecha_contrato_asc", Text = "Fecha de contrato (más cercana)" },
+                new SelectListItem { Value = "fecha_contrato_desc", Text = "Fecha de contrato (más lejana)" },
+                new SelectListItem { Value = "cantidad_personas_desc", Text = "Cantidad de Personas (Mayor)" },
+                new SelectListItem { Value = "cantidad_personas_asc", Text = "Cantidad de Personas (Menor)" },
+                new SelectListItem { Value = "tipo_evento", Text = "Tipo de Evento (A-Z)" }
+            };
         }
     }
 }

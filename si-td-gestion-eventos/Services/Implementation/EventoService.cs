@@ -49,11 +49,10 @@ namespace si_td_gestion_eventos.Services.Implementation
             string? searchQuery,
             DateTime? fechaDesde,
             DateTime? fechaHasta,
+            EventoEstado? estado,
             string ordenarPor,
             int page,
-            int pageSize,
-            bool incluirPasados = false,
-            bool incluirCancelados = false)
+            int pageSize)
         {
             try
             {
@@ -68,19 +67,6 @@ namespace si_td_gestion_eventos.Services.Implementation
                                         q => q.Cliente
                                     )).AsQueryable();
 
-                // Filtrar eventos pasados si no se solicita incluirlos
-                if (!incluirPasados)
-                {
-                    var hoy = DateTime.Today;
-                    eventosQuery = eventosQuery.Where(e => e.Inicio.Date >= hoy);
-                }
-
-                // Filtrar eventos cancelados si no se solicita incluirlos
-                if (!incluirCancelados)
-                {
-                    eventosQuery = eventosQuery.Where(e => e.Estado != EventoEstado.Cancelado);
-                }
-
                 if (fechaDesde.HasValue)
                 {
                     eventosQuery = eventosQuery.Where(e => e.Inicio.Date >= fechaDesde.Value.Date);
@@ -88,6 +74,11 @@ namespace si_td_gestion_eventos.Services.Implementation
                 if (fechaHasta.HasValue)
                 {
                     eventosQuery = eventosQuery.Where(e => e.Inicio.Date <= fechaHasta.Value.Date);
+                }
+
+                if (estado.HasValue)
+                {
+                    eventosQuery = eventosQuery.Where(e => e.Estado == estado.Value);
                 }
 
                 IOrderedQueryable<Evento> eventosOrdenados = ordenarPor switch

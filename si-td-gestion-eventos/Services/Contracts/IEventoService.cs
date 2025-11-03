@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc.Rendering;
 using si_td_gestion_eventos.Infrastructure;
+using si_td_gestion_eventos.Models.Enums;
 using si_td_gestion_eventos.Models.ViewModels;
 using si_td_gestion_eventos.Services.Common;
 
@@ -11,11 +12,10 @@ namespace si_td_gestion_eventos.Services.Contracts
             string? searchQuery,
             DateTime? fechaDesde,
             DateTime? fechaHasta,
+            EventoEstado? estado,
             string ordenarPor,
             int page,
-            int pageSize,
-            bool incluirPasados = false,
-            bool incluirCancelados = false);
+            int pageSize);
         Task<List<EventoVM>> GetLatestAsync(int count);
         Task<EventoVM?> GetByIdAsync(int id);
         Task<ServiceResult<EventoVM>> CreateAsync(EventoVM eventoVM);
