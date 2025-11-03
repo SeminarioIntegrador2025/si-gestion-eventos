@@ -18,7 +18,7 @@ namespace si_td_gestion_eventos.BackgroundServices
             _logger.LogInformation("Servicio de Plazo de Pago iniciado.");
 
           
-            using var timer = new PeriodicTimer(TimeSpan.FromHours(1));
+            using var timer = new PeriodicTimer(TimeSpan.FromMinutes(1)); //DESPUES CAMBIARLO A TIEMPO MAS RAZONABLE 
           
             while (await timer.WaitForNextTickAsync(stoppingToken))
             {
@@ -29,7 +29,7 @@ namespace si_td_gestion_eventos.BackgroundServices
                     return;
                 }
 
-                _logger.LogInformation("Ejecutando chequeo de plazos de pago...");
+                _logger.LogInformation("Ejecutando chequeo de plazos de pago y finalizacion de eventos");
 
                 try
                 {
@@ -44,6 +44,14 @@ namespace si_td_gestion_eventos.BackgroundServices
                         {
                             _logger.LogInformation($"Se cancelaron automáticamente {result.Data} eventos por falta de pago.");
                         }
+
+                        var completeResult = await eventoService.MarkCompletedEventsAsync();
+
+                        if (completeResult.Success && completeResult.Data > 0)
+                        {
+                            _logger.LogInformation($"Se marcaron automáticamente {completeResult.Data} eventos como Realizados.");
+                        }
+
                     }
                 }
                 catch (Exception ex)

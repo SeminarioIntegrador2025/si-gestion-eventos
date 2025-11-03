@@ -511,6 +511,48 @@ namespace si_td_gestion_eventos.Services.Implementation
                 }
             }
         }
+        public async Task<ServiceResult<int>> MarkCompletedEventsAsync()
+        {
+            int completedCount = 0;
+
+            var statesToComplete = new[] {
+            EventoEstado.PendienteAdeudado,
+            EventoEstado.PendientePagado,
+            EventoEstado.Reprogramado
+        };
+
+            try
+            {               
+                var eventsToMark = await _eventoRepository.FindAsync(
+                    e => e.Fin.Date < DateTime.Today &&
+                         statesToComplete.Contains(e.Estado)
+                );
+
+                if (!eventsToMark.Any())
+                {
+                    return ServiceResult<int>.SuccessResult(0, "No hay eventos para marcar como realizados.");
+                }
+
+                foreach (var evento in eventsToMark)
+                {
+                    evento.Estado = EventoEstado.Realizado;
+                    _eventoRepository.Update(evento);
+                    completedCount++;
+                }
+
+                if (completedCount > 0)
+                {
+                    await _eventoRepository.SaveChangesAsync();
+                }
+
+                return ServiceResult<int>.SuccessResult(completedCount, $"Se marcaron {completedCount} eventos como Realizados.");
+            }
+            catch (Exception ex)
+            {
+                // (Loggear el error 'ex')
+                return ServiceResult<int>.FailureResult($"Error al marcar eventos como realizados: {ex.Message}");
+            }
+        }
 
         public async Task<ServiceResult<int>> CheckAndCancelUnpaidEventsAsync()
         {         
