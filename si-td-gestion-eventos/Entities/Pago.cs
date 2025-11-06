@@ -8,7 +8,6 @@ namespace si_td_gestion_eventos.Entities
         public DateTime Fecha { get; set; }
         public float Monto { get; set; }
         public MetodoPago Metodo { get; set; }
-
         public string? Observaciones { get; set; }
 
         // --- ARREGLO 1: Propiedades de Relación ---

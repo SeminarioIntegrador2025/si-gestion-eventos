@@ -10,7 +10,6 @@ namespace si_td_gestion_eventos.Models.ViewModels
 
         [Required(ErrorMessage = "El ID del evento es obligatorio.")]
         public int EventoId { get; set; }
-        // Para mostrar info del evento en la vista
         public string? EventoDescripcion { get; set; }
         public string? ClienteNombre { get; set; }
 
@@ -22,7 +21,7 @@ namespace si_td_gestion_eventos.Models.ViewModels
         [Required(ErrorMessage = "El monto es obligatorio.")]
         [Range(0.01, double.MaxValue, ErrorMessage = "El monto debe ser mayor a cero.")]
         [DataType(DataType.Currency)]
-        public float Monto { get; set; } // O decimal
+        public float Monto { get; set; } 
 
         [Required(ErrorMessage = "Debe seleccionar un método de pago.")]
         [Display(Name = "Método de Pago")]
@@ -33,12 +32,9 @@ namespace si_td_gestion_eventos.Models.ViewModels
 
         // --- Para Comprobante Adjunto (Transferencia/Externo) ---
         [Display(Name = "Adjuntar Comprobante")]
-        public IFormFile? ArchivoComprobante { get; set; } // Para subir el archivo
-        public string? RutaArchivoExistente { get; set; } // Para mostrar/borrar el actual
-        public TipoArchivo? TipoArchivoComprobante { get; set; } // PDF, JPG, etc.
-        public string? ReferenciaComprobante { get; set; } // Ej: Nro Transferencia
+        public IFormFile? ArchivoComprobante { get; set; }
+        public string? RutaArchivoExistente { get; set; } 
+        public TipoArchivo? TipoArchivoComprobante { get; set; } 
 
-        // --- Para Recibo en Efectivo ---
-        // (No se sube archivo, se genera)
     }
 }
