@@ -26,7 +26,7 @@
                     </h5>
                 </div>
 
-                <form asp-action="Create" method="post" novalidate>
+                <form asp-action="Create" method="post" novalidate id="formCrearEvento">
                     <div class="card-body">
                         <partial name="_EventoCreateForm" model="Model" />
                     </div>
@@ -44,13 +44,13 @@
         </div>
     </div>
 </div>
-
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 
     <script>
         $(document).ready(function () {
-    
+
+            // --- 1. TU SCRIPT DE CÉDULA (SE QUEDA) ---
             $('#ResponsableCedula').on('input', function() {
                 let value = this.value.replace(/[^\d]/g, '');
                 if (value.length > 8) {
@@ -62,66 +62,49 @@
                 this.value = value;
             });
 
-            const fechaInicioInput = $("#FechaInicio");
-            const costoAlquilerInput = $("#CostoAlquiler");
-            const horaInicioInput = $("#HoraInicio"); 
-            const montoAireInput = $("#MontoAire");
-            const montoReservaInput = $("#MontoReserva");
-            const montoReservaLabel = $("#MontoReservaLabel");
+            // --- 2. SCRIPT ANTIGUO DE 48HS (SE ELIMINA) ---
+            // (Borramos todo el bloque const fechaInicioInput = ...
+            // y la función revisarLogica48Hs() y sus listeners)
 
-            // Salir si los elementos no existen (medida de seguridad)
-           if (!fechaInicioInput.length || !horaInicioInput.length || !costoAlquilerInput.length || !montoAireInput.length || !montoReservaInput.length || !montoReservaLabel.length) {
-            console.warn("Script de 48hs: No se encontraron todos los IDs necesarios.");
-            return;
-        }
+            // --- 3. NUEVO SCRIPT DE ADVERTENCIA 48HS (SE AÑADE) ---
 
-            
-            const labelOriginal = montoReservaLabel.text();
+            // 3a. Busca el formulario.
+            // (¡IMPORTANTE! Asegurate de que tu <form> tenga id="formCrearEvento")
+            // En 'create.cshtml': <form asp-action="Create" ... id="formCrearEvento">
+            $("#formCrearEvento").on("submit", function(e) {
 
-          
-               function revisarLogica48Hs() {
+                // 3b. Lee los 4 valores clave (usando los IDs del _EventoCreateForm)
+                const fechaInicio = new Date($("#FechaInicio").val() + "T" + $("#HoraInicio").val());
+                const costoAlquiler = parseFloat($("#CostoAlquiler").val()) || 0;
+                const montoAire = parseFloat($("#MontoAire").val()) || 0;
+                const montoReserva = parseFloat($("#MontoReserva").val()) || 0;
 
-                const costoAlquiler = parseFloat(costoAlquilerInput.val()) || 0;
-                const montoAire = parseFloat(montoAireInput.val()) || 0;
-                const fechaVal = fechaInicioInput.val(); 
-                const horaVal = horaInicioInput.val();   
+                const costoTotal = costoAlquiler + montoAire;
 
-
-                if (!fechaVal || !horaVal) {
-
-                    montoReservaLabel.text(labelOriginal);
-                    montoReservaInput.prop("readonly", false);
-                    return; 
-                }
-
-
-                const fechaInicio = new Date(fechaVal + "T" + horaVal);
-
-
+                // 3c. Define las condiciones
                 const ahora = new Date();
                 const deadline48hs = new Date(ahora.getTime() + 48 * 60 * 60 * 1000);
 
-                if (fechaInicio > ahora && fechaInicio < deadline48hs) {
+                const esDentroDe48Hs = (fechaInicio > ahora && fechaInicio < deadline48hs);
+                const esPagoParcial = montoReserva < costoTotal;
 
-                    const costoTotal = costoAlquiler + montoAire;
-                    montoReservaLabel.text("Monto Total (Pago Requerido)");
-                    montoReservaInput.val(costoTotal.toFixed(2));
-                    montoReservaInput.prop("readonly", true);
+                // 3d. ¡LA LÓGICA DE ADVERTENCIA!
+                if (esDentroDe48Hs && esPagoParcial) {
 
-                } else {
+                    const mensaje = "ADVERTENCIA:\n\n" +
+                                  "Este evento es en menos de 48 horas y solo se está pagando la reserva.\n\n" +
+                                  "¿Desea crearlo igualmente?";
 
-                    montoReservaLabel.text(labelOriginal);
-                    montoReservaInput.prop("readonly", false);
+                    if (confirm(mensaje)) {
+                        // SI (El usuario confirma): Deja que el formulario se envíe
+                        return;
+                    } else {
+                        // NO (El usuario cancela): Detiene el envío del formulario
+                        e.preventDefault();
+                    }
                 }
-            }
-
-            fechaInicioInput.on("change", revisarLogica48Hs);
-            horaInicioInput.on("change", revisarLogica48Hs); 
-            costoAlquilerInput.on("input", revisarLogica48Hs);
-            montoAireInput.on("input", revisarLogica48Hs);
-
-          
-            revisarLogica48Hs();
+            });
         });
     </script>
+}
 }

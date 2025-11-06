@@ -42,10 +42,6 @@ namespace si_td_gestion_eventos.Validators
                 .Must(BeValidFileType).WithMessage("El tipo de archivo no es válido (solo PDF, JPG, PNG).")
                 .When(p => p.ArchivoComprobante != null);
 
-            RuleFor(p => p.ReferenciaComprobante)
-                .NotEmpty().WithMessage("Debe ingresar una referencia para la transferencia.")
-                .When(p => p.Metodo == MetodoPago.Transferencia);
-
             RuleFor(p => p.Observaciones)
                 .MaximumLength(500).WithMessage("Las observaciones no pueden exceder los 500 caracteres.");
         }

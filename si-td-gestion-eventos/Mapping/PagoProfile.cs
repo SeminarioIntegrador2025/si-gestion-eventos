@@ -15,8 +15,7 @@ namespace si_td_gestion_eventos.Mapping
 
                 .ForMember(dest => dest.RutaArchivoExistente, opt => opt.MapFrom(src => src.ComprobanteExterno != null ? src.ComprobanteExterno.RutaArchivo : null))
 
-                .ForMember(dest => dest.TipoArchivoComprobante, opt => opt.MapFrom(src => src.ComprobanteExterno != null ? (TipoArchivo?)src.ComprobanteExterno.TipoArchivo : null))
-                .ForMember(dest => dest.ReferenciaComprobante, opt => opt.MapFrom(src => src.ComprobanteExterno != null ? src.ComprobanteExterno.Referencia : null));
+                .ForMember(dest => dest.TipoArchivoComprobante, opt => opt.MapFrom(src => src.ComprobanteExterno != null ? (TipoArchivo?)src.ComprobanteExterno.TipoArchivo : null));
 
           
             CreateMap<PagoVM, Pago>()
@@ -29,7 +28,6 @@ namespace si_td_gestion_eventos.Mapping
             CreateMap<PagoVM, ComprobanteExterno>()
                 .ForMember(dest => dest.FechaComprobante, opt => opt.MapFrom(src => DateTime.Now)) 
                 .ForMember(dest => dest.TipoArchivo, opt => opt.MapFrom(src => src.TipoArchivoComprobante ?? TipoArchivo.PDF))
-                .ForMember(dest => dest.Referencia, opt => opt.MapFrom(src => src.ReferenciaComprobante))
                 .ForMember(dest => dest.RutaArchivo, opt => opt.Ignore()) 
                 .ForMember(dest => dest.Pago, opt => opt.Ignore()) 
                 .ForMember(dest => dest.PagoId, opt => opt.Ignore())

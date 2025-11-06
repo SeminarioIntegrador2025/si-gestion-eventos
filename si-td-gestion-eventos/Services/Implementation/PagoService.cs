@@ -163,7 +163,6 @@ namespace si_td_gestion_eventos.Services.Implementation
                         RutaArchivo = string.Empty, 
                         FechaComprobante = DateTime.Now,
                         TipoArchivo = pagoVM.TipoArchivoComprobante ?? TipoArchivo.PDF,
-                        Referencia = pagoVM.ReferenciaComprobante
                     };
 
                     comprobanteEntity.RutaArchivo = await GuardarArchivoComprobanteAsync(pagoVM.ArchivoComprobante, pagoVM.EventoId, 0 /*pagoEntity.PagoId*/);

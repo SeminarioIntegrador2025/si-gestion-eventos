@@ -1,7 +1,20 @@
 ﻿@model si_td_gestion_eventos.Models.ViewModels.PagoReservaVM
 @{
     ViewData["Title"] = "Confirmar Reserva de Evento";
+
+    // 1. OBTENEMOS LOS DATOS DEL VIEWDATA (QUE PASA EL PAGOCONTROLLER)
+    var costoTotal = (float)(ViewData["CostoTotalEvento"] ?? 0f);
+    var obsReserva = ViewData["ObsReserva"]?.ToString() ?? "Por Reserva";
+    var obsCompleto = ViewData["ObsCompleto"]?.ToString() ?? "Pago completo";
 }
+
+<div id="helperData"
+     data-costo-total="@costoTotal"
+     data-obs-reserva="@obsReserva"
+     data-obs-completo="@obsCompleto"
+     style="display: none;">
+</div>
+
 
 <h2>Paso 2: Confirmar Pago de Reserva</h2>
 <p>Complete los datos del pago para confirmar la creación del evento.</p>
@@ -14,11 +27,20 @@
 
             <div asp-validation-summary="All" class="text-danger mb-3"></div>
 
+            <div class="alert alert-info d-flex align-items-center" role="alert">
+                <i class="fa-solid fa-circle-info fa-lg me-3"></i>
+                <div>
+                    <strong>Sugerencia:</strong> Los siguientes campos son editables. El sistema ha sugerido valores basados en la fecha del evento, pero podés modificarlos.
+                </div>
+            </div>
+
             <fieldset class="mb-3">
-                <legend style="font-size: 1.1em;">Datos de la Reserva (Bloqueados)</legend>
+                <legend style="font-size: 1.1em;">Datos de la Reserva (Sugeridos)</legend>
                 <div class="form-group mb-2">
                     <label asp-for="Monto" class="control-label"></label>
-                    <input asp-for="Monto" class="form-control" readonly />
+
+                    <input asp-for="Monto" class="form-control" id="montoSugerido" />
+
                 </div>
                 <div class="form-group mb-2">
                     <label asp-for="Fecha" class="control-label"></label>
@@ -37,9 +59,11 @@
                 </div>
                 <div class="form-group mb-2">
                     <label asp-for="Observaciones" class="control-label"></label>
-
                     <input asp-for="Observaciones" type="text" class="form-control" id="observacionesInput" />
 
+                    <small class="form-text text-info-emphasis" style="font-size: 0.8em;">
+                        El texto inicial es una sugerencia. Podés añadir más detalles.
+                    </small>
                 </div>
                 <div class="form-group mb-3">
                     <label asp-for="ArchivoComprobante" class="control-label"></label>
@@ -72,51 +96,51 @@
     <script>
         document.addEventListener("DOMContentLoaded", function() {
 
+            // 5. OBTENER LOS ELEMENTOS
+            const montoInput = document.getElementById("montoSugerido");
             const obsInput = document.getElementById("observacionesInput");
-            if (!obsInput) return; // Salir si no se encuentra
+            const helperData = document.getElementById("helperData");
 
-            const prefix = obsInput.value;
+            if (!montoInput || !obsInput || !helperData) return;
 
-            // --- El resto del script es para proteger ese prefijo ---
+            // 6. OBTENER LOS VALORES DEL CONTROLADOR
+            const costoTotal = parseFloat(helperData.dataset.costoTotal);
+            const obsReserva = helperData.dataset.obsReserva;
+            const obsCompleto = helperData.dataset.obsCompleto;
 
-            obsInput.addEventListener("focus", function() {
-                if(obsInput.value === prefix) {
-                    obsInput.value = prefix + " "; // Añade un espacio para escribir
-                    obsInput.setSelectionRange(obsInput.value.length, obsInput.value.length);
+            // 7. FUNCIÓN QUE RECALCULA
+            function actualizarObservacion() {
+                const montoActual = parseFloat(montoInput.value) || 0;
+
+                // (Guardamos el texto que el usuario pudo haber añadido)
+                let textoAdicional = "";
+                const obsActual = obsInput.value;
+
+                // Vemos si el usuario ya escribió algo después del prefijo
+                if (obsActual.startsWith(obsReserva) && obsActual.length > obsReserva.length) {
+                    textoAdicional = obsActual.substring(obsReserva.length);
+                } else if (obsActual.startsWith(obsCompleto) && obsActual.length > obsCompleto.length) {
+                    textoAdicional = obsActual.substring(obsCompleto.length);
+                } else if (!obsActual.startsWith(obsReserva) && !obsActual.startsWith(obsCompleto)) {
+                    // Si el usuario borró todo y escribió algo nuevo
+                    textoAdicional = " - " + obsActual;
                 }
-            });
 
-            obsInput.addEventListener("keydown", function(e) {
-                const cursorPosition = e.target.selectionStart;
-                const prefixLength = prefix.length;
-
-                if (e.key === "Backspace" && cursorPosition <= prefixLength) {
-                    e.preventDefault();
+                // 8. ¡LA LÓGICA!
+                if (montoActual >= costoTotal) {
+                    // Si el monto es total, poner la obs de pago completo
+                    obsInput.value = obsCompleto + textoAdicional;
+                } else {
+                    // Si el monto es parcial, poner la obs de reserva
+                    obsInput.value = obsReserva + textoAdicional;
                 }
+            }
 
-                if (e.key === "Delete" && cursorPosition < prefixLength) {
-                    e.preventDefault();
-                }
-            });
+            // 9. ESCUCHAR CAMBIOS EN EL MONTO
+            montoInput.addEventListener("input", actualizarObservacion);
 
-            obsInput.addEventListener("cut", function(e) {
-                if (e.target.selectionStart < prefix.length) {
-                    e.preventDefault();
-                }
-            });
-
-             obsInput.addEventListener("paste", function(e) {
-                if (e.target.selectionStart < prefix.length) {
-                    e.preventDefault();
-                }
-            });
-
-            obsInput.addEventListener("input", function(e) {
-                if (!e.target.value.startsWith(prefix)) {
-                    // Si el usuario logra borrarlo, lo resetea
-                    e.target.value = prefix + " ";
-                }
-            });
+            // (Opcional) Ejecutar una vez al cargar por si el monto sugerido no coincide
+            actualizarObservacion();
         });
     </script>
 }

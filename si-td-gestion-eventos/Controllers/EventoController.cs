@@ -98,11 +98,12 @@ namespace si_td_gestion_eventos.Controllers
             return View(viewModel);
         }
 
-        // POST: Evento/Create 
+        // POST: Evento/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(EventoVM eventoVM)
         {
+            // 1. Validar con FluentValidation (reglas de formato, fechas lógicas, etc.)
             var validationResult = await _validator.ValidateAsync(eventoVM, options =>
             {
                 options.IncludeRuleSets("default", "Create");
@@ -114,38 +115,49 @@ namespace si_td_gestion_eventos.Controllers
                     ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
                 }
             }
+
+            // 2. Calcular la lógica de 48hs (para las sugerencias)
             var deadline = DateTime.Now.AddHours(48);
             var now = DateTime.Now;
-
             DateTime fechaInicioReal = eventoVM.Inicio.Date.Add(eventoVM.HoraInicio);
-
             bool esDentroDe48Hs = (fechaInicioReal < deadline && fechaInicioReal > now);
 
-            string observacionTexto;
+            // 3. Preparar las "Sugerencias" para el Paso 2
+            string observacionSugerida;
+            float montoSugerido;
+
             if (esDentroDe48Hs)
             {
-                observacionTexto = "Pago completo del salón (Evento < 48hs)";
+                // Si es < 48hs, SIEMPRE sugerimos el pago total
+                observacionSugerida = "Pago completo del salón (Evento < 48hs)";
+                float costoTotal = (float)(eventoVM.CostoAlquiler + (eventoVM.MontoAireAcondicionado ?? 0));
+                montoSugerido = costoTotal;
             }
             else
             {
-                observacionTexto = "Por Reserva";
+                // Si es lejano, sugerimos la reserva normal
+                observacionSugerida = "Por Reserva";
+                montoSugerido = (float)eventoVM.MontoReserva;
             }
 
+            // 4. Comprobar el ModelState (SOLO de FluentValidation)
             if (ModelState.IsValid)
             {
-
+                // 5. Redirigir al Paso 2, pasando las SUGERENCIAS
                 TempData["PendingEvent"] = JsonConvert.SerializeObject(eventoVM);
 
                 var pagoVm = new PagoReservaVM
                 {
-                    Monto = (float)eventoVM.MontoReserva,
+                    Monto = montoSugerido, // <-- Pasa el monto sugerido
                     Fecha = eventoVM.FechaContrato,
-                    Observaciones = observacionTexto 
+                    Observaciones = observacionSugerida // <-- Pasa la observación sugerida
                 };
                 TempData["PendingPaymentDetails"] = JsonConvert.SerializeObject(pagoVm);
 
                 return RedirectToAction("CreateReserva", "Pago");
             }
+
+            // Si FluentValidation falló (ej. faltó un cliente)
             await PopulateClientesDropdown();
             return View(eventoVM);
         }

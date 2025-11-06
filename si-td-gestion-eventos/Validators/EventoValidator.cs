@@ -15,11 +15,6 @@ namespace si_td_gestion_eventos.Validators
         {
             _businessRules = businessRules;
 
-            Func<EventoVM, bool> isWithin48Hours = (evento) => {
-                var deadline = DateTime.Now.AddHours(48);
-                var now = DateTime.Now;
-                return evento.Inicio < deadline && evento.Inicio > now;
-            };
 
             // ==========================================================
             // REGLAS COMUNES (Aplican siempre: Create y Edit)
@@ -81,8 +76,7 @@ namespace si_td_gestion_eventos.Validators
             RuleFor(x => x.MontoReserva)
                 .GreaterThanOrEqualTo(0).WithMessage("El monto de reserva no puede ser negativo.")
                 .LessThanOrEqualTo(x => x.CostoAlquiler)
-                .WithMessage("El monto de reserva no puede ser mayor al costo del alquiler.")
-                .Unless(isWithin48Hours);
+                .WithMessage("El monto de reserva no puede ser mayor al costo del alquiler.");
 
             RuleFor(x => x.MontoAireAcondicionado)
                 .GreaterThanOrEqualTo(0).WithMessage("El monto del aire acondicionado no puede ser negativo.")
@@ -134,14 +128,8 @@ namespace si_td_gestion_eventos.Validators
                 // Validación específica del Monto de Reserva al crear y sin ser el evento en las 48hs proximas
                 RuleFor(x => x)
                     .MustAsync(async (evento, ct) => await _businessRules.IsReservationAmountValidAsync(evento.MontoReserva, evento.CostoAlquiler))
-                    .WithMessage("El monto de reserva no cumple con el mínimo requerido para el costo del alquiler.")
-                    .Unless(isWithin48Hours);
+                    .WithMessage("El monto de reserva no cumple con el mínimo requerido para el costo del alquiler.");
 
-                // Validación específica del Monto de Reserva al crear y siendo el evento en las 48hs proximas
-                RuleFor(x => x.MontoReserva)
-                .Equal(x => x.CostoAlquiler + (x.MontoAireAcondicionado ?? 0))
-                .WithMessage("Para eventos en < 48hs, el monto debe ser igual al Costo Total (Alquiler + Aire).")
-                .When(isWithin48Hours);
             });
 
             // ==========================================================
