@@ -452,13 +452,17 @@ body.app {
 }
 
 /* Inputs de solo lectura / deshabilitados: alto contraste y legibles */
-.form-control[readonly],
-.form-control-plaintext[readonly],
-.form-select:disabled {
-    background-color: var(--bg-3) !important;
-    color: var(--ink) !important;
-    opacity: 1; /* no los apagues demasiado */
-}
+    .form-control[readonly],
+    .form-control[disabled], 
+    .form-control-plaintext[readonly],
+    .form-select:disabled {
+            background-color: var(--bg-2) !important;
+            color: var(--ink-light) !important;
+            opacity: 1;
+        border-color: var(--line-light);
+        /* (Opcional) Evitar que el cursor cambie a "prohibido" */
+        cursor: default;
+    }
 
 /* Placeholders siempre legibles */
 ::placeholder {

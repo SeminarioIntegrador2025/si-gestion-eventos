@@ -23,7 +23,6 @@ namespace si_td_gestion_eventos.Controllers
         }
 
         // --- MÉTODO INDEX (Sin Cambios) ---
-        // /Pago (global) Y /Pago?eventoId=5 (filtrado)
         public async Task<IActionResult> Index(int? eventoId, string q)
         {
             List<PagoVM> pagos;
@@ -40,17 +39,16 @@ namespace si_td_gestion_eventos.Controllers
             else
             {
                 pagos = await _pagoService.GetAllAsync();
-
                 if (!string.IsNullOrEmpty(q))
                 {
                     string lowerQ = q.ToLower().Trim();
                     pagos = pagos.Where(p =>
                         (p.ClienteNombre != null && p.ClienteNombre.ToLower().Contains(lowerQ)) ||
                         (p.EventoDescripcion != null && p.EventoDescripcion.ToLower().Contains(lowerQ)) ||
+                        // (Aquí ya no está la 'ReferenciaComprobante' que daba error, ¡bien!)
                         p.Metodo.ToString().ToLower().Contains(lowerQ)
                     ).ToList();
                 }
-
                 ViewBag.EventosFilter = await _eventoService.GetEventosAdeudadosParaDropdownAsync();
                 ViewData["CurrentFilterQ"] = q;
             }
@@ -67,9 +65,7 @@ namespace si_td_gestion_eventos.Controllers
             return View(pagos);
         }
 
-        // --- MÉTODO CREATE [GET] (MODIFICADO) ---
-        // Maneja /Pago/Create Y /Pago/Create?eventoId=5
-        // Añade la lógica para pasar los datos del Informe Financiero a la vista
+        // --- MÉTODO CREATE [GET] (Con Informe Financiero) ---
         [HttpGet]
         public async Task<IActionResult> Create(int? eventoId)
         {
@@ -78,23 +74,22 @@ namespace si_td_gestion_eventos.Controllers
                 Fecha = DateTime.Now
             };
 
+            // 1. OBTENER LA LISTA DE EVENTOS SIEMPRE
+            // (Esto es necesario para el dropdown)
+            var eventosList = await _eventoService.GetEventosAdeudadosParaDropdownAsync();
+
             if (eventoId.HasValue)
             {
+                // MODO 1: Evento pre-seleccionado
                 pagoVM.EventoId = eventoId.Value;
                 ViewData["EventoId"] = eventoId.Value;
 
-                // --- INICIO DE LA MODIFICACIÓN (INFORME FINANCIERO) ---
+                // --- Lógica del Informe Financiero (Igual que antes) ---
                 var eventoVM = await _eventoService.GetByIdAsync(eventoId.Value);
                 if (eventoVM != null)
                 {
-                    // Calculamos el costo total real (con aire)
                     float costoTotal = (float)(eventoVM.CostoAlquiler + (eventoVM.MontoAireAcondicionado ?? 0));
 
-                    // Creamos la descripción del evento para el input deshabilitado
-                    string eventoDescripcion = $"{eventoVM.ClienteNombreCompleto} - {eventoVM.Tipo} - {eventoVM.Inicio:dd/MM/yyyy}";
-                    ViewData["EventoDescripcion"] = eventoDescripcion;
-
-                    // Pasamos los datos al ViewData para el informe y el JS
                     ViewData["SaldoAnterior"] = (float)eventoVM.SaldoRestante;
                     ViewData["TotalPagadoActual"] = (float)eventoVM.TotalPagado;
                     ViewData["CostoTotalEvento"] = costoTotal;
@@ -102,26 +97,32 @@ namespace si_td_gestion_eventos.Controllers
                 }
                 else
                 {
-                    // Fallback por si no se encuentra
-                    ViewData["EventoDescripcion"] = "Evento no encontrado";
+                    // Fallback (Datos vacíos)
                     ViewData["SaldoAnterior"] = 0f;
                     ViewData["TotalPagadoActual"] = 0f;
                     ViewData["CostoTotalEvento"] = 0f;
                     ViewData["EstadoActual"] = "N/A";
                 }
-                // --- FIN DE LA MODIFICACIÓN ---
             }
             else
             {
-                // Modo global, solo cargamos el dropdown
-                ViewBag.Eventos = await _eventoService.GetEventosAdeudadosParaDropdownAsync();
+                // MODO 2: Sin evento seleccionado
+                // (El informe simplemente mostrará $0)
+                ViewData["SaldoAnterior"] = 0f;
+                ViewData["TotalPagadoActual"] = 0f;
+                ViewData["CostoTotalEvento"] = 0f;
+                ViewData["EstadoActual"] = "N/A";
             }
+
+            // 2. CREAR LA SELECTLIST
+            // Le pasamos la lista Y el 'eventoId' (que puede ser null)
+            // Esto se encarga de pre-seleccionar el dropdown automáticamente.
+            ViewBag.Eventos = new SelectList(eventosList, "Value", "Text", eventoId);
 
             return View(pagoVM);
         }
 
-        // --- MÉTODO CREATE [POST] (Sin Cambios) ---
-        // Tu lógica aquí está perfecta.
+        // --- MÉTODO CREATE [POST] (Con Validación de Sobrepago) ---
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(PagoVM pagoVM)
@@ -132,10 +133,29 @@ namespace si_td_gestion_eventos.Controllers
                 return View(pagoVM);
             }
 
-            // (Aquí es donde deberías añadir la validación de FE3 - Monto Excedido)
-            // var evento = await _eventoService.GetByIdAsync(pagoVM.EventoId);
-            // var saldoRestante = (float)evento.SaldoRestante;
-            // if (pagoVM.Monto > saldoRestante) { ... }
+            // --- VALIDACIÓN (CU07.3.FE3 - SOBREPAGO) ---
+            var evento = await _eventoService.GetByIdAsync(pagoVM.EventoId);
+            if (evento != null)
+            {
+                var saldoRestante = (float)evento.SaldoRestante;
+
+                if (pagoVM.Monto > (saldoRestante + 0.01)) // (Margen de 0.01 para errores de float)
+                {
+                    ModelState.AddModelError("Monto",
+                        $"El monto no puede superar el saldo pendiente de ${saldoRestante:N2}");
+
+                    // Recargamos los datos del informe y el dropdown
+                    await PrepararDropdownEventosAsync(pagoVM.EventoId);
+                    ViewData["EventoDescripcion"] = $"{evento.ClienteNombreCompleto} - {evento.Tipo} - {evento.Inicio:dd/MM/yyyy}";
+                    ViewData["SaldoAnterior"] = saldoRestante;
+                    ViewData["TotalPagadoActual"] = (float)evento.TotalPagado;
+                    ViewData["CostoTotalEvento"] = (float)(evento.CostoAlquiler + (evento.MontoAireAcondicionado ?? 0));
+                    ViewData["EstadoActual"] = evento.Estado.ToString();
+
+                    return View(pagoVM);
+                }
+            }
+            // --- FIN DE LA VALIDACIÓN ---
 
             var result = await _pagoService.CreateAsync(pagoVM);
             if (result.Success)
@@ -177,8 +197,7 @@ namespace si_td_gestion_eventos.Controllers
         }
 
 
-        // --- MÉTODO CreateReserva [GET] (MODIFICADO) ---
-        // Añade la lógica para pasar el "CostoTotal" al JavaScript de la vista
+        // --- MÉTODO CreateReserva [GET] (Con Sugerencias a JS) ---
         [HttpGet]
         public IActionResult CreateReserva()
         {
@@ -189,9 +208,7 @@ namespace si_td_gestion_eventos.Controllers
             }
             var pagoVm = JsonConvert.DeserializeObject<PagoReservaVM>(paymentJson);
 
-            // --- INICIO DE LA MODIFICACIÓN (PASAR COSTO TOTAL) ---
-
-            // 1. Necesitamos también los datos del evento (del Paso 1)
+            // --- PASAR DATOS A JS ---
             if (TempData["PendingEvent"] is not string eventJson)
             {
                 TempData["Error"] = "Sesión expirada. Inicie de nuevo.";
@@ -199,15 +216,12 @@ namespace si_td_gestion_eventos.Controllers
             }
             var eventoVm = JsonConvert.DeserializeObject<EventoVM>(eventJson);
 
-            // 2. Calculamos el Costo Total REAL
             float costoTotal = (float)(eventoVm.CostoAlquiler + (eventoVm.MontoAireAcondicionado ?? 0));
 
-            // 3. Pasamos los datos que el JavaScript necesitará
             ViewData["CostoTotalEvento"] = costoTotal;
-            ViewData["ObsReserva"] = "Por Reserva"; // Texto para pago parcial
-            ViewData["ObsCompleto"] = "Pago completo del salón (Evento < 48hs)"; // Texto para pago total
-
-            // --- FIN DE LA MODIFICACIÓN ---
+            ViewData["ObsReserva"] = "Por Reserva";
+            ViewData["ObsCompleto"] = "Pago completo del salón (Evento < 48hs)";
+            // --- FIN ---
 
             TempData.Keep("PendingEvent");
             TempData.Keep("PendingPaymentDetails");
@@ -215,8 +229,7 @@ namespace si_td_gestion_eventos.Controllers
             return View(pagoVm);
         }
 
-        // --- MÉTODO CreateReserva [POST] (Sin Cambios) ---
-        // Tu lógica aquí está perfecta.
+        // --- MÉTODO CreateReserva [POST] (Con Repoblado de ViewData) ---
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateReserva(PagoReservaVM pagoVm)
@@ -234,6 +247,7 @@ namespace si_td_gestion_eventos.Controllers
 
             var eventoVm = JsonConvert.DeserializeObject<EventoVM>(eventJson);
             var originalPagoVm = JsonConvert.DeserializeObject<PagoReservaVM>(paymentJson);
+            float costoTotal = (float)(eventoVm.CostoAlquiler + (eventoVm.MontoAireAcondicionado ?? 0));
 
             if (!ModelState.IsValid)
             {
@@ -244,8 +258,8 @@ namespace si_td_gestion_eventos.Controllers
                 TempData.Keep("PendingEvent");
                 TempData.Keep("PendingPaymentDetails");
 
-                // --- (Necesitás volver a pasar el costo total si la validación falla) ---
-                ViewData["CostoTotalEvento"] = eventoVm.CostoAlquiler + (eventoVm.MontoAireAcondicionado ?? 0);
+                // --- AÑADIDO: Repoblar ViewData para el JS ---
+                ViewData["CostoTotalEvento"] = costoTotal;
                 ViewData["ObsReserva"] = "Por Reserva";
                 ViewData["ObsCompleto"] = "Pago completo del salón (Evento < 48hs)";
                 // ---
@@ -274,8 +288,8 @@ namespace si_td_gestion_eventos.Controllers
                 pagoVm.Fecha = originalPagoVm.Fecha;
                 pagoVm.Observaciones = originalPagoVm.Observaciones;
 
-                // --- (Necesitás volver a pasar el costo total si la transacción falla) ---
-                ViewData["CostoTotalEvento"] = eventoVm.CostoAlquiler + (eventoVm.MontoAireAcondicionado ?? 0);
+                // --- AÑADIDO: Repoblar ViewData para el JS ---
+                ViewData["CostoTotalEvento"] = costoTotal;
                 ViewData["ObsReserva"] = "Por Reserva";
                 ViewData["ObsCompleto"] = "Pago completo del salón (Evento < 48hs)";
                 // ---

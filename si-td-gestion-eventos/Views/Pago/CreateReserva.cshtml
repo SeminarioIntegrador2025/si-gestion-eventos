@@ -38,9 +38,7 @@
                 <legend style="font-size: 1.1em;">Datos de la Reserva (Sugeridos)</legend>
                 <div class="form-group mb-2">
                     <label asp-for="Monto" class="control-label"></label>
-
                     <input asp-for="Monto" class="form-control" id="montoSugerido" />
-
                 </div>
                 <div class="form-group mb-2">
                     <label asp-for="Fecha" class="control-label"></label>
@@ -60,9 +58,8 @@
                 <div class="form-group mb-2">
                     <label asp-for="Observaciones" class="control-label"></label>
                     <input asp-for="Observaciones" type="text" class="form-control" id="observacionesInput" />
-
                     <small class="form-text text-info-emphasis" style="font-size: 0.8em;">
-                        El texto inicial es una sugerencia. Podés añadir más detalles.
+                        El texto inicial cambiará automáticamente según el monto.
                     </small>
                 </div>
                 <div class="form-group mb-3">
@@ -96,50 +93,45 @@
     <script>
         document.addEventListener("DOMContentLoaded", function() {
 
-            // 5. OBTENER LOS ELEMENTOS
+            // 1. OBTENER LOS ELEMENTOS
             const montoInput = document.getElementById("montoSugerido");
             const obsInput = document.getElementById("observacionesInput");
             const helperData = document.getElementById("helperData");
 
             if (!montoInput || !obsInput || !helperData) return;
 
-            // 6. OBTENER LOS VALORES DEL CONTROLADOR
+            // 2. OBTENER LOS VALORES DEL CONTROLADOR
             const costoTotal = parseFloat(helperData.dataset.costoTotal);
             const obsReserva = helperData.dataset.obsReserva;
             const obsCompleto = helperData.dataset.obsCompleto;
 
-            // 7. FUNCIÓN QUE RECALCULA
+            // 3. FUNCIÓN QUE RECALCULA
             function actualizarObservacion() {
                 const montoActual = parseFloat(montoInput.value) || 0;
 
-                // (Guardamos el texto que el usuario pudo haber añadido)
                 let textoAdicional = "";
                 const obsActual = obsInput.value;
 
-                // Vemos si el usuario ya escribió algo después del prefijo
                 if (obsActual.startsWith(obsReserva) && obsActual.length > obsReserva.length) {
                     textoAdicional = obsActual.substring(obsReserva.length);
                 } else if (obsActual.startsWith(obsCompleto) && obsActual.length > obsCompleto.length) {
                     textoAdicional = obsActual.substring(obsCompleto.length);
-                } else if (!obsActual.startsWith(obsReserva) && !obsActual.startsWith(obsCompleto)) {
-                    // Si el usuario borró todo y escribió algo nuevo
+                } else if (!obsActual.startsWith(obsReserva) && !obsActual.startsWith(obsCompleto) && obsActual.length > 0) {
                     textoAdicional = " - " + obsActual;
                 }
 
-                // 8. ¡LA LÓGICA!
+                // 4. ¡LA LÓGICA!
                 if (montoActual >= costoTotal) {
-                    // Si el monto es total, poner la obs de pago completo
                     obsInput.value = obsCompleto + textoAdicional;
                 } else {
-                    // Si el monto es parcial, poner la obs de reserva
                     obsInput.value = obsReserva + textoAdicional;
                 }
             }
 
-            // 9. ESCUCHAR CAMBIOS EN EL MONTO
+            // 5. ESCUCHAR CAMBIOS EN EL MONTO
             montoInput.addEventListener("input", actualizarObservacion);
 
-            // (Opcional) Ejecutar una vez al cargar por si el monto sugerido no coincide
+            // 6. Ejecutar una vez al cargar la página
             actualizarObservacion();
         });
     </script>
