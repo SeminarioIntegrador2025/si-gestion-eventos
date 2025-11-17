@@ -1,0 +1,61 @@
+﻿@using si_td_gestion_eventos.Infrastructure
+@model PaginatedList<object>
+
+@if (Model.TotalPages > 1)
+{
+    <nav aria-label="Navegación de páginas">
+        <ul class="pagination justify-content-center">
+
+            @* Flecha anterior - solo mostrar si no estamos en la primera página *@
+            @if (Model.HasPreviousPage)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="@GetPageUrl(Model.PageIndex - 1)" aria-label="Anterior">
+                        <i class="fas fa-chevron-left"></i>
+                        <span class="d-none d-sm-inline ms-1">Anterior</span>
+                    </a>
+                </li>
+            }
+
+            @* Páginas numeradas *@
+            @for (int i = Model.StartPage; i <= Model.EndPage; i++)
+            {
+                <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                    <a class="page-link" href="@GetPageUrl(i)">@i</a>
+                </li>
+            }
+
+            @* Flecha siguiente - solo mostrar si no estamos en la última página *@
+            @if (Model.HasNextPage)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="@GetPageUrl(Model.PageIndex + 1)" aria-label="Siguiente">
+                        <span class="d-none d-sm-inline me-1">Siguiente</span>
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+            }
+        </ul>
+
+        <div class="text-center text-muted mt-2">
+            <small>
+                Mostrando @((Model.PageIndex - 1) * Model.Count + 1) a @(Math.Min(Model.PageIndex * Model.Count, Model.TotalCount))
+                de @Model.TotalCount resultados
+            </small>
+        </div>
+    </nav>
+}
+
+@functions {
+    private string GetPageUrl(int pageNumber)
+    {
+        var request = ViewContext.HttpContext.Request;
+        var query = request.Query.ToDictionary(x => x.Key, x => x.Value.ToString());
+
+        query["page"] = pageNumber.ToString();
+
+        var queryString = string.Join("&", query.Select(kvp => $"{kvp.Key}={Uri.EscapeDataString(kvp.Value)}"));
+
+        return $"{request.Path}?{queryString}";
+    }
+}

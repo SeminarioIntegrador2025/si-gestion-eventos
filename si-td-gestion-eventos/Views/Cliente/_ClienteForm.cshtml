@@ -1,46 +1,126 @@
 ﻿@model si_td_gestion_eventos.Models.ViewModels.ClienteVM
- 
-
-@{var isEditing = Model?.ClienteId > 0;}
-<div>
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <div class="mb-3">
-        <label asp-for="Nombre" class="form-label"></label>
-        <input asp-for="Nombre" class="form-control" />
-        <span asp-validation-for="Nombre" class="text-danger"></span>
-    </div>
-
-    <div class="mb-3">
-        <label asp-for="Apellido" class="form-label"></label>
-        <input asp-for="Apellido" class="form-control" />
-        <span asp-validation-for="Apellido" class="text-danger"></span>
-    </div>
-
-    <div class="mb-3">
-        <label asp-for="CedulaIdentidad" class="form-label">Cedula de Identidad</label>
-        <input asp-for="CedulaIdentidad" class="form-control" readonly="@(isEditing ? "readonly" : null)" />
-        <span asp-validation-for="CedulaIdentidad" class="text-danger"></span>
-    </div>
-
-    <div class="mb-3">
-        <label asp-for="Domicilio" class="form-label"></label>
-        <input asp-for="Domicilio" class="form-control" />
-        <span asp-validation-for="Domicilio" class="text-danger"></span>
-    </div>
-
-    <div class="mb-3">
-        <label asp-for="Telefono" class="form-label"></label>
-        <input asp-for="Telefono" class="form-control" />
-        <span asp-validation-for="Telefono" class="text-danger"></span>
-    </div>
-
-    <div class="mb-3">
-        <label asp-for="Activo" class="form-label"></label>
-        <input asp-for="Activo" type="checkbox" class="form-check-input" />
-        <span asp-validation-for="Activo" class="text-danger"></span>
-    </div>
-
-</div>
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+@{
+    var isEditing = Model?.ClienteId > 0;
 }
+
+<div class="container-fluid">
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert">
+            <h6 class="alert-heading">
+                <i class="fas fa-exclamation-triangle me-2"></i>Por favor, corrige los siguientes errores:
+            </h6>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label asp-for="Nombre" class="form-label fw-semibold" id="label-nombre">
+                    <i class="fas fa-user me-1"></i>Nombre *
+                </label>
+                <input asp-for="Nombre" class="form-control" placeholder="Ingrese el nombre" />
+                <span asp-validation-for="Nombre" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="col-md-6" id="campo-apellido-div">
+            <div class="mb-3">
+                <label asp-for="Apellido" class="form-label fw-semibold">
+                    <i class="fas fa-user me-1"></i>Apellido *
+                </label>
+                <input asp-for="Apellido" class="form-control" placeholder="Ingrese el apellido" />
+                <span asp-validation-for="Apellido" class="text-danger small"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6" id="campo-cedula-div">
+            <div class="mb-3">
+                <label asp-for="CedulaIdentidad" class="form-label fw-semibold">
+                    <i class="fas fa-id-card me-1"></i>Cédula de Identidad *
+                </label>
+                @if (isEditing)
+                {
+                    <div class="input-group">
+                        <span class="input-group-text bg-light">
+                            <i class="fas fa-lock text-muted"></i>
+                        </span>
+                        <input asp-for="CedulaIdentidad" class="form-control bg-light" readonly placeholder="No editable" />
+                    </div>
+                    <small class="text-muted">La cédula no puede modificarse una vez creado el cliente</small>
+                }
+                else
+                {
+                    <input asp-for="CedulaIdentidad" class="form-control" placeholder="Ej: 1.234.567-8" />
+                    <small class="text-muted">Formato: 1.234.567-8</small>
+                }
+                <span asp-validation-for="CedulaIdentidad" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="col-md-6" id="campo-rut-div" style="display: none;">
+            <div class="mb-3">
+                <label asp-for="RUT" class="form-label fw-semibold">
+                    <i class="fas fa-building me-1"></i>RUT *
+                </label>
+                @if (isEditing)
+                {
+                    <div class="input-group">
+                        <span class="input-group-text bg-light">
+                            <i class="fas fa-lock text-muted"></i>
+                        </span>
+                        <input asp-for="RUT" class="form-control bg-light" readonly placeholder="No editable" />
+                    </div>
+                    <small class="text-muted">El RUT no puede modificarse una vez creado el cliente</small>
+                }
+                else
+                {
+                    <input asp-for="RUT" class="form-control" placeholder="Ej: 211234560010" />
+                    <small class="text-muted">Formato: 12 dígitos</small>
+                }
+                <span asp-validation-for="RUT" class="text-danger small"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label asp-for="Telefono" class="form-label fw-semibold">
+                    <i class="fas fa-phone me-1"></i>Teléfono *
+                </label>
+                <input asp-for="Telefono" class="form-control" placeholder="Ej: 099 123 456" />
+                <span asp-validation-for="Telefono" class="text-danger small"></span>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label asp-for="Domicilio" class="form-label fw-semibold">
+                    <i class="fas fa-home me-1"></i>Domicilio *
+                </label>
+                <input asp-for="Domicilio" class="form-control" placeholder="Dirección completa" />
+                <span asp-validation-for="Domicilio" class="text-danger small"></span>
+            </div>
+        </div>
+    </div>
+
+    @if (isEditing)
+    {
+        <div class="mb-3">
+            <div class="form-check form-switch">
+                <input asp-for="Activo" type="checkbox" class="form-check-input" id="activoSwitch" />
+                <label asp-for="Activo" class="form-check-label fw-semibold" for="activoSwitch">
+                    <i class="fas fa-toggle-on me-1"></i>Cliente Activo
+                </label>
+            </div>
+            <small class="text-muted">Los clientes inactivos no pueden crear nuevos eventos</small>
+            <span asp-validation-for="Activo" class="text-danger small"></span>
+        </div>
+    }
+    else
+    {
+        <input asp-for="Activo" type="hidden" value="true" />
+    }
+</div>

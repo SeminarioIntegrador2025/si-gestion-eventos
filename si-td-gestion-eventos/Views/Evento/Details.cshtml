@@ -1,4 +1,5 @@
-﻿@model si_td_gestion_eventos.Models.ViewModels.EventoVM
+﻿@using si_td_gestion_eventos.Models.Enums
+@model si_td_gestion_eventos.Models.ViewModels.EventoVM
 
 @{
     ViewData["Title"] = $"Detalles del Evento: {Model.Tipo}";
@@ -30,17 +31,26 @@
                 <h4>Información General</h4>
                 <hr />
                 <dl class="row">
-                    <dt class="col-sm-5">Cliente Responsable</dt>
+                    <dt class="col-sm-5">Cliente</dt>
                     <dd class="col-sm-7">@Model.ClienteNombreCompleto</dd>
 
+                    <dt class="col-sm-5">Tipo de Cliente</dt>
+                    <dd class="col-sm-7">
+                        @(Model.TipoCli == TipoCliente.PersonaFisica ? "Persona Fisica" : "Persona Juridica")
+                    </dd>
+                
                     <dt class="col-sm-5">Tipo de Evento</dt>
                     <dd class="col-sm-7">@Model.Tipo</dd>
 
                     <dt class="col-sm-5">Estado</dt>
-                    <dd class="col-sm-7"><span class="badge bg-primary">@Model.Estado</span></dd>
+                    <dd class="col-sm-7">@Model.Estado</dd>
 
                     <dt class="col-sm-5">Cantidad de Personas</dt>
                     <dd class="col-sm-7">@Model.CantidadPersonas</dd>
+
+                    <dt class="col-sm-5">Observaciones</dt>
+                    <dd class="col-sm-7">@Model.Observaciones</dd>
+
                 </dl>
 
                 <h4>Fechas y Horarios</h4>
@@ -56,13 +66,14 @@
                     <dd class="col-sm-7">@Model.Fin.ToLongDateString()</dd>
 
                     <dt class="col-sm-5">Horario</dt>
-                    <dd class="col-sm-7">De @Model.HoraInicio a @Model.HoraFin</dd>
+                    <dd class="col-sm-7">De @Model.HoraInicio.ToString("hh\\:mm") a @Model.HoraFin.ToString("hh\\:mm")</dd>
                 </dl>
             </div>
 
             <div class="col-md-6">
                 <h4>Información Financiera</h4>
                 <hr />
+                <div class="col-md-6">
                 <dl class="row">
                     <dt class="col-sm-5">Costo del Alquiler</dt>
                     <dd class="col-sm-7">@Model.CostoAlquiler.ToString("C")</dd>
@@ -80,6 +91,20 @@
                     <dd class="col-sm-7 fw-bold text-danger">@Model.SaldoRestante.ToString("C")</dd>
                 </dl>
             </div>
+
+            <h4>Informacion del Responsable</h4>
+            <hr />
+            <dl class="row">
+                <dt class="col-sm-5">Responsable</dt>
+                <dd class="col-sm-7">@Model.ResponsableNombre</dd>
+
+                <dt class="col-sm-5">Telefono del Responsable</dt>
+                <dd class="col-sm-7">@Model.ResponsableTelefono</dd>
+
+                <dt class="col-sm-5">CI del Responsable</dt>
+                <dd class="col-sm-7">@Model.ResponsableCedula</dd>
+            </dl>
+
         </div>
     </div>
     <div class="card-footer text-muted">

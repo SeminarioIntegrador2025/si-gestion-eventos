@@ -1,50 +1,228 @@
-﻿@*@model IEnumerable<si_td_gestion_eventos.Entities.Pago>
+﻿@model List<si_td_gestion_eventos.Models.ViewModels.PagoVM>
+@using si_td_gestion_eventos.Models.Enums
 
 @{
-    ViewData["Title"] = "Pagos";
+    ViewData["Title"] = "Gestión de Pagos";
+
+    // Recuperamos los datos de los KPIs y filtros
+    bool isFilteredByEvent = (bool)ViewData["IsFilteredByEvent"];
+
+    // KPIs
+    int totalPagosPmes = (int)ViewBag.TotalPagosPMes;
+    decimal totalMontoPMes = (decimal)ViewBag.TotalMontoPMes ;
+    int countTransferPMes = (int)ViewBag.CountTransferenciasPMes;
+    int countEfectivoPMes = (int)ViewBag.CountEfectivoPMes;
+
+    // Encabezado (modo filtrado)
+    var eventoId = ViewData["EventoId"];
+    var eventoDesc = ViewData["EventoDescripcion"];
+    var clienteNombre = ViewData["ClienteNombre"];
 }
 
-<div>
+<div class="page-header d-flex align-items-start justify-content-between flex-wrap gap-3">
     <div>
-    <h2>Pagos</h2>
-
-
-    <div class="mb-3">
-        <a class="btn btn-primary" href="/pago/create">Nuevo Pago</a>
+        <h1 class="page-title mb-1">
+            <i class="fa-solid fa-dollar-sign text-primary me-3"></i>Gestión de Pagos
+        </h1>
+        @if (isFilteredByEvent)
+        {
+            <h5 class="text-muted fw-normal mb-0">Mostrando pagos para: <strong>@eventoDesc</strong> (@clienteNombre)</h5>
+        }
     </div>
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Fecha</th>
-                <th>Monto</th>
-                <th>Método de Pago</th>
-                <th>Evento</th>
-                <th>Comprobante</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var pago in Model)
-            {
-                <tr>
-                    <td>@pago.Fecha.ToShortDateString()</td>
-                    <td>@pago.Monto.ToString("C")</td>
-                    <td>@pago.Metodo</td>
-                    <td>@pago.Evento.ResponsableNombre</td>
-                    <td>
-                        @if (!string.IsNullOrEmpty(pago.ComprobanteRuta))
+    <div class="ms-auto d-flex gap-2">
+        <a class="btn btn-success" asp-action="Create" asp-route-eventoId="@eventoId">
+            <i class="fa-solid fa-plus me-2"></i>Nuevo Pago
+        </a>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+
+<div class="row g-4">
+    <div class="col-xl-9 col-lg-8">
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card card-kpi text-center">
+                    <div class="card-body">
+                        <div class="card-title mb-1">Monto Generado en el Mes</div>
+                        <div class="h3 text-primary fw-bold">@totalMontoPMes.ToString("N1")</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card card-kpi text-center">
+                    <div class="card-body">
+                        <div class="card-title mb-1"># Pagos del mes</div>
+                        <div class="display-6 text-info fw-bold">@totalPagosPmes</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card card-kpi text-center">
+                    <div class="card-body">
+                        <div class="card-title mb-1"># Transferencias del Mes</div>
+                        <div class="display-6 text-success fw-bold">@countTransferPMes</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card card-kpi text-center">
+                    <div class="card-body">
+                        <div class="card-title mb-1"># Efectivo en el mes</div>
+                        <div class="display-6 text-warning fw-bold">@countEfectivoPMes</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (!isFilteredByEvent)
+        {
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3 align-items-end">
+                        <div class="col-md-5">
+                            <label class="form-label fw-semibold">
+                                <i class="fa-solid fa-magnifying-glass me-1"></i>Buscar Pago
+                            </label>
+                            <input name="q" class="form-control" placeholder="Cliente, evento, referencia..." value="@ViewData["CurrentFilterQ"]" />
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label fw-semibold">
+                                <i class="fa-solid fa-filter me-1"></i>Filtrar por Evento
+                            </label>
+                            <select name="eventoId" class="form-select" onchange="this.form.submit()" asp-items="@ViewBag.EventosFilter">
+                                <option value="">Todos los eventos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fa-solid fa-search me-1"></i>Buscar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        }
+
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fa-solid fa-table me-2"></i>Lista de Pagos</span>
+                <span class="badge bg-primary">@Model.Count pagos</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            @if (!isFilteredByEvent)
+                            {
+                                <th><i class="fa-solid fa-user me-1"></i>Cliente</th>
+                                <th><i class="fa-solid fa-calendar me-1"></i>Evento</th>
+                            }
+                            <th>Fecha</th>
+                            <th>Monto</th>
+                            <th>Método</th>
+                            <th>Observaciones</th>
+                            <th>Comprobante</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Any())
                         {
-                            <a href="@pago.ComprobanteRuta" target="_blank">Ver Comprobante</a>
+                            foreach (var pago in Model)
+                            {
+                                <tr>
+                                    @if (!isFilteredByEvent)
+                                    {
+                                        <td>@pago.ClienteNombre</td>
+                                        <td>@pago.EventoDescripcion</td>
+                                    }
+                                    <td>@pago.Fecha.ToString("dd/MM/yyyy")</td>
+                                    <td>@pago.Monto.ToString("C")</td>
+                                    <td>@pago.Metodo</td>
+                                    <td>@pago.Observaciones</td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(pago.RutaArchivoExistente))
+                                        {
+                                            <a href="@pago.RutaArchivoExistente" target="_blank" class="btn btn-sm btn-info" title="Descargar comprobante">
+                                                <i class="fas fa-file-alt"></i> Descargar
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">N/A</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group" role="group">
+                                            <a asp-action="Edit" asp-route-id="@pago.PagoId" class="btn btn-sm btn-outline-secondary" title="Editar">
+                                                <i class="fa-solid fa-pen"></i>
+                                            </a>
+                                            <a asp-action="Delete" asp-route-id="@pago.PagoId" class="btn btn-sm btn-outline-danger" title="Borrar">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </a>
+                                            <a asp-action="DescargarRecibo" asp-route-pagoId="@pago.PagoId" class="btn btn-sm btn-outline-info" title="Descargar Recibo">
+                                                <i class="fa-solid fa-file-pdf"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
                         }
                         else
                         {
-                            <span>No disponible</span>
-                        }
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+                        <td colspan="@(isFilteredByEvent ? 6 : 8)" class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="fa-solid fa-search-dollar fa-3x mb-3 d-block"></i>
+                                <h5>No se encontraron pagos</h5>
+                                <p>Intenta ajustar los filtros o <a asp-action="Create" class="text-decoration-none">agregar un nuevo pago</a>.</p>
+                            </div>
+                        </td>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <span><i class="fa-solid fa-clock-rotate-left me-2"></i>Últimos pagos</span>
+                <a asp-action="Create" class="btn btn-sm btn-accent"><i class="fa-solid fa-plus me-1"></i>Nuevo</a>
+            </div>
+            <div class="list-group list-group-flush">
+                @foreach (var p in Model.OrderByDescending(x => x.PagoId).Take(5))
+                {
+                    <a class="list-group-item list-group-item-action" href="#">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <div class="fw-semibold">@p.Monto.ToString("C")</div>
+                                <small class="text-muted">@p.ClienteNombre</small>
+                            </div>
+                            <small class="text-muted">@p.Fecha.ToString("dd/MM")</small>
+                        </div>
+                    </a>
+                }
+            </div>
+        </div>
     </div>
 </div>
-*@
+
+@if (isFilteredByEvent)
+{
+    <div class="mt-4">
+        <a asp-controller="Evento" asp-action="Details" asp-route-id="@eventoId" class="btn btn-outline-secondary">
+            <i class="fa-solid fa-arrow-left me-2"></i>Volver al Evento
+        </a>
+    </div>
+}

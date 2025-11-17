@@ -1,12 +1,16 @@
-﻿@* Se cambia el modelo para usar el ViewModel, mejorando rendimiento y seguridad *@
+﻿@using si_td_gestion_eventos.Models.Enums
 @model si_td_gestion_eventos.Infrastructure.PaginatedList<si_td_gestion_eventos.Models.ViewModels.EventoVM>
 
 @{
     ViewData["Title"] = "Gestión de Eventos";
-    // Hacemos el casting al tipo correcto (lista de ViewModels)
-    var ultimos = ViewBag.Ultimos as List<si_td_gestion_eventos.Models.ViewModels.EventoVM>;
+
+    // Obtenemos los filtros actuales para la paginación
     string q = ViewBag.Search as string ?? "";
-    int pageSize = ViewBag.PageSize ?? 10;
+    // Usamos 'SelectedValue' de la SelectList, es más limpio
+    int pageSize = (int)(ViewBag.PageSizeList.SelectedValue ?? 10);
+    DateTime? fechaDesde = ViewBag.FechaDesde as DateTime?;
+    DateTime? fechaHasta = ViewBag.FechaHasta as DateTime?;
+    EventoEstado? estado = ViewBag.Estado as EventoEstado?;
 }
 
 @if (TempData["Ok"] != null)
@@ -16,7 +20,6 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 }
-
 @if (TempData["Error"] != null)
 {
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -30,104 +33,180 @@
     <a class="btn btn-primary" asp-action="Create"><i class="fa-solid fa-plus"></i> Nuevo Evento</a>
 </div>
 
-<div class="row">
-    <div class="col-md-8">
-        <form method="get" class="row g-2 mb-3">
-            <div class="col-sm-8">
-                @* Se actualiza el placeholder para reflejar el nuevo modelo de datos *@
-                <input name="q" value="@q" class="form-control" placeholder="Buscar por cliente o tipo de evento..." />
-            </div>
-            <div class="col-sm-2">
-                <select name="pageSize" class="form-select" onchange="this.form.submit()">
-                    @{
-                        int[] sizes = new[] { 5, 10, 20, 50 };
-                        foreach (var s in sizes)
-                        {
-                            <option value="@s" selected="@(s == pageSize)">@s por página</option>
-                        }
-                    }
-                </select>
-            </div>
-            <div class="col-sm-2">
-                <button type="submit" class="btn btn-outline-secondary w-100"><i class="fa-solid fa-magnifying-glass"></i> Buscar</button>
-            </div>
-        </form>
+<form method="get" class="row g-3 mb-4 align-items-end">
 
-        <table class="table table-striped table-hover">
-            <thead>
-                <tr>
-                    <th>Cliente Responsable</th>
-                    <th>Tipo de Evento</th>
-                    <th>Fecha Inicio</th>
-                    <th>Estado</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var e in Model)
-                {
-                    <tr>
-                        @* Se usa la propiedad pre-formateada del ViewModel *@
-                        <td>@e.ClienteNombreCompleto</td>
-                        <td>@e.Tipo</td>
-                        <td>@e.Inicio.ToShortDateString()</td>
-                        <td>
-                            @* Opcional: Usar un badge para que el estado se vea mejor *@
-                            <span class="badge bg-info text-dark">@e.Estado</span>
-                        </td>
-                        <td class="text-end">
-                            <a asp-action="Details" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-info" title="Ver Detalles"><i class="fa-solid fa-eye"></i></a>
-                            <a asp-action="Edit" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="fa-solid fa-pen"></i></a>
-                            <a asp-action="Cancel" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-danger" title="Cancelar Evento"><i class="fa-solid fa-ban"></i></a>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+    <div class="col-md-3">
+        <label for="q" class="form-label">Buscar por Cliente</label>
+        <input type="text" name="q" id="q" class="form-control" value="@q" placeholder="Nombre cliente o CI" />
+    </div>
 
-        @* El código de paginación no necesita cambios, ya que funciona con la clase PaginatedList *@
-        <nav aria-label="Paginación">
-            <ul class="pagination">
-                <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
-                    <a class="page-link" asp-action="Index" asp-route-q="@q" asp-route-page="@(Model.PageIndex - 1)" asp-route-pageSize="@pageSize">Anterior</a>
-                </li>
-                @for (int i = 1; i <= Model.TotalPages; i++)
-                {
-                    <li class="page-item @(i == Model.PageIndex ? "active" : "")">
-                        <a class="page-link" asp-action="Index" asp-route-q="@q" asp-route-page="@i" asp-route-pageSize="@pageSize">@i</a>
-                    </li>
-                }
-                <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
-                    <a class="page-link" asp-action="Index" asp-route-q="@q" asp-route-page="@(Model.PageIndex + 1)" asp-route-pageSize="@pageSize">Siguiente</a>
-                </li>
-            </ul>
-        </nav>
+    <div class="col-md-2">
+        <label for="fechaDesde" class="form-label">Fecha Desde</label>
+        <input type="date" name="fechaDesde" id="fechaDesde" class="form-control" value="@fechaDesde?.ToString("yyyy-MM-dd")" />
+    </div>
 
-        <p class="text-muted">
-            Mostrando @Model.Count de @Model.TotalCount eventos (página @Model.PageIndex de @Model.TotalPages).
-        </p>
+    <div class="col-md-2">
+        <label for="fechaHasta" class="form-label">Fecha Hasta</label>
+        <input type="date" name="fechaHasta" id="fechaHasta" class="form-control" value="@fechaHasta?.ToString("yyyy-MM-dd")" />
+    </div>
+
+    <div class="col-md-3">
+        <label for="estado" class="form-label">Estado</label>
+        <select name="estado" id="estado" class="form-select" asp-items="ViewBag.EstadosList">
+            <option value="">-- Mostrar Todos --</option>
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <label for="pageSize" class="form-label">Por Página</label>
+        <select name="pageSize" id="pageSize" class="form-select" asp-items="ViewBag.PageSizeList" onchange="this.form.submit()">
+        </select>
     </div>
 
     <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">Últimos eventos agregados</div>
-            <ul class="list-group list-group-flush">
-                @if (ultimos != null && ultimos.Any())
-                {
-                    @foreach (var u in ultimos)
-                    {
-                        <li class="list-group-item">
-                            @* Se actualiza para usar las propiedades del ViewModel *@
-                            <strong>@u.Tipo - @u.ClienteNombreCompleto</strong><br />
-                            <small>Fecha: @u.Inicio.ToShortDateString()</small>
-                        </li>
-                    }
-                }
-                else
-                {
-                    <li class="list-group-item">No hay eventos recientes.</li>
-                }
-            </ul>
-        </div>
+        <label for="ordenPor" class="form-label">Ordenar por</label>
+        <select name="ordenPor" id="ordenPor" class="form-select" asp-items="ViewBag.OrdenPorList" onchange="this.form.submit()">
+        </select>
     </div>
+
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-magnifying-glass"></i> Buscar</button>
+    </div>
+</form>
+
+<table class="table table-striped table-hover">
+    <thead>
+        <tr>
+            <th>Cliente Responsable</th>
+            <th>Tipo de Evento</th>
+            <th>Fecha Inicio del Evento</th>
+            <th>Estado</th>
+            <th>Observaciones</th>
+            <th>Acciones Rapidas</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (!Model.Any())
+        {
+            <tr>
+                <td colspan="6" class="text-center">
+                    <div class="alert alert-warning my-3" role="alert">
+                        <i class="fa-solid fa-circle-info me-2"></i>
+                        @if (!string.IsNullOrEmpty(q) || fechaDesde.HasValue || fechaHasta.HasValue || estado.HasValue)
+                        {
+                            @:No se encontraron eventos que coincidan con los filtros aplicados.
+                        }
+                        else
+                        {
+                            @:No hay eventos para mostrar.
+                        }
+                    </div>
+                </td>
+            </tr>
+        }
+        else
+        {
+            @foreach (var e in Model)
+            {
+                // --- Lógica para el estado (Tu código está perfecto) ---
+                string estadoClass = "bg-secondary";
+                string estadoIcon = "fa-question-circle";
+                string estadoTexto = e.Estado.ToString();
+
+                switch (e.Estado)
+                {
+                    case EventoEstado.PendientePagado:
+                        estadoClass = "bg-success";
+                        estadoIcon = "fa-check-circle";
+                        estadoTexto = "Pendiente (Pagado)";
+                        break;
+                    case EventoEstado.PendienteAdeudado:
+                        estadoClass = "bg-warning text-dark";
+                        estadoIcon = "fa-exclamation-triangle";
+                        estadoTexto = "Pendiente (Adeudado)";
+                        break;
+                    case EventoEstado.Realizado:
+                        estadoClass = "bg-secondary";
+                        estadoIcon = "fa-check";
+                        estadoTexto = "Realizado";
+                        break;
+                    case EventoEstado.Cancelado:
+                        estadoClass = "bg-danger";
+                        estadoIcon = "fa-ban";
+                        estadoTexto = "Cancelado";
+                        break;
+                    case EventoEstado.Reprogramado:
+                        estadoClass = "bg-info text-dark";
+                        estadoIcon = "fa-clock-rotate-left";
+                        estadoTexto = "Reprogramado";
+                        break;
+                }
+                <tr>
+                    <td>@e.ClienteNombreCompleto</td>
+                    <td>@e.Tipo</td>
+                    <td>@e.Inicio.ToLongDateString()</td>
+                    <td>
+                        <span class="badge @estadoClass">
+                            <i class="fa-solid @estadoIcon me-1"></i> @estadoTexto
+                        </span>
+                    </td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(e.Observaciones))
+                        {
+                            <span title="@e.Observaciones" class="d-inline-block text-truncate" style="max-width: 150px;">
+                                @e.Observaciones
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="text-muted fst-italic">N/A</span>
+                        }
+                    </td>
+                    <td class="text-center">
+                        <a asp-action="Details" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-info" title="Ver Detalles"><i class="fa-solid fa-eye"></i></a>
+                        <a asp-action="Edit" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="fa-solid fa-pen"></i></a>
+                        @if (e.Estado != EventoEstado.Cancelado)
+                        {
+                            <a asp-action="Cancel" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-danger" title="Cancelar Evento"><i class="fa-solid fa-ban"></i></a>
+                        }
+                        else
+                        {
+                            <a asp-action="Reprogramar" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-warning" title="Reprogramar Evento"><i class="fa-solid fa-clock"></i></a>
+                        }
+                        <a asp-controller="Pago" asp-action="Create" asp-route-eventoId="@e.EventoId" class="btn btn-sm btn-outline-success" title="Agregar Pago">
+                            <i class="fa-solid fa-dollar-sign"></i>
+                        </a>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+<div class="d-flex justify-content-between align-items-center mt-3">
+    <nav aria-label="Paginación">
+        <ul class="pagination mb-0">
+            <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                <a class="page-link" asp-action="Index"
+                   asp-route-q="@q" asp-route-fechaDesde="@fechaDesde?.ToString("yyyy-MM-dd")" asp-route-fechaHasta="@fechaHasta?.ToString("yyyy-MM-dd")"
+                   asp-route-estado="@estado" asp-route-page="@(Model.PageIndex - 1)" asp-route-pageSize="@pageSize">Anterior</a>
+            </li>
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                    <a class="page-link" asp-action="Index"
+                       asp-route-q="@q" asp-route-fechaDesde="@fechaDesde?.ToString("yyyy-MM-dd")" asp-route-fechaHasta="@fechaHasta?.ToString("yyyy-MM-dd")"
+                       asp-route-estado="@estado" asp-route-page="@i" asp-route-pageSize="@pageSize">@i</a>
+                </li>
+            }
+            <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                <a class="page-link" asp-action="Index"
+                   asp-route-q="@q" asp-route-fechaDesde="@fechaDesde?.ToString("yyyy-MM-dd")" asp-route-fechaHasta="@fechaHasta?.ToString("yyyy-MM-dd")"
+                   asp-route-estado="@estado" asp-route-page="@(Model.PageIndex + 1)" asp-route-pageSize="@pageSize">Siguiente</a>
+            </li>
+        </ul>
+    </nav>
+    <p class="text-muted mb-0">
+        Mostrando @Model.Count de @Model.TotalCount eventos (página @Model.PageIndex de @Model.TotalPages).
+    </p>
 </div>

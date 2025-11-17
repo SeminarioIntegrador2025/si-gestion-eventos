@@ -5,5 +5,6 @@
         Task<bool> IsCedulaUniqueAsync(string cedula, int? excludeClienteId = null);
         Task<bool> CanDeactivateClienteAsync(int clienteId);
         Task<bool> HasActiveEventsAsync(int clienteId);
+        Task<bool> IsRUTUniqueAsync(string rut, int? excludeClienteId = null);
     }
 }

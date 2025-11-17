@@ -4,14 +4,27 @@
 @{
     ViewData["Title"] = "Clientes - Gestión";
 }
+@if (TempData["Ok"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Ok"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
 
 <!-- Encabezado de página -->
 <div class="page-header d-flex align-items-start justify-content-between flex-wrap gap-3">
     <div>
         <h1 class="page-title mb-1">
-            <i class="fa-solid fa-users text-primary me-3"></i>Clientes
+            <i class="fa-solid fa-users text-primary me-3"></i>Gestion de Clientes
         </h1>
-        <p class="text-muted mb-0">Administra la base de datos de clientes</p>
     </div>
 
     <!-- Acciones a la derecha -->
@@ -26,7 +39,8 @@
             <ul class="dropdown-menu dropdown-menu-end">
                 <li><a class="dropdown-item" asp-action="ExportExcel"><i class="fa-solid fa-file-excel me-2"></i>Excel</a></li>
                 <li><a class="dropdown-item" asp-action="ExportCsv"><i class="fa-solid fa-file-csv me-2"></i>CSV</a></li>
-            </ul>
+            </ul> 
+            <!-- Ajustar Formatos -->
         </div>
     </div>
 </div>
@@ -116,8 +130,11 @@
                     <thead>
                         <tr>
                             <th><i class="fa-solid fa-user me-1"></i>Cliente</th>
-                            <th><i class="fa-solid fa-id-card me-1"></i>Cédula</th>
+                            <th>
+                                <i class="fa-solid fa-id-card me-1"></i>Documento (CI/RUT)
+                            </th>
                             <th><i class="fa-solid fa-phone me-1"></i>Teléfono</th>
+                            <th><i class="fa-solid fa-building-user me-1"></i>Tipo</th>
                             <th><i class="fa-solid fa-toggle-on me-1"></i>Estado</th>
                             <th class="text-center"><i class="fa-solid fa-cog me-1"></i>Acciones</th>
                         </tr>
@@ -127,23 +144,44 @@
                         {
                             foreach (var cliente in Model)
                             {
-                                <tr class="@(!cliente.Activo ? "table-secondary" : "table-active")">
+                                <tr class="@(!cliente.Activo ? "table-secondary" : "")">
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <div class="avatar-md @(cliente.Activo ? "bg-primary" : "bg-secondary") text-white rounded-circle d-flex align-items-center justify-content-center me-3">
-                                                @(cliente.Nombre.Substring(0, 1) + cliente.Apellido.Substring(0, 1))
+                                                @(cliente.Nombre.Substring(0, 1) + (cliente.Apellido != null ? cliente.Apellido.Substring(0, 1) : ""))
                                             </div>
                                             <div>
-                                                <div class="fw-semibold">@cliente.Apellido, @cliente.Nombre</div>
+                                                <div class="fw-semibold">@(cliente.Apellido != null ? $"{cliente.Apellido}, {cliente.Nombre}" : cliente.Nombre)</div>
                                                 <small class="text-muted">Cliente @(cliente.Activo ? "activo" : "inactivo")</small>
                                             </div>
                                         </div>
                                     </td>
-                                    <td><span class="font-monospace">@cliente.CedulaIdentidad</span></td>
+                                    <td>
+                                        <span class="font-monospace">
+                                            @if (cliente.Tipo == si_td_gestion_eventos.Models.Enums.TipoCliente.PersonaFisica)
+                                            {
+                                                @cliente.CedulaIdentidad
+                                            }
+                                            else
+                                            {
+                                                @cliente.RUT
+                                            }
+                                        </span>
+                                    </td>
                                     <td>
                                         <a href="tel:@cliente.Telefono" class="text-decoration-none">
                                             <i class="fa-solid fa-phone me-1 text-success"></i>@cliente.Telefono
                                         </a>
+                                    </td>
+                                    <td>
+                                        @if (cliente.Tipo == si_td_gestion_eventos.Models.Enums.TipoCliente.PersonaFisica)
+                                        {
+                                            <span title="Persona Física"><i class="fa-solid fa-user text-info me-1"></i> Física</span>
+                                        }
+                                        else
+                                        {
+                                            <span title="Persona Jurídica"><i class="fa-solid fa-building text-warning me-1"></i> Jurídica</span>
+                                        }
                                     </td>
                                     <td>
                                         <span class="badge @(cliente.Activo ? "bg-success" : "bg-secondary")">
@@ -159,9 +197,41 @@
                                             <a asp-action="Edit" asp-route-id="@cliente.ClienteId" class="btn btn-sm btn-outline-secondary" title="Editar">
                                                 <i class="fa-solid fa-pen"></i>
                                             </a>
-                                            <a asp-controller="Evento" asp-action="Create" asp-route-clienteId="@cliente.ClienteId" class="btn btn-sm btn-outline-success" title="Crear evento">
+                                         @* No aplica las validaciones para crear un evento (Cliente Activo) y en todo caso deberia crear el evento con el cliente ya seleccionado
+                                             <a asp-controller="Evento" asp-action="Create" asp-route-clienteId="@cliente.ClienteId" class="btn btn-sm btn-outline-success" title="Crear evento">
                                                 <i class="fa-solid fa-calendar-plus"></i>
-                                            </a>
+                                            </a> 
+                                            *@
+                                            @if (cliente.Activo)
+                                            {
+                                                <form asp-action="ToggleUnactive" method="post" class="d-inline"
+                                                      onsubmit="return confirm('¿Está seguro que desea dar de baja este cliente?');">
+
+                                                    @Html.AntiForgeryToken()
+
+                                                    @* --- AGREGA ESTE CAMPO OCULTO --- *@
+                                                    <input type="hidden" name="id" value="@cliente.ClienteId" />
+
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Dar de Baja">
+                                                        <i class="fa-solid fa-ban"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                            else
+                                            {
+                                                <form asp-action="ToggleActive" method="post" class="d-inline"
+                                                      onsubmit="return confirm('¿Desea dar de alta este cliente?');">
+
+                                                    @Html.AntiForgeryToken()
+
+                                                    @* --- AGREGA ESTE CAMPO OCULTO --- *@
+                                                    <input type="hidden" name="id" value="@cliente.ClienteId" />
+
+                                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Dar de Alta">
+                                                        <i class="fa-solid fa-check"></i>
+                                                    </button>
+                                                </form>
+                                            }
                                         </div>
                                     </td>
                                 </tr>
@@ -170,7 +240,7 @@
                         else
                         {
                             <tr>
-                                <td colspan="5" class="text-center py-5">
+                                <td colspan="6" class="text-center py-5">
                                     <div class="text-muted">
                                         <i class="fa-solid fa-user-slash fa-3x mb-3 d-block"></i>
                                         <h5>No se encontraron clientes</h5>
@@ -203,10 +273,10 @@
                        asp-action="Details" asp-route-id="@c.ClienteId">
                         <div class="d-flex align-items-center">
                             <div class="avatar-sm bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-3">
-                                @(c.Nombre.Substring(0, 1) + c.Apellido.Substring(0, 1))
+                                @(c.Nombre.Substring(0, 1) + (c.Apellido != null ? c.Apellido.Substring(0, 1) : ""))
                             </div>
                             <div>
-                                <div class="fw-semibold">@c.Apellido, @c.Nombre</div>
+                                <div class="fw-semibold">@(c.Apellido != null ? $"{c.Apellido}, {c.Nombre}" : c.Nombre)</div>
                                 <small class="text-muted">@c.CedulaIdentidad</small>
                             </div>
                         </div>
@@ -231,8 +301,14 @@
                     </div>
                     <div class="col-6">
                         <div class="text-center">
-                            <div class="h4 text-success mb-0">@Model.Count(c => !string.IsNullOrEmpty(c.Telefono))</div>
-                            <small class="text-muted">Con Teléfono</small>
+                            <div class="h4 text-primary mb-0">@(Model.Any() ? Math.Round((double)Model.Count(c => c.Tipo == si_td_gestion_eventos.Models.Enums.TipoCliente.PersonaFisica) / Model.Count * 100, 1) : 0)%</div>
+                            <small class="text-muted">Física</small>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="text-center">
+                            <div class="h4 text-primary mb-0">@(Model.Any() ? Math.Round((double)Model.Count(c => c.Tipo == si_td_gestion_eventos.Models.Enums.TipoCliente.PersonaJuridica) / Model.Count * 100, 1) : 0)%</div>
+                            <small class="text-muted">Juridica</small>
                         </div>
                     </div>
                 </div>

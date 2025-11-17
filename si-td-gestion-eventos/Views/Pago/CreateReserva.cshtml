@@ -1,0 +1,138 @@
+﻿@model si_td_gestion_eventos.Models.ViewModels.PagoReservaVM
+@{
+    ViewData["Title"] = "Confirmar Reserva de Evento";
+
+    // 1. OBTENEMOS LOS DATOS DEL VIEWDATA (QUE PASA EL PAGOCONTROLLER)
+    var costoTotal = (float)(ViewData["CostoTotalEvento"] ?? 0f);
+    var obsReserva = ViewData["ObsReserva"]?.ToString() ?? "Por Reserva";
+    var obsCompleto = ViewData["ObsCompleto"]?.ToString() ?? "Pago completo";
+}
+
+<div id="helperData"
+     data-costo-total="@costoTotal"
+     data-obs-reserva="@obsReserva"
+     data-obs-completo="@obsCompleto"
+     style="display: none;">
+</div>
+
+
+<h2>Paso 2: Confirmar Pago de Reserva</h2>
+<p>Complete los datos del pago para confirmar la creación del evento.</p>
+<hr />
+
+<div class="row">
+    <div class="col-md-7">
+
+        <form asp-action="CreateReserva" method="post" enctype="multipart/form-data">
+
+            <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+            <div class="alert alert-info d-flex align-items-center" role="alert">
+                <i class="fa-solid fa-circle-info fa-lg me-3"></i>
+                <div>
+                    <strong>Sugerencia:</strong> Los siguientes campos son editables. El sistema ha sugerido valores basados en la fecha del evento, pero podés modificarlos.
+                </div>
+            </div>
+
+            <fieldset class="mb-3">
+                <legend style="font-size: 1.1em;">Datos de la Reserva (Sugeridos)</legend>
+                <div class="form-group mb-2">
+                    <label asp-for="Monto" class="control-label"></label>
+                    <input asp-for="Monto" class="form-control" id="montoSugerido" />
+                </div>
+                <div class="form-group mb-2">
+                    <label asp-for="Fecha" class="control-label"></label>
+                    <input asp-for="Fecha" class="form-control" readonly />
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend style="font-size: 1.1em;">Complete el Pago</legend>
+                <div class="form-group mb-3">
+                    <label asp-for="Metodo" class="control-label">Método de Pago</label>
+                    <select asp-for="Metodo" class="form-select" asp-items="Html.GetEnumSelectList<si_td_gestion_eventos.Models.Enums.MetodoPago>()">
+                        <option value="">-- Seleccionar --</option>
+                    </select>
+                    <span asp-validation-for="Metodo" class="text-danger"></span>
+                </div>
+                <div class="form-group mb-2">
+                    <label asp-for="Observaciones" class="control-label"></label>
+                    <input asp-for="Observaciones" type="text" class="form-control" id="observacionesInput" />
+                    <small class="form-text text-info-emphasis" style="font-size: 0.8em;">
+                        El texto inicial cambiará automáticamente según el monto.
+                    </small>
+                </div>
+                <div class="form-group mb-3">
+                    <label asp-for="ArchivoComprobante" class="control-label"></label>
+                    <input asp-for="ArchivoComprobante" type="file" class="form-control" />
+                </div>
+            </fieldset>
+
+            <div class="form-group mt-4">
+                <input type="submit" value="Confirmar y Guardar Evento" class="btn btn-success" />
+                <a id="btnCancelar" href="@Url.Action("CancelCreate", "Pago")" class="btn btn-danger">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        document.getElementById("btnCancelar").addEventListener("click", function(e) {
+            e.preventDefault();
+            if (confirm("Si cancela, se perderán los datos del evento y no podrá darse de alta. ¿Está seguro?")) {
+                window.location.href = this.href;
+            }
+        });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+
+            // 1. OBTENER LOS ELEMENTOS
+            const montoInput = document.getElementById("montoSugerido");
+            const obsInput = document.getElementById("observacionesInput");
+            const helperData = document.getElementById("helperData");
+
+            if (!montoInput || !obsInput || !helperData) return;
+
+            // 2. OBTENER LOS VALORES DEL CONTROLADOR
+            const costoTotal = parseFloat(helperData.dataset.costoTotal);
+            const obsReserva = helperData.dataset.obsReserva;
+            const obsCompleto = helperData.dataset.obsCompleto;
+
+            // 3. FUNCIÓN QUE RECALCULA
+            function actualizarObservacion() {
+                const montoActual = parseFloat(montoInput.value) || 0;
+
+                let textoAdicional = "";
+                const obsActual = obsInput.value;
+
+                if (obsActual.startsWith(obsReserva) && obsActual.length > obsReserva.length) {
+                    textoAdicional = obsActual.substring(obsReserva.length);
+                } else if (obsActual.startsWith(obsCompleto) && obsActual.length > obsCompleto.length) {
+                    textoAdicional = obsActual.substring(obsCompleto.length);
+                } else if (!obsActual.startsWith(obsReserva) && !obsActual.startsWith(obsCompleto) && obsActual.length > 0) {
+                    textoAdicional = " - " + obsActual;
+                }
+
+                // 4. ¡LA LÓGICA!
+                if (montoActual >= costoTotal) {
+                    obsInput.value = obsCompleto + textoAdicional;
+                } else {
+                    obsInput.value = obsReserva + textoAdicional;
+                }
+            }
+
+            // 5. ESCUCHAR CAMBIOS EN EL MONTO
+            montoInput.addEventListener("input", actualizarObservacion);
+
+            // 6. Ejecutar una vez al cargar la página
+            actualizarObservacion();
+        });
+    </script>
+}

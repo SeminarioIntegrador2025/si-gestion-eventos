@@ -1,68 +1,162 @@
-﻿@*@model si_td_gestion_eventos.Entities.Pago
-
+﻿@model si_td_gestion_eventos.Models.ViewModels.PagoVM
 @{
-    ViewData["Title"] = "Cargar Pago";
-    var eventos = ViewBag.Eventos as List<si_td_gestion_eventos.Entities.Evento>;
+    ViewData["Title"] = "Registrar Nuevo Pago";
+
+    // Leemos los datos del informe (del controller)
+    var saldoAnterior = (float)(ViewData["SaldoAnterior"] ?? 0f);
+    var totalPagadoActual = (float)(ViewData["TotalPagadoActual"] ?? 0f);
+    var costoTotalEvento = (float)(ViewData["CostoTotalEvento"] ?? 0f);
+    var estadoActual = ViewData["EstadoActual"]?.ToString() ?? "N/A";
+    var eventoId = ViewData["EventoId"];
 }
 
-<h2>Cargar Pago</h2>
+<h2>Registrar Nuevo Pago</h2>
+<hr />
 
-<form asp-action="Create" method="post">
-    <div class="mb-3">
-        <label asp-for="Fecha" class="form-label"></label>
-        <input asp-for="Fecha" class="form-control" type="date" />
-        <span asp-validation-for="Fecha" class="text-danger"></span>
+<div class="row">
+
+    <div class="col-md-7">
+        <form asp-action="Create" method="post" enctype="multipart/form-data">
+
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="form-group mb-3">
+                <label asp-for="EventoId" class="control-label fw-semibold">Seleccionar Evento</label>
+                <select asp-for="EventoId" asp-items="@ViewBag.Eventos" class="form-select" id="eventoSelect">
+                    <option value="">-- Seleccione un evento... --</option>
+                </select>
+                <span asp-validation-for="EventoId" class="text-danger"></span>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label asp-for="Monto" class="control-label"></label>
+                        <input asp-for="Monto" class="form-control" type="number" step="0.01" />
+                        <span asp-validation-for="Monto" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label asp-for="Fecha" class="control-label"></label>
+                        <input asp-for="Fecha" class="form-control" type="date" />
+                        <span asp-validation-for="Fecha" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Metodo" class="control-label"></label>
+                <select asp-for="Metodo" asp-items="Html.GetEnumSelectList<si_td_gestion_eventos.Models.Enums.MetodoPago>()" class="form-select">
+                    <option value="">Seleccione...</option>
+                </select>
+                <span asp-validation-for="Metodo" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Observaciones" class="control-label"></label>
+                <input asp-for="Observaciones" class="form-control" />
+                <span asp-validation-for="Observaciones" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="ArchivoComprobante" class="control-label"></label>
+                <input asp-for="ArchivoComprobante" type="file" class="form-control" />
+                <span asp-validation-for="ArchivoComprobante" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mt-4">
+                <input type="submit" value="Guardar Pago" class="btn btn-primary" />
+                <a asp-action="Index" asp-route-eventoId="@eventoId" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
     </div>
-    <div class="mb-3">
-        <label asp-for="Monto" class="form-label"></label>
-        <input asp-for="Monto" class="form-control" type="number" step="0.01" />
-        <span asp-validation-for="Monto" class="text-danger"></span>
+
+    <div class="col-md-5">
+        <div id="informeFinanciero"
+             style="border: 1px solid #444; border-radius: 8px; padding: 20px; background-color: #2c3034;"
+             data-costo-total="@costoTotalEvento"
+             data-total-pagado="@totalPagadoActual">
+
+            <h4 style="margin-top: 0;">Informe Financiero</h4>
+            <hr style="border-top: 1px solid #444;" />
+
+            <dl class="row">
+                <dt class="col-sm-6">Saldo Anterior:</dt>
+                <dd class="col-sm-6 text-end" style="color: #dc3545; font-weight: bold;">
+                    @saldoAnterior.ToString("C2")
+                </dd>
+                <dt class="col-sm-6">Monto a Pagar:</dt>
+                <dd class="col-sm-6 text-end" id="infoMontoNuevo" style="font-weight: bold;">
+                    $ 0,00
+                </dd>
+            </dl>
+            <hr style="border-top: 1px solid #444;" />
+            <dl class="row">
+                <dt class="col-sm-6">Nuevo Saldo:</dt>
+                <dd class="col-sm-6 text-end" id="infoSaldoNuevo" style="color: #dc3545; font-weight: bold; font-size: 1.1em;">
+                    @saldoAnterior.ToString("C2")
+                </dd>
+                <dt class="col-sm-6">Nuevo Estado:</dt>
+                <dd class="col-sm-6 text-end" id="infoEstadoNuevo" style="font-weight: bold; font-size: 1.1em;">
+                    @estadoActual
+                </dd>
+            </dl>
+        </div>
     </div>
-    <div class="mb-3">
-        <label asp-for="Metodo" class="form-label"></label>
-        <select asp-for="Metodo" class="form-select">
-            <option value="">Seleccione método</option>
-            @foreach (var metodo in Enum.GetValues(typeof(si_td_gestion_eventos.Models.Enums.MetodoPago)))
-            {
-                <option value="@metodo">@metodo</option>
-            }
-        </select>
-        <span asp-validation-for="Metodo" class="text-danger"></span>
-    </div>
-    <div class="mb-3">
-        <label for="eventoId" class="form-label">Evento</label>
-        <select id="eventoId" name="eventoId" class="form-select">
-            <option value="">Seleccione evento</option>
-            @if (eventos != null)
-            {
-                foreach (var evento in eventos)
-                {
-                    <option value="@evento.EventoId">@evento.ResponsableNombre - @evento.FechaInicio.ToShortDateString()</option>
-                }
-            }
-        </select>
-    </div>
-    <div class="mb-3">
-        <label asp-for="ComprobanteRuta" class="form-label">Ruta del Comprobante</label>
-        <input asp-for="ComprobanteRuta" class="form-control" />
-        <span asp-validation-for="ComprobanteRuta" class="text-danger"></span>
-    </div>
-    <div class="mb-3">
-        <label asp-for="ComprobanteTipo" class="form-label"></label>
-        <select asp-for="ComprobanteTipo" class="form-select">
-            <option value="">Seleccione tipo de archivo</option>
-            @foreach (var tipo in Enum.GetValues(typeof(si_td_gestion_eventos.Models.Enums.TipoArchivo)))
-            {
-                <option value="@tipo">@tipo</option>
-            }
-        </select>
-        <span asp-validation-for="ComprobanteTipo" class="text-danger"></span>
-    </div>
-    <button type="submit" class="btn btn-success">Guardar</button>
-    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
-</form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const montoInput = document.getElementById("Monto");
+            if (!montoInput) return;
+
+            const informeBox = document.getElementById("informeFinanciero");
+            if (!informeBox.dataset.costoTotal || parseFloat(informeBox.dataset.costoTotal) === 0) {
+                // Si no hay evento seleccionado, oculta el informe
+                informeBox.style.display = "none";
+                return;
+            }
+
+            const infoMontoNuevo = document.getElementById("infoMontoNuevo");
+            const infoSaldoNuevo = document.getElementById("infoSaldoNuevo");
+            const infoEstadoNuevo = document.getElementById("infoEstadoNuevo");
+            const costoTotal = parseFloat(informeBox.dataset.costoTotal);
+            const totalPagadoActual = parseFloat(informeBox.dataset.totalPagado);
+            const currencyFormatter = new Intl.NumberFormat('es-AR', { /* ... */ });
+
+            montoInput.addEventListener("input", function() {
+                const montoNuevo = parseFloat(montoInput.value) || 0;
+                const nuevoTotalPagado = totalPagadoActual + montoNuevo;
+                const nuevoSaldo = costoTotal - nuevoTotalPagado;
+
+                let nuevoEstado = (nuevoSaldo <= 0) ? "PendientePagado" : "PendienteAdeudado";
+                let colorSaldo = (nuevoSaldo <= 0) ? "#198754" : "#dc3545"; // Verde o Rojo
+
+                infoMontoNuevo.innerText = currencyFormatter.format(montoNuevo);
+                infoSaldoNuevo.innerText = currencyFormatter.format(nuevoSaldo);
+                infoEstadoNuevo.innerText = nuevoEstado;
+                infoSaldoNuevo.style.color = colorSaldo;
+            });
+        });
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const eventoDropdown = document.getElementById("eventoSelect");
+            if (eventoDropdown) {
+                eventoDropdown.addEventListener("change", function() {
+                    const selectedEventoId = this.value;
+                    if (selectedEventoId) {
+                        window.location.href = '/Pago/Create?eventoId=' + selectedEventoId;
+                    } else {
+                         window.location.href = '/Pago/Create';
+                    }
+                });
+            }
+        });
+    </script>
 }
-*@

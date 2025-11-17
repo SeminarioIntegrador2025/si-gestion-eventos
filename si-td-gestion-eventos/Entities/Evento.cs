@@ -1,5 +1,6 @@
 ﻿using si_td_gestion_eventos.Models.Enums;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace si_td_gestion_eventos.Entities
 {
@@ -7,32 +8,58 @@ namespace si_td_gestion_eventos.Entities
     {
         public int EventoId { get; set; }
 
-        public required DateTime FechaContrato { get; set; }        
-        public required DateTime Inicio { get; set; }
-        public required DateTime Fin { get; set; }
-        public required TimeSpan HoraInicio { get; set; }
-        public required TimeSpan HoraFin { get; set; }
-        public required TipoEvento Tipo { get; set; }
-        public required decimal CostoAlquiler { get; set; }
-        public required decimal MontoReserva { get; set; }
-        public required int CantidadPersonas { get; set; }
-        public decimal? MontoAireAcondicionado { get; set; }
-        public required EventoEstado Estado { get; set; } = EventoEstado.PendienteAConfirmar;
-
-        [StringLength(100)]
-        public required string ResponsableNombre { get; set; }
-
-        [StringLength(30)]
-        public required string ResponsableTelefono { get; set; }
-
-        [StringLength(30)]
-        public required string ResponsableCedula { get; set; }
-
-        // --- RELACIONES ---
         [Required]
-        public required int ClienteId { get; set; }
+        public DateTime FechaContrato { get; set; }
+
+        [Required]
+        public DateTime Inicio { get; set; }
+
+        [Required]
+        public DateTime Fin { get; set; }
+
+        [Required]
+        public TimeSpan HoraInicio { get; set; }
+
+        [Required]
+        public TimeSpan HoraFin { get; set; }
+
+        [Required]
+        public TipoEvento Tipo { get; set; }
+
+        [Required]
+        [Column(TypeName = "decimal(18, 2)")]
+        public float CostoAlquiler { get; set; }
+
+        [Required]
+        [Column(TypeName = "decimal(18, 2)")]
+        public float MontoReserva { get; set; }
+
+        [Required]
+        public int CantidadPersonas { get; set; }
+
+        [Column(TypeName = "decimal(18, 2)")]
+        public float? MontoAireAcondicionado { get; set; }
+
+        [Required]
+        public EventoEstado Estado { get; set; } = EventoEstado.PendienteAdeudado;
+
+        public String? Observaciones { get; set; }
+
+        // Propiedad Adueñada (Owned) para Responsable
+        [Required]
+        public ResponsableSalon ResponsableSalon { get; set; } = null!;
+
+        // Propiedad Adueñada (Owned) para Servicios (ahora solo con AGADU)
+        [Required]
+        public ServiciosEsenciales ServiciosEsenciales { get; set; } = null!;
+
+        // Relaciones
+        [Required]
+        public int ClienteId { get; set; }
         public Cliente Cliente { get; set; } = null!;
+
         public ICollection<Pago> Pagos { get; set; } = new List<Pago>();
-        public Fianza? Fianza { get; set; }
-        }
+        public ICollection<Fianza> Fianzas { get; set; } = new List<Fianza>();
+        public ICollection<Reporte> Reportes { get; set; } = new List<Reporte>();
+    }
 }

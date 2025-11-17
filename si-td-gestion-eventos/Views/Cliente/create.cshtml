@@ -1,20 +1,160 @@
-﻿@using si_td_gestion_eventos.Models.ViewModels
+﻿@using si_td_gestion_eventos.Models.Enums
+@using si_td_gestion_eventos.Models.ViewModels
 @model ClienteVM
 @{
     ViewData["Title"] = "Nuevo Cliente";
 }
 
-<div>
-    <h2>Nuevo Cliente</h2>
-    <form asp-action="Create" method="post">
-        <partial name="_ClienteForm" />
-        <button type="submit" class="btn btn-primary">Guardar</button>
-        <a asp-action="Index" class="btn btn-secondary">Volver</a>
-    </form>
+<div class="container-fluid">
+    <div class="page-header mb-4">
+        <h2 class="page-title">
+            <i class="fas fa-user-plus me-3 text-primary"></i>Nuevo Cliente
+        </h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-action="Index">Clientes</a></li>
+                <li class="breadcrumb-item active">Nuevo</li>
+            </ol>
+        </nav>
+    </div>
 
-    @if (ViewBag.Message != null){
-        <div class="alert alert-success" role="alert">
-            @ViewBag.Message
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-plus me-2"></i>Información del Cliente
+                    </h5>
+                </div>
+
+                <div class="card-body">
+                    <form asp-action="Create" method="post" novalidate>
+
+                        <h5 class="mb-3">Tipo de Cliente</h5>
+                        <div class="row mb-4">
+                            <div class="col">
+                                <div class="btn-group w-100" role="group" data-bs-toggle="buttons">
+
+                                    <input type="radio"
+                                           class="btn-check"
+                                           asp-for="Tipo"
+                                           id="radioPersonaFisica"
+                                           value="@TipoCliente.PersonaFisica"
+                                           autocomplete="off">
+                                    <label class="btn btn-outline-primary w-50" for="radioPersonaFisica">
+                                        <i class="fa-solid fa-user me-2"></i>Persona Física
+                                    </label>
+
+                                    <input type="radio"
+                                           class="btn-check"
+                                           asp-for="Tipo"
+                                           id="radioPersonaJuridica"
+                                           value="@TipoCliente.PersonaJuridica"
+                                           autocomplete="off">
+                                    <label class="btn btn-outline-primary w-50" for="radioPersonaJuridica">
+                                        <i class="fa-solid fa-building me-2"></i>Persona Jurídica (Empresa)
+                                    </label>
+
+                                </div>
+                                <span asp-validation-for="Tipo" class="text-danger d-block mt-2"></span>
+                            </div>
+                        </div>
+
+                        <hr />
+
+                        <partial name="_ClienteForm" />
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save me-2"></i>Guardar Cliente
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-        }
+    </div>
+
+    @if (ViewBag.Message != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@ViewBag.Message
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
 </div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        $(document).ready(function() {
+
+            // --- LÓGICA CONDICIONAL DE FORMULARIO ---
+
+            const radioFisica = $('#radioPersonaFisica');
+            const radioJuridica = $('#radioPersonaJuridica');
+
+            const campoApellido = $('#campo-apellido-div');
+            const labelNombre = $('#label-nombre');
+            const campoCedula = $('#campo-cedula-div');
+            const inputCedula = $('#CedulaIdentidad');
+            const campoRut = $('#campo-rut-div');
+            const inputRut = $('#RUT');
+
+            function actualizarFormulario() {
+                if (radioJuridica.is(':checked')) {
+                    // MODO EMPRESA
+                    labelNombre.html('<i class="fas fa-building me-1"></i>Razón Social *');
+                    campoApellido.hide();
+                    campoRut.show();
+                    campoCedula.hide();
+                    if(inputCedula.length) {
+                        inputCedula.val('');
+                    }
+                } else {
+                    // MODO PERSONA
+                    labelNombre.html('<i class="fas fa-user me-1"></i>Nombre *');
+                    campoApellido.show();
+                    campoRut.hide();
+                    campoCedula.show();
+                    if(inputRut.length) {
+                        inputRut.val('');
+                    }
+                }
+            }
+
+            radioFisica.on('change', actualizarFormulario);
+            radioJuridica.on('change', actualizarFormulario);
+            actualizarFormulario();
+
+            // --- FORMATEAR CÉDULA ---
+                    $('#CedulaIdentidad').on('input', function() {
+            // 1. Limpia el valor (solo dígitos)
+            let value = this.value.replace(/[^\d]/g, '');
+
+            // 2. LA SOLUCIÓN: Trunca la *cantidad de dígitos* a un máximo de 8.
+            // (El formato X.XXX.XXX-N usa 8 dígitos en total)
+            if (value.length > 8) {
+                value = value.substring(0, 8);
+            }
+
+            // 3. Aplica el formato (la misma lógica que tenías)
+            // (Ej: "55094898" (8 dígitos) se formatea a "5.509.489-8" (11 chars))
+            if (value.length >= 7) {
+                value = value.substring(0, value.length - 1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') + '-' + value.substring(value.length - 1);
+            }
+
+            // 4. Asigna el valor.
+            // Ya no necesitas el .substring(0, 12) porque el tope de 8 dígitos
+            // previene que la cadena formateada supere los 11 caracteres.
+            this.value = value;
+        });
+        });
+    </script>
+}

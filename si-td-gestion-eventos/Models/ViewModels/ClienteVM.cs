@@ -1,13 +1,35 @@
-﻿namespace si_td_gestion_eventos.Models.ViewModels
+﻿using si_td_gestion_eventos.Models.Enums;
+using System.ComponentModel.DataAnnotations;
+
+namespace si_td_gestion_eventos.Models.ViewModels
 {
     public class ClienteVM
     {
         public int ClienteId { get; set; }
+
+        [Display(Name = "Tipo de Cliente")]
+        public TipoCliente? Tipo { get; set; }
+
+        [Display(Name = "Nombre")] 
+        [Required(ErrorMessage = "El nombre o razón social es obligatorio.")]
         public required string Nombre { get; set; }
-        public required string Apellido { get; set; }
-        public required string CedulaIdentidad { get; set; }
-        public required string Domicilio { get; set; }
+
+        [Display(Name = "Apellido")]
+        public string? Apellido { get; set; } 
+
+        [Display(Name = "Cédula de Identidad")]
+        public string? CedulaIdentidad { get; set; }
+
+        [Display(Name = "RUT")]
+        public string? RUT { get; set; }
+
+        [Display(Name = "Teléfono")]
+        [Required(ErrorMessage = "El teléfono es obligatorio.")]
         public required string Telefono { get; set; }
+
+        [Display(Name = "Domicilio")]
+        [Required(ErrorMessage = "El domicilio es obligatorio.")]
+        public required string Domicilio { get; set; }
         public required bool Activo { get; set; }
 
     }

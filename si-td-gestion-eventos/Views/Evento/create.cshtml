@@ -4,23 +4,107 @@
     ViewData["Title"] = "Crear Nuevo Evento";
 }
 
-<h2 class="mb-4">Nuevo Evento</h2>
-
-<form asp-action="Create" method="post">
-    <partial name="_EventoForms" model="Model" />
-    <div class="mt-4">
-        <button type="submit" class="btn btn-primary">
-            <i class="bi bi-check-circle"></i> Crear Evento
-        </button>
-        <a asp-action="Index" class="btn btn-secondary">
-            <i class="bi bi-x-circle"></i> Volver
-        </a>
+<div class="container-fluid">
+    <div class="page-header mb-4">
+        <h2 class="page-title">
+            <i class="fas fa-calendar-plus me-3 text-success"></i>Nuevo Evento
+        </h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-controller="Evento" asp-action="Index">Eventos</a></li>
+                <li class="breadcrumb-item active">Nuevo</li>
+            </ol>
+        </nav>
     </div>
-</form>
 
-@* validación del lado del cliente *@
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-plus me-2"></i>Información del Evento
+                    </h5>
+                </div>
+
+                <form asp-action="Create" method="post" novalidate id="formCrearEvento">
+                    <div class="card-body">
+                        <partial name="_EventoCreateForm" model="Model" />
+                    </div>
+
+                    <div class="card-footer bg-light d-flex justify-content-between align-items-center">
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Volver
+                        </a>
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-check-circle me-2"></i>Crear Evento
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        $(document).ready(function () {
+
+            // --- 1. TU SCRIPT DE CÉDULA (SE QUEDA) ---
+            $('#ResponsableCedula').on('input', function() {
+                let value = this.value.replace(/[^\d]/g, '');
+                if (value.length > 8) {
+                    value = value.substring(0, 8);
+                }
+                if (value.length >= 2) {
+                    value = value.substring(0, value.length - 1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') + '-' + value.substring(value.length - 1);
+                }
+                this.value = value;
+            });
+
+            // --- 2. SCRIPT ANTIGUO DE 48HS (SE ELIMINA) ---
+            // (Borramos todo el bloque const fechaInicioInput = ...
+            // y la función revisarLogica48Hs() y sus listeners)
+
+            // --- 3. NUEVO SCRIPT DE ADVERTENCIA 48HS (SE AÑADE) ---
+
+            // 3a. Busca el formulario.
+            // (¡IMPORTANTE! Asegurate de que tu <form> tenga id="formCrearEvento")
+            // En 'create.cshtml': <form asp-action="Create" ... id="formCrearEvento">
+            $("#formCrearEvento").on("submit", function(e) {
+
+                // 3b. Lee los 4 valores clave (usando los IDs del _EventoCreateForm)
+                const fechaInicio = new Date($("#FechaInicio").val() + "T" + $("#HoraInicio").val());
+                const costoAlquiler = parseFloat($("#CostoAlquiler").val()) || 0;
+                const montoAire = parseFloat($("#MontoAire").val()) || 0;
+                const montoReserva = parseFloat($("#MontoReserva").val()) || 0;
+
+                const costoTotal = costoAlquiler + montoAire;
+
+                // 3c. Define las condiciones
+                const ahora = new Date();
+                const deadline48hs = new Date(ahora.getTime() + 48 * 60 * 60 * 1000);
+
+                const esDentroDe48Hs = (fechaInicio > ahora && fechaInicio < deadline48hs);
+                const esPagoParcial = montoReserva < costoTotal;
+
+                // 3d. ¡LA LÓGICA DE ADVERTENCIA!
+                if (esDentroDe48Hs && esPagoParcial) {
+
+                    const mensaje = "ADVERTENCIA:\n\n" +
+                                  "Este evento es en menos de 48 horas y solo se está pagando la reserva.\n\n" +
+                                  "¿Desea crearlo igualmente?";
+
+                    if (confirm(mensaje)) {
+                        // SI (El usuario confirma): Deja que el formulario se envíe
+                        return;
+                    } else {
+                        // NO (El usuario cancela): Detiene el envío del formulario
+                        e.preventDefault();
+                    }
+                }
+            });
+        });
+    </script>
+}
 }

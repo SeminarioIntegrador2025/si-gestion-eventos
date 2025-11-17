@@ -1,13 +1,165 @@
-﻿@using si_td_gestion_eventos.Models.ViewModels
+﻿@using si_td_gestion_eventos.Models.Enums
+@using si_td_gestion_eventos.Models.ViewModels
 @model ClienteVM
 @{
     ViewData["Title"] = "Editar Cliente";
 }
 
-<h2>Editar Cliente</h2>
-<form asp-action="Edit" method="post">
-    <input type="hidden" asp-for="ClienteId" />
-    <partial name="_ClienteForm" />
-    <button type="submit" class="btn btn-primary">Guardar cambios</button>
-    <a asp-action="Index" class="btn btn-secondary">Volver</a>
-</form>
+<div class="container-fluid">
+    <div class="page-header mb-4">
+        <h2 class="page-title">
+            <i class="fas fa-user-edit me-3 text-warning"></i>Editar Cliente
+        </h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-action="Index">Clientes</a></li>
+                <li class="breadcrumb-item active">Editar</li>
+            </ol>
+        </nav>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-edit me-2"></i>Modificar Información del Cliente
+                    </h5>
+                </div>
+                
+                <div class="card-body">
+                    <form asp-action="Edit" method="post" novalidate>
+                        <input type="hidden" asp-for="ClienteId" />
+                        <input type="hidden" asp-for="Tipo" />
+
+                        <h5 class="mb-3">Tipo de Cliente</h5>
+                        <div class="row mb-4">
+                            <div class="col">
+                                <div class="btn-group w-100" role="group" data-bs-toggle="buttons">
+
+                                    <input type="radio"
+                                           class="btn-check"
+                                           asp-for="Tipo"
+                                           id="radioPersonaFisica"
+                                           value="@TipoCliente.PersonaFisica"
+                                           autocomplete="off"
+                                           disabled> <label class="btn btn-outline-primary w-50" for="radioPersonaFisica">
+                                        <i class="fa-solid fa-user me-2"></i>Persona Física
+                                    </label>
+
+                                    <input type="radio"
+                                           class="btn-check"
+                                           asp-for="Tipo"
+                                           id="radioPersonaJuridica"
+                                           value="@TipoCliente.PersonaJuridica"
+                                           autocomplete="off"
+                                           disabled> <label class="btn btn-outline-primary w-50" for="radioPersonaJuridica">
+                                        <i class="fa-solid fa-building me-2"></i>Persona Jurídica (Empresa)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr />
+
+                        <partial name="_ClienteForm" />
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </a>
+                            <button type="submit" class="btn btn-warning btn-lg">
+                                <i class="fas fa-save me-2"></i>Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        $(document).ready(function() {
+
+            // --- LÓGICA CONDICIONAL DE FORMULARIO ---
+
+            // Referencias a los radios (aunque estén deshabilitados, igual los lee)
+            const radioFisica = $('#radioPersonaFisica');
+            const radioJuridica = $('#radioPersonaJuridica');
+
+            // Referencias a los campos del partial view
+            const campoApellido = $('#campo-apellido-div');
+            const labelNombre = $('#label-nombre');
+            const campoCedula = $('#campo-cedula-div');
+            const inputCedula = $('#CedulaIdentidad');
+            const campoRut = $('#campo-rut-div');
+            const inputRut = $('#RUT');
+
+            // Advertencia si no se encuentran los elementos
+            if(!campoApellido.length || !labelNombre.length || !campoCedula.length || !campoRut.length) {
+                 console.error("Error de Script: No se encontraron uno o más elementos del formulario. Revisa los IDs en _ClienteForm.cshtml.");
+            }
+
+            function actualizarFormulario() {
+                if (radioJuridica.is(':checked')) {
+                    // MODO EMPRESA
+                    labelNombre.html('<i class="fas fa-building me-1"></i>Razón Social *');
+                    campoApellido.hide();
+                    campoRut.show();
+                    campoCedula.hide();
+                    if(inputCedula.length) {
+                        inputCedula.val('');
+                    }
+                } else {
+                    // MODO PERSONA
+                    labelNombre.html('<i class="fas fa-user me-1"></i>Nombre *');
+                    campoApellido.show();
+                    campoRut.hide();
+                    campoCedula.show();
+                    if(inputRut.length) {
+                        inputRut.val('');
+                    }
+                }
+            }
+
+            // Escuchar cambios (aunque están deshabilitados, no hace daño)
+            radioFisica.on('change', actualizarFormulario);
+            radioJuridica.on('change', actualizarFormulario);
+
+            actualizarFormulario();
+
+            // --- LÓGICA DE VALIDACIÓN Y FORMATO ---
+
+            function toggleValidationSummary() {
+                const hasErrors = $('.text-danger.small').filter(function() {
+                    return $(this).text().trim() !== '';
+                }).length > 0;
+
+                const summary = $('[asp-validation-summary="ModelOnly"]');
+
+                if (hasErrors) {
+                    summary.removeClass('d-none').addClass('d-block');
+                } else {
+                    summary.removeClass('d-block').addClass('d-none');
+                }
+            }
+
+            // El formateo de cédula no es necesario aquí
+            // si el campo está deshabilitado ('readonly')
+
+            // Validación en tiempo real al salir de un campo
+            $('input').on('blur', function() {
+                setTimeout(toggleValidationSummary, 150);
+            });
+
+            // Verificar al cargar la página (por si recarga con errores)
+            setTimeout(toggleValidationSummary, 150);
+        });
+    </script>
+}
