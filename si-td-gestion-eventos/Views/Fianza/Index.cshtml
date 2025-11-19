@@ -1,11 +1,125 @@
-﻿@using si_td_gestion_eventos.Entities
-@model List<Fianza>
+﻿@using si_td_gestion_eventos.Models.Enums
+@model si_td_gestion_eventos.Infrastructure.PaginatedList<si_td_gestion_eventos.Models.ViewModels.FianzaVM>
 
-<div>
-    <div>
-        <h2>Fianzas</h2>
+@{
+    ViewData["Title"] = "Gestión de Fianzas";
+
+    string q = ViewBag.Search as string ?? "";
+    EstadoFianza? estado = ViewBag.Estado as EstadoFianza?;
+    int pageSize = (int)(ViewBag.PageSizeList.SelectedValue ?? 10);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="m-0"><i class="fas fa-shield-alt text-warning me-2"></i>Gestión de Fianzas</h2>
+    <a class="btn btn-primary" asp-action="Create"><i class="fa-solid fa-plus"></i> Registrar Nueva Fianza</a>
+</div>
+
+<form method="get" class="row g-3 mb-4 align-items-end">
+    <div class="col-md-4">
+        <label for="q" class="form-label">Buscar</label>
+        <input type="text" name="q" id="q" class="form-control" value="@q" placeholder="Cliente, CI o Tipo de Evento" />
     </div>
-    <div class="mb-3">
-        <a class="btn btn-primary" href="/Fianza/Create">Cargar Fianza</a>
+
+    <div class="col-md-3">
+        <label for="estado" class="form-label">Estado</label>
+        <select name="estado" id="estado" class="form-select" asp-items="ViewBag.EstadosList">
+            <option value="">-- Todos los Estados --</option>
+        </select>
     </div>
+
+    <div class="col-md-2">
+        <label for="pageSize" class="form-label">Por Página</label>
+        <select name="pageSize" id="pageSize" class="form-select" asp-items="ViewBag.PageSizeList" onchange="this.form.submit()">
+        </select>
+    </div>
+
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-magnifying-glass"></i> Buscar</button>
+    </div>
+</form>
+
+<table class="table table-striped table-hover">
+    <thead>
+        <tr>
+            <th>Cliente</th>
+            <th>Evento (Fecha)</th>
+            <th>Monto</th>
+            <th>Estado</th>
+            <th>Fecha Registro</th>
+            <th class="text-center">Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (!Model.Any())
+        {
+            <tr>
+                <td colspan="6" class="text-center text-muted py-4">
+                    No se encontraron fianzas registradas.
+                </td>
+            </tr>
+        }
+        else
+        {
+            @foreach (var item in Model)
+            {
+                // Lógica visual para el badge de estado
+                string badgeClass = item.Estado switch
+                {
+                    EstadoFianza.Registrada => "bg-primary",
+                    EstadoFianza.DevueltaTotalmente => "bg-success",
+                    EstadoFianza.DevueltaParcialmente => "bg-warning text-dark",
+                    EstadoFianza.NoDevuelta => "bg-danger",
+                    _ => "bg-secondary"
+                };
+
+                <tr>
+                    <td>@item.ClienteNombre</td>
+                    <td>
+                        @item.EventoFecha.ToShortDateString()
+                        <br />
+                        <small class="text-muted">@item.EventoDescripcion</small>
+                    </td>
+                    <td class="fw-bold">$ @item.Monto.ToString("N2")</td>
+                    <td>
+                        <span class="badge @badgeClass">@item.Estado</span>
+                    </td>
+                    <td>@item.FechaRegistro.ToShortDateString()</td>
+                    <td class="text-center">
+                        <a asp-controller="Evento" asp-action="Details" asp-route-id="@item.EventoId" class="btn btn-sm btn-outline-info" title="Ver Evento">
+                            <i class="fa-solid fa-eye"></i>
+                        </a>
+
+                        @if (item.Estado == EstadoFianza.Registrada)
+                        {
+                            <button class="btn btn-sm btn-outline-success" title="Devolver Fianza" disabled>
+                                <i class="fa-solid fa-hand-holding-dollar"></i>
+                            </button>
+                        }
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+<div class="d-flex justify-content-between align-items-center mt-3">
+    <nav>
+        <ul class="pagination mb-0">
+            <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                <a class="page-link" asp-action="Index" asp-route-page="@(Model.PageIndex - 1)" asp-route-q="@q" asp-route-estado="@estado" asp-route-pageSize="@pageSize">Anterior</a>
+            </li>
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-q="@q" asp-route-estado="@estado" asp-route-pageSize="@pageSize">@i</a>
+                </li>
+            }
+            <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                <a class="page-link" asp-action="Index" asp-route-page="@(Model.PageIndex + 1)" asp-route-q="@q" asp-route-estado="@estado" asp-route-pageSize="@pageSize">Siguiente</a>
+            </li>
+        </ul>
+    </nav>
+    <p class="text-muted mb-0">
+        Página @Model.PageIndex de @Model.TotalPages
+    </p>
 </div>

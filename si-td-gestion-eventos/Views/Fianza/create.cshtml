@@ -1,20 +1,110 @@
-﻿@model si_td_gestion_eventos.Entities.Fianza
-
+﻿@model si_td_gestion_eventos.Models.ViewModels.FianzaVM
 @{
-    ViewData["Title"] = "Cargar Fianza";
+    ViewData["Title"] = "Registrar Fianza";
 }
 
-<h2>Cargar Fianza</h2>
-
-
-<form asp-action="Create" method="post">
-    <div class="mb-3">
-      
+<div class="container-fluid">
+    <div class="page-header mb-4">
+        <h2 class="page-title">
+            <i class="fas fa-shield-alt me-3 text-warning"></i>Registrar Fianza
+        </h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-controller="Evento" asp-action="Index">Eventos</a></li>
+                @if (ViewBag.EventoPreseleccionado == true)
+                {
+                    <li class="breadcrumb-item"><a asp-controller="Evento" asp-action="Details" asp-route-id="@Model.EventoId">Detalles del Evento</a></li>
+                }
+                else
+                {
+                    <li class="breadcrumb-item"><a asp-controller="Fianza" asp-action="Index">Fianzas</a></li>
+                }
+                <li class="breadcrumb-item active">Registrar Fianza</li>
+            </ol>
+        </nav>
     </div>
- 
-    <button type="submit" class="btn btn-success">Guardar</button>
-    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
-</form>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>Datos de la Fianza
+                    </h5>
+                </div>
+
+                <form asp-action="Create" method="post">
+                    <div class="card-body p-4">
+
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="form-group mb-3">
+                            <label class="form-label fw-semibold">Evento Asociado</label>
+
+                            @if (ViewBag.EventoPreseleccionado == true)
+                            {
+                                <input class="form-control" value="@Model.EventoDescripcion" disabled />
+                                <input type="hidden" asp-for="EventoId" />
+                            }
+                            else
+                            {
+                                <select asp-for="EventoId"
+                                        asp-items="@(ViewBag.EventosDisponibles as IEnumerable<SelectListItem>)"
+                                        class="form-select">
+                                    <option value="">-- Seleccione un evento --</option>
+                                </select>
+                                <span asp-validation-for="EventoId" class="text-danger"></span>
+                            }
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="Monto" class="form-label"></label>
+                                    <input asp-for="Monto" class="form-control" type="number" step="0.01" min="0" />
+                                    <span asp-validation-for="Monto" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="FechaRegistro" class="form-label"></label>
+                                    <input asp-for="FechaRegistro" class="form-control" type="date" />
+                                    <span asp-validation-for="FechaRegistro" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="Observaciones" class="form-label"></label>
+                            <textarea asp-for="Observaciones" class="form-control" rows="3"></textarea>
+                            <span asp-validation-for="Observaciones" class="text-danger"></span>
+                        </div>
+
+                    </div>
+
+                    <div class="card-footer bg-light d-flex justify-content-between align-items-center">
+                        @if (ViewBag.EventoPreseleccionado == true)
+                        {
+                            <a asp-controller="Evento" asp-action="Details" asp-route-id="@Model.EventoId" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Cancelar
+                            </a>
+                        }
+                        else
+                        {
+                            <a asp-controller="Fianza" asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Cancelar
+                            </a>
+                        }
+
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-check-circle me-2"></i>Guardar Fianza
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

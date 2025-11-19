@@ -148,6 +148,9 @@ namespace si_td_gestion_eventos.Migrations
                     b.Property<DateTime>("FechaContrato")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("FianzaId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("Fin")
                         .HasColumnType("datetime2");
 
@@ -193,7 +196,7 @@ namespace si_td_gestion_eventos.Migrations
                     b.Property<int>("EventoId")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("FechaDevolucion")
+                    b.Property<DateTime?>("FechaDevolucion")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime>("FechaRegistro")
@@ -202,7 +205,7 @@ namespace si_td_gestion_eventos.Migrations
                     b.Property<decimal>("Monto")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<decimal>("MontoDevuelto")
+                    b.Property<decimal?>("MontoDevuelto")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Observaciones")
@@ -210,7 +213,8 @@ namespace si_td_gestion_eventos.Migrations
 
                     b.HasKey("FianzaId");
 
-                    b.HasIndex("EventoId");
+                    b.HasIndex("EventoId")
+                        .IsUnique();
 
                     b.ToTable("Fianza");
                 });
@@ -366,8 +370,8 @@ namespace si_td_gestion_eventos.Migrations
             modelBuilder.Entity("si_td_gestion_eventos.Entities.Fianza", b =>
                 {
                     b.HasOne("si_td_gestion_eventos.Entities.Evento", "Evento")
-                        .WithMany("Fianzas")
-                        .HasForeignKey("EventoId")
+                        .WithOne("Fianza")
+                        .HasForeignKey("si_td_gestion_eventos.Entities.Fianza", "EventoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -403,7 +407,7 @@ namespace si_td_gestion_eventos.Migrations
 
             modelBuilder.Entity("si_td_gestion_eventos.Entities.Evento", b =>
                 {
-                    b.Navigation("Fianzas");
+                    b.Navigation("Fianza");
 
                     b.Navigation("Pagos");
 

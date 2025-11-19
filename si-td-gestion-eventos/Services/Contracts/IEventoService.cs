@@ -30,5 +30,6 @@ namespace si_td_gestion_eventos.Services.Contracts
         Task<ServiceResult<EventoVM>> CreateEventWithPaymentAsync(EventoVM eventoVM, PagoReservaVM pagoVM);
         Task<ServiceResult<int>> CheckAndCancelUnpaidEventsAsync();
         Task<ServiceResult<int>> MarkCompletedEventsAsync();
+        Task<IEnumerable<SelectListItem>> GetEventosSinFianzaParaDropdownAsync();
     }
 }

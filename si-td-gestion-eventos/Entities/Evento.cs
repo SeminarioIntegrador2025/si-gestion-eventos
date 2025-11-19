@@ -59,7 +59,8 @@ namespace si_td_gestion_eventos.Entities
         public Cliente Cliente { get; set; } = null!;
 
         public ICollection<Pago> Pagos { get; set; } = new List<Pago>();
-        public ICollection<Fianza> Fianzas { get; set; } = new List<Fianza>();
+        public int? FianzaId { get; set; }
+        public Fianza? Fianza { get; set; } 
         public ICollection<Reporte> Reportes { get; set; } = new List<Reporte>();
     }
 }

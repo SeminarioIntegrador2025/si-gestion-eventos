@@ -107,6 +107,28 @@
 
         </div>
     </div>
+
+        @if (Model.FianzaId == null)
+        {
+            <a asp-controller="Fianza"
+               asp-action="Create"
+               asp-route-eventoId="@Model.EventoId"
+               class="btn btn-warning">
+                <i class="fas fa-shield-alt me-2"></i> Registrar Fianza
+            </a>
+        }
+        else
+        {
+            <a asp-controller="Fianza"
+               asp-action="Details"
+               asp-route-id="@Model.FianzaId"
+               class="btn btn-info">
+                <i class="fas fa-shield-alt me-2"></i> Ver Fianza Registrada
+            </a>
+        }
+
+        <a asp-action="Edit" asp-route-id="@Model.EventoId" class="btn btn-secondary">Editar</a>
+        <a asp-action="Index" class="btn btn-outline-secondary">Volver a la Lista</a>
     <div class="card-footer text-muted">
         <a asp-action="Edit" asp-route-id="@Model.EventoId" class="btn btn-primary"><i class="fa-solid fa-pen"></i> Editar</a>
         <a asp-action="Index" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i> Volver a la Lista</a>

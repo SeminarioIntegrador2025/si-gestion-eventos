@@ -270,13 +270,13 @@ namespace si_td_gestion_eventos.Services.Implementation
             return new ReporteFianzasVM
             {
                 TotalFianzasRegistradas = Math.Round(totalRegistradas, 2),
-                TotalFianzasDevueltas = Math.Round(totalDevueltas, 2),
-                TotalFianzasPendientesDevolucion = Math.Round(totalPendientesDevolucion, 2),
+                TotalFianzasDevueltas = Math.Round((decimal)totalDevueltas, 2),
+                TotalFianzasPendientesDevolucion = Math.Round((decimal)totalPendientesDevolucion, 2),
                 FianzasRegistradasEsteMes = fianzasEsteMes.Count,
                 FianzasDevueltasEsteMes = fianzasEsteMes.Count(f => 
                     f.Estado == EstadoFianza.DevueltaTotalmente || 
                     f.Estado == EstadoFianza.DevueltaParcialmente),
-                PorcentajeDevolucionTotal = Math.Round(porcentajeDevolucion, 2),
+                PorcentajeDevolucionTotal = Math.Round((decimal)porcentajeDevolucion, 2),
                 MontoPromedioFianza = Math.Round(montoPromedio, 2),
                 FianzasVencidas = fianzasVencidas
             };
