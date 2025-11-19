@@ -113,7 +113,7 @@ namespace si_td_gestion_eventos.Services.Implementation
         // --- GetByIdAsync (Corregido para CostoTotal) ---
         public async Task<EventoVM?> GetByIdAsync(int id)
         {
-            var evento = await _eventoRepository.GetByIdWithIncludesAsync(id, e => e.Cliente, e => e.Pagos);
+            var evento = await _eventoRepository.GetByIdWithIncludesAsync(id, e => e.Cliente, e => e.Pagos, e => e.Fianza);
 
             if (evento == null)
                 return null;

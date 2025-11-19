@@ -105,9 +105,31 @@
                 <dd class="col-sm-7">@Model.ResponsableCedula</dd>
             </dl>
 
+                @if (Model.FianzaId != null)
+                {
+                    <h4>Fianza</h4>
+                    <hr />
+                    <dl class="row">
+                        <dt class="col-sm-5">Fecha</dt>
+                        <dd class="col-sm-7">@Model.DetalleFianza.FechaRegistro.ToShortDateString()</dd>
+
+                        <dt class="col-sm-5">Estado  Fianza</dt>
+                        <dd class="col-sm-7">@Model.DetalleFianza.Estado</dd>
+
+                        <dt class="col-sm-5">Monto Fianza</dt>
+                        <dd class="col-sm-7">@Model.DetalleFianza.Monto.ToString("C2")</dd>
+
+                        @if (!string.IsNullOrEmpty(Model.DetalleFianza.Observaciones))
+                        {
+                            <dt class="col-sm-5">Observaciones</dt>
+                            <dd class="col-sm-7">@Model.DetalleFianza.Observaciones</dd>
+                        }
+                    </dl>
+}
+
         </div>
     </div>
-
+        <div class="card-footer text-muted">
         @if (Model.FianzaId == null)
         {
             <a asp-controller="Fianza"
@@ -123,12 +145,10 @@
                asp-action="Details"
                asp-route-id="@Model.FianzaId"
                class="btn btn-info">
-                <i class="fas fa-shield-alt me-2"></i> Ver Fianza Registrada
+                <i class="fas fa-shield-alt me-2"></i> Gestionar Fianza *Arreglar*
             </a>
         }
-
-        <a asp-action="Edit" asp-route-id="@Model.EventoId" class="btn btn-secondary">Editar</a>
-        <a asp-action="Index" class="btn btn-outline-secondary">Volver a la Lista</a>
+        </div>
     <div class="card-footer text-muted">
         <a asp-action="Edit" asp-route-id="@Model.EventoId" class="btn btn-primary"><i class="fa-solid fa-pen"></i> Editar</a>
         <a asp-action="Index" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i> Volver a la Lista</a>
