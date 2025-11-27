@@ -104,5 +104,103 @@ namespace si_td_gestion_eventos.Services.Implementation
 
             return new PaginatedList<FianzaVM>(items, totalCount, page, pageSize);
         }
+
+        public async Task<FianzaVM?> GetByIdAsync(int id)
+        {
+            var fianza = await _fianzaRepo.GetByIdWithIncludesAsync(id, f => f.Evento, f => f.Evento.Cliente);
+            if (fianza == null) return null;
+            return _mapper.Map<FianzaVM>(fianza);
+        }
+
+        public async Task<ServiceResult<FianzaVM>> UpdateAsync(FianzaVM fianzaVM)
+        {
+            var fianza = await _fianzaRepo.GetByIdAsync(fianzaVM.FianzaId);
+            if (fianza == null) return ServiceResult<FianzaVM>.FailureResult("Fianza no encontrada.");
+
+            // Actualizamos los campos editables
+            fianza.Monto = fianzaVM.Monto; // (Por si hubo error al cargarla)
+            fianza.FechaRegistro = fianzaVM.FechaRegistro;
+            fianza.Observaciones = fianzaVM.Observaciones;
+
+            // --- LÓGICA DE DEVOLUCIÓN ---
+            // Si se ingresó un monto devuelto, actualizamos el estado automáticamente
+            if (fianzaVM.MontoDevuelto.HasValue)
+            {
+                fianza.MontoDevuelto = fianzaVM.MontoDevuelto;
+                fianza.FechaDevolucion = fianzaVM.FechaDevolucion ?? DateTime.Today;
+
+                if (fianza.MontoDevuelto == fianza.Monto)
+                {
+                    fianza.Estado = EstadoFianza.DevueltaTotalmente;
+                }
+                else if (fianza.MontoDevuelto > 0 && fianza.MontoDevuelto < fianza.Monto)
+                {
+                    fianza.Estado = EstadoFianza.DevueltaParcialmente;
+                }
+                else if (fianza.MontoDevuelto == 0)
+                {
+                    fianza.Estado = EstadoFianza.NoDevuelta; // (Ej. se rompió todo)
+                }
+            }
+            else
+            {
+                // Si no hay devolución, mantenemos o reseteamos a Registrada
+                fianza.MontoDevuelto = null;
+                fianza.FechaDevolucion = null;
+                fianza.Estado = EstadoFianza.Registrada;
+            }
+
+            try
+            {
+                _fianzaRepo.Update(fianza);
+                await _fianzaRepo.SaveChangesAsync();
+                return ServiceResult<FianzaVM>.SuccessResult(fianzaVM, "Fianza actualizada correctamente.");
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<FianzaVM>.FailureResult($"Error al actualizar: {ex.Message}");
+            }
+        }
+
+        public async Task<ServiceResult<bool>> DeleteAsync(int id)
+        {
+            var fianza = await _fianzaRepo.GetByIdAsync(id);
+            if (fianza == null) return ServiceResult<bool>.FailureResult("Fianza no encontrada.");
+
+            var evento = await _eventoRepo.GetByIdAsync(fianza.EventoId);
+
+            // Si el evento ya se realizó, no deberíamos poder borrar la fianza "por error", 
+            // ya que es parte de la historia de un evento consumado.
+            {
+                return ServiceResult<bool>.FailureResult("No se puede eliminar la fianza de un evento que ya fue REALIZADO. Si desea devolver el dinero, utilice la opción de Editar.");
+            }
+
+            await using (var transaction = await _context.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                 
+                    if (evento != null)
+                    {
+                        evento.FianzaId = null;
+                        _eventoRepo.Update(evento);
+                        await _eventoRepo.SaveChangesAsync();
+                    }
+
+                    //Se podria agregar un estadi "Anulada", pero no lo contemplamos en la documentacion.
+                    _fianzaRepo.Remove(fianza);
+
+                    await _fianzaRepo.SaveChangesAsync();
+
+                    await transaction.CommitAsync();
+                    return ServiceResult<bool>.SuccessResult(true, "La fianza ha sido eliminada y desvinculada del evento correctamente.");
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    return ServiceResult<bool>.FailureResult($"Error al eliminar la fianza: {ex.Message}");
+                }
+            }
+        }
     }
 }

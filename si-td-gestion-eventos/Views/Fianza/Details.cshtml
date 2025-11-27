@@ -1,0 +1,42 @@
+﻿<div class="card shadow-sm mb-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="fas fa-shield-alt me-2"></i>Fianza / Garantía</h5>
+    </div>
+    <div class="card-body">
+        @if (Model.FianzaId == null)
+        {
+            <div class="alert alert-warning mb-3">
+                <i class="fas fa-exclamation-triangle me-2"></i> Este evento aún no tiene una fianza registrada.
+            </div>
+
+            <a asp-controller="Fianza"
+               asp-action="Create"
+               asp-route-eventoId="@Model.EventoId"
+               class="btn btn-warning">
+                <i class="fas fa-plus-circle me-2"></i> Registrar Fianza
+            </a>
+        }
+        else
+        {
+            // Mostramos un resumen rápido usando la propiedad 'DetalleFianza' (que es un FianzaVM)
+            // Asegurate de que tu EventoController llene esta propiedad en el Details!
+            <div class="row">
+                <div class="col-md-4">
+                    <strong>Estado:</strong>
+                    <span class="badge bg-primary">@Model.DetalleFianza?.Estado</span>
+                </div>
+                <div class="col-md-4">
+                    <strong>Monto:</strong> $ @Model.DetalleFianza?.Monto.ToString("N2")
+                </div>
+                <div class="col-md-4 text-end">
+                    <a asp-controller="Fianza"
+                       asp-action="Edit"
+                       asp-route-id="@Model.FianzaId"
+                       class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-cog me-2"></i> Gestionar Fianza
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+</div>

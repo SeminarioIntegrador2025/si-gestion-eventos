@@ -32,8 +32,6 @@ namespace si_td_gestion_eventos.Mapping
 
                 .ForMember(dest => dest.TipoCli, opt => opt.MapFrom(src => src.Cliente.Tipo))
 
-  
-
                 .ForMember(dest => dest.FianzaId, opt => opt.MapFrom(src => src.FianzaId))
 
                 .ForMember(dest => dest.DetalleFianza, opt => opt.MapFrom(src => src.Fianza));

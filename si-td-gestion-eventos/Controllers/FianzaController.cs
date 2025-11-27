@@ -122,5 +122,25 @@ namespace si_td_gestion_eventos.Controllers
 
             return View(fianzaVM);
         }
+
+        [HttpPost] // Importante: Solo aceptamos peticiones POST por seguridad
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var result = await _fianzaService.DeleteAsync(id);
+
+            if (result.Success)
+            {
+                TempData["Ok"] = result.Message; // "La fianza ha sido dada de baja correctamente."
+            }
+            else
+            {
+                TempData["Error"] = result.Message;
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
     }
+
 }
