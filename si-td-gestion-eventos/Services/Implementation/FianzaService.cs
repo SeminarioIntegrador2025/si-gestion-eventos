@@ -165,21 +165,24 @@ namespace si_td_gestion_eventos.Services.Implementation
         public async Task<ServiceResult<bool>> DeleteAsync(int id)
         {
             var fianza = await _fianzaRepo.GetByIdAsync(id);
-            if (fianza == null) return ServiceResult<bool>.FailureResult("Fianza no encontrada.");
+            if (fianza == null)
+                return ServiceResult<bool>.FailureResult("Fianza no encontrada.");
 
             var evento = await _eventoRepo.GetByIdAsync(fianza.EventoId);
 
-            // Si el evento ya se realizó, no deberíamos poder borrar la fianza "por error", 
-            // ya que es parte de la historia de un evento consumado.
+            // 1. VALIDACIÓN PREVIA (Sin abrir transacción todavía)
+            // Si el evento existe y ya se realizó, bloqueamos el borrado aquí mismo.
+            if (evento != null && evento.Estado == EventoEstado.Realizado)
             {
-                return ServiceResult<bool>.FailureResult("No se puede eliminar la fianza de un evento que ya fue REALIZADO. Si desea devolver el dinero, utilice la opción de Editar.");
+                return ServiceResult<bool>.FailureResult("No se puede eliminar la fianza porque el evento ya fue REALIZADO. Si desea devolver el dinero, utilice la opción de Editar.");
             }
 
+            // 2. AHORA SÍ, LA TRANSACCIÓN
             await using (var transaction = await _context.Database.BeginTransactionAsync())
             {
                 try
                 {
-                 
+                    // A. Desvincular del evento (Si existe)
                     if (evento != null)
                     {
                         evento.FianzaId = null;
@@ -187,17 +190,18 @@ namespace si_td_gestion_eventos.Services.Implementation
                         await _eventoRepo.SaveChangesAsync();
                     }
 
-                    //Se podria agregar un estadi "Anulada", pero no lo contemplamos en la documentacion.
+                    // B. Borrar la fianza físicamente
                     _fianzaRepo.Remove(fianza);
-
                     await _fianzaRepo.SaveChangesAsync();
 
                     await transaction.CommitAsync();
+
                     return ServiceResult<bool>.SuccessResult(true, "La fianza ha sido eliminada y desvinculada del evento correctamente.");
                 }
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
+                    // Esto captura errores de SQL (ej: si hay Pagos vinculados que impiden borrar)
                     return ServiceResult<bool>.FailureResult($"Error al eliminar la fianza: {ex.Message}");
                 }
             }

@@ -129,28 +129,38 @@
 
         </div>
     </div>
-        <div class="card-footer text-muted">
-        @if (Model.FianzaId == null)
-        {
-            <a asp-controller="Fianza"
-               asp-action="Create"
-               asp-route-eventoId="@Model.EventoId"
-               class="btn btn-warning">
-                <i class="fas fa-shield-alt me-2"></i> Registrar Fianza
-            </a>
-        }
-        else
-        {
-            <a asp-controller="Fianza"
-               asp-action="Details"
-               asp-route-id="@Model.FianzaId"
-               class="btn btn-info">
-                <i class="fas fa-shield-alt me-2"></i> Gestionar Fianza *Arreglar*
-            </a>
-        }
-        </div>
-    <div class="card-footer text-muted">
-        <a asp-action="Edit" asp-route-id="@Model.EventoId" class="btn btn-primary"><i class="fa-solid fa-pen"></i> Editar</a>
-        <a asp-action="Index" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i> Volver a la Lista</a>
     </div>
+
+    <div class="card-footer text-muted d-flex justify-content-between align-items-center">
+        <div>
+            <a asp-action="Edit" asp-route-id="@Model.EventoId" class="btn btn-primary">
+                <i class="fa-solid fa-pen me-2"></i>Editar Evento
+            </a>
+            <a asp-action="Index" class="btn btn-secondary">
+                <i class="fa-solid fa-arrow-left me-2"></i>Volver
+            </a>
+        </div>
+
+        <div>
+            @if (Model.FianzaId == null)
+            {
+                <a asp-controller="Fianza"
+                   asp-action="Create"
+                   asp-route-eventoId="@Model.EventoId"
+                   class="btn btn-success">
+                    <i class="fas fa-plus-circle me-2"></i>Registrar Fianza
+                </a>
+            }
+            else
+            {
+                <a asp-controller="Fianza"
+                   asp-action="Details"
+                   asp-route-id="@Model.FianzaId"
+                   class="btn btn-info text-white">
+                    <i class="fas fa-hand-holding-usd me-2"></i> Ver Fianza
+                </a>
+            }
+        </div>
+    </div>
+</div>
 </div>

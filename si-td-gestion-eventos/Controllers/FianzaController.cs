@@ -18,26 +18,20 @@ namespace si_td_gestion_eventos.Controllers
             _eventoService = eventoService;
         }
 
-        // --- 1. LISTADO DE FIANZAS (Index) ---
+        //Listado
         [HttpGet]
         public async Task<IActionResult> Index(string? q, EstadoFianza? estado, int page = 1, int pageSize = 10)
         {
-            // Llamamos al servicio que nos devuelve PaginatedList<FianzaVM>
             var paginatedList = await _fianzaService.GetPaginatedAsync(q, estado, page, pageSize);
-
-            // Pasamos los filtros a la vista para mantener el estado
             ViewBag.Search = q;
             ViewBag.Estado = estado;
-
-            // Listas para los dropdowns de filtros
             ViewBag.EstadosList = new SelectList(Enum.GetValues(typeof(EstadoFianza)), estado);
             ViewBag.PageSizeList = new SelectList(new[] { 10, 25, 50 }, pageSize);
 
             return View(paginatedList);
         }
 
-        // --- 2. ALTA DE FIANZA (Create) ---
-        // GET: Fianza/Create?eventoId=5 (Desde Detalles) O Fianza/Create (Desde Index)
+        // GET: Fianza/Create
         [HttpGet]
         public async Task<IActionResult> Create(int? eventoId)
         {
@@ -123,7 +117,59 @@ namespace si_td_gestion_eventos.Controllers
             return View(fianzaVM);
         }
 
-        [HttpPost] // Importante: Solo aceptamos peticiones POST por seguridad
+        [HttpGet]
+        public async Task<IActionResult> Edit(int id)
+        {
+            var fianzaVM = await _fianzaService.GetByIdAsync(id);
+            if (fianzaVM == null)
+            {
+                return NotFound();
+            }
+            return View(fianzaVM);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, FianzaVM fianzaVM)
+        {
+            if (id != fianzaVM.FianzaId)
+            {
+                return BadRequest();
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return View(fianzaVM);
+            }
+
+            // Aquí llamamos a la lógica de negocio que calcula si es devolución parcial/total
+            var result = await _fianzaService.UpdateAsync(fianzaVM);
+
+            if (result.Success)
+            {
+                TempData["Ok"] = result.Message;
+                return RedirectToAction(nameof(Index));
+            }
+
+            string errorMsg = result.Message;
+            if (string.IsNullOrEmpty(errorMsg) && result.Errors != null)
+                errorMsg = result.Errors.FirstOrDefault();
+
+            ModelState.AddModelError(string.Empty, errorMsg ?? "Error al actualizar la fianza");
+
+            // Recargamos descripción por si acaso, para que la vista no se vea fea
+            var fianzaOriginal = await _fianzaService.GetByIdAsync(id);
+            if (fianzaOriginal != null)
+            {
+                fianzaVM.EventoDescripcion = fianzaOriginal.EventoDescripcion;
+            }
+
+            return View(fianzaVM);
+        }
+
+
+
+        [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
@@ -131,7 +177,7 @@ namespace si_td_gestion_eventos.Controllers
 
             if (result.Success)
             {
-                TempData["Ok"] = result.Message; // "La fianza ha sido dada de baja correctamente."
+                TempData["Ok"] = result.Message;
             }
             else
             {
@@ -141,6 +187,18 @@ namespace si_td_gestion_eventos.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        [HttpGet]
+        public async Task<IActionResult> Details(int id)
+        {
+            var fianzaVM = await _fianzaService.GetByIdAsync(id);
+            if (fianzaVM == null)
+            {
+                return NotFound();
+            }
+            return View(fianzaVM);
+        }
+
     }
 
+ 
 }

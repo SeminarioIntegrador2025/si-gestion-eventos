@@ -387,7 +387,6 @@ namespace si_td_gestion_eventos.Services.Implementation
                     float costoTotal = evento.CostoAlquiler + (evento.MontoAireAcondicionado ?? 0);
                     float totalPagado = evento.Pagos?.Sum(p => p.Monto) ?? 0;
 
-                    // --- ¡LÓGICA PERMISIVA QUE DISCUTIMOS! ---
                     // Solo cancelamos si no pagaron NADA.
                     if (totalPagado == 0)
                     {
