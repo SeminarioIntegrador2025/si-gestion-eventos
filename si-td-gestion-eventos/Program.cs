@@ -41,6 +41,7 @@ builder.Services.AddScoped<IPagoService, PagoService>();
 builder.Services.AddScoped<IReporteService, ReporteService>();
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 builder.Services.AddScoped<IFianzaService, FianzaService>();
+builder.Services.AddScoped<IServicioEsencialService, ServicioEsencialService>();
 
 
 // Reglas de Negocio (Validaciones complejas)

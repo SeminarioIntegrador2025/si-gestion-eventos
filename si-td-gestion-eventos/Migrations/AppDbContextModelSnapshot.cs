@@ -276,6 +276,49 @@ namespace si_td_gestion_eventos.Migrations
                     b.ToTable("Reporte");
                 });
 
+            modelBuilder.Entity("si_td_gestion_eventos.Entities.ServicioEsencial", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("EventoId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TipoServicio")
+                        .IsRequired()
+                        .HasMaxLength(21)
+                        .HasColumnType("nvarchar(21)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EventoId");
+
+                    b.ToTable("ServiciosEsenciales");
+
+                    b.HasDiscriminator<string>("TipoServicio").HasValue("ServicioEsencial");
+
+                    b.UseTphMappingStrategy();
+                });
+
+            modelBuilder.Entity("si_td_gestion_eventos.Entities.CertificadoAGADU", b =>
+                {
+                    b.HasBaseType("si_td_gestion_eventos.Entities.ServicioEsencial");
+
+                    b.Property<DateTime?>("FechaAdjunto")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RutaArchivo")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("Verificado")
+                        .HasColumnType("bit");
+
+                    b.HasDiscriminator().HasValue("AGADU");
+                });
+
             modelBuilder.Entity("si_td_gestion_eventos.Entities.ComprobanteExterno", b =>
                 {
                     b.HasOne("si_td_gestion_eventos.Entities.Pago", "Pago")
@@ -320,50 +363,9 @@ namespace si_td_gestion_eventos.Migrations
                                 .HasForeignKey("EventoId");
                         });
 
-                    b.OwnsOne("si_td_gestion_eventos.Entities.ServiciosEsenciales", "ServiciosEsenciales", b1 =>
-                        {
-                            b1.Property<int>("EventoId")
-                                .HasColumnType("int");
-
-                            b1.HasKey("EventoId");
-
-                            b1.ToTable("Evento");
-
-                            b1.WithOwner()
-                                .HasForeignKey("EventoId");
-
-                            b1.OwnsOne("si_td_gestion_eventos.Entities.CertificadoAGADU", "CertificadoAGADU", b2 =>
-                                {
-                                    b2.Property<int>("ServiciosEsencialesEventoId")
-                                        .HasColumnType("int");
-
-                                    b2.Property<DateTime?>("FechaAdjunto")
-                                        .HasColumnType("datetime2");
-
-                                    b2.Property<string>("RutaArchivo")
-                                        .HasColumnType("nvarchar(max)");
-
-                                    b2.Property<bool>("Verificado")
-                                        .HasColumnType("bit");
-
-                                    b2.HasKey("ServiciosEsencialesEventoId");
-
-                                    b2.ToTable("Evento");
-
-                                    b2.WithOwner()
-                                        .HasForeignKey("ServiciosEsencialesEventoId");
-                                });
-
-                            b1.Navigation("CertificadoAGADU")
-                                .IsRequired();
-                        });
-
                     b.Navigation("Cliente");
 
                     b.Navigation("ResponsableSalon")
-                        .IsRequired();
-
-                    b.Navigation("ServiciosEsenciales")
                         .IsRequired();
                 });
 
@@ -400,6 +402,17 @@ namespace si_td_gestion_eventos.Migrations
                     b.Navigation("Evento");
                 });
 
+            modelBuilder.Entity("si_td_gestion_eventos.Entities.ServicioEsencial", b =>
+                {
+                    b.HasOne("si_td_gestion_eventos.Entities.Evento", "Evento")
+                        .WithMany("ServiciosEsenciales")
+                        .HasForeignKey("EventoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Evento");
+                });
+
             modelBuilder.Entity("si_td_gestion_eventos.Entities.Cliente", b =>
                 {
                     b.Navigation("Eventos");
@@ -412,6 +425,8 @@ namespace si_td_gestion_eventos.Migrations
                     b.Navigation("Pagos");
 
                     b.Navigation("Reportes");
+
+                    b.Navigation("ServiciosEsenciales");
                 });
 
             modelBuilder.Entity("si_td_gestion_eventos.Entities.Pago", b =>

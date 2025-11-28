@@ -46,26 +46,8 @@ namespace si_td_gestion_eventos.Mapping
                 // Mapeo inverso de Responsable
                 .ForPath(dest => dest.ResponsableSalon.Nombre, opt => opt.MapFrom(src => src.ResponsableNombre))
                 .ForPath(dest => dest.ResponsableSalon.Telefono, opt => opt.MapFrom(src => src.ResponsableTelefono))
-                .ForPath(dest => dest.ResponsableSalon.CI, opt => opt.MapFrom(src => src.ResponsableCedula))
-
-                .AfterMap((src, dest) => {
-                    if (dest.ResponsableSalon == null)
-                    {
-                        dest.ResponsableSalon = new ResponsableSalon
-                        {
-                            Nombre = src.ResponsableNombre,
-                            Telefono = src.ResponsableTelefono,
-                            CI = src.ResponsableCedula
-                        };
-                    }
-                    if (dest.ServiciosEsenciales == null)
-                    {
-                        dest.ServiciosEsenciales = new ServiciosEsenciales
-                        {
-                            CertificadoAGADU = new CertificadoAGADU()
-                        };
-                    }
-                });
+                .ForPath(dest => dest.ResponsableSalon.CI, opt => opt.MapFrom(src => src.ResponsableCedula));
+            
         }
     }
 }

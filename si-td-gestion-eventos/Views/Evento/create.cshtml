@@ -50,7 +50,7 @@
     <script>
         $(document).ready(function () {
 
-            // --- 1. TU SCRIPT DE CÉDULA (SE QUEDA) ---
+            // Formato CI
             $('#ResponsableCedula').on('input', function() {
                 let value = this.value.replace(/[^\d]/g, '');
                 if (value.length > 8) {
@@ -62,33 +62,23 @@
                 this.value = value;
             });
 
-            // --- 2. SCRIPT ANTIGUO DE 48HS (SE ELIMINA) ---
-            // (Borramos todo el bloque const fechaInicioInput = ...
-            // y la función revisarLogica48Hs() y sus listeners)
-
-            // --- 3. NUEVO SCRIPT DE ADVERTENCIA 48HS (SE AÑADE) ---
-
-            // 3a. Busca el formulario.
-            // (¡IMPORTANTE! Asegurate de que tu <form> tenga id="formCrearEvento")
-            // En 'create.cshtml': <form asp-action="Create" ... id="formCrearEvento">
+            // Advertencia de 48 hs
             $("#formCrearEvento").on("submit", function(e) {
-
-                // 3b. Lee los 4 valores clave (usando los IDs del _EventoCreateForm)
+            
                 const fechaInicio = new Date($("#FechaInicio").val() + "T" + $("#HoraInicio").val());
                 const costoAlquiler = parseFloat($("#CostoAlquiler").val()) || 0;
                 const montoAire = parseFloat($("#MontoAire").val()) || 0;
                 const montoReserva = parseFloat($("#MontoReserva").val()) || 0;
-
                 const costoTotal = costoAlquiler + montoAire;
-
-                // 3c. Define las condiciones
+                
+                
                 const ahora = new Date();
                 const deadline48hs = new Date(ahora.getTime() + 48 * 60 * 60 * 1000);
 
                 const esDentroDe48Hs = (fechaInicio > ahora && fechaInicio < deadline48hs);
                 const esPagoParcial = montoReserva < costoTotal;
 
-                // 3d. ¡LA LÓGICA DE ADVERTENCIA!
+
                 if (esDentroDe48Hs && esPagoParcial) {
 
                     const mensaje = "ADVERTENCIA:\n\n" +

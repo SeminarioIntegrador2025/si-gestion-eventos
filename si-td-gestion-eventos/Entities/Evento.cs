@@ -49,18 +49,16 @@ namespace si_td_gestion_eventos.Entities
         [Required]
         public ResponsableSalon ResponsableSalon { get; set; } = null!;
 
-        // Propiedad Adueñada (Owned) para Servicios (ahora solo con AGADU)
-        [Required]
-        public ServiciosEsenciales ServiciosEsenciales { get; set; } = null!;
-
         // Relaciones
         [Required]
         public int ClienteId { get; set; }
         public Cliente Cliente { get; set; } = null!;
-
+        public virtual ICollection<ServicioEsencial> ServiciosEsenciales { get; set; } = new List<ServicioEsencial>();
         public ICollection<Pago> Pagos { get; set; } = new List<Pago>();
         public int? FianzaId { get; set; }
-        public Fianza? Fianza { get; set; } 
+        public Fianza? Fianza { get; set; }
         public ICollection<Reporte> Reportes { get; set; } = new List<Reporte>();
+
+
     }
 }
