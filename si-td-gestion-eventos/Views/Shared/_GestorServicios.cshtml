@@ -3,7 +3,7 @@
 <div class="card shadow-sm mt-4 border-secondary">
 
     <div class="card-header bg-dark text-white border-secondary">
-        <h5 class="mb-0"><i class="fas fa-file-contract me-2"></i>Servicios Esenciales (AGADU)</h5>
+        <h5 class="mb-0"><i class="fas fa-file-contract me-2"></i>Servicios Esenciales</h5>
     </div>
 
     <div class="card-body p-0">
@@ -18,7 +18,6 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @* INICIO DEL FOREACH: La variable 'item' nace aquí *@
                     @foreach (var item in Model)
                     {
                         <tr>
@@ -39,9 +38,9 @@
                                 @if (!string.IsNullOrEmpty(item.RutaArchivo))
                                 {
                                     <div class="d-flex align-items-center">
-                                        <i class="fas fa-file-pdf text-danger fs-4 me-2"></i>
+                                        <i class="fas fa-file-pdf text-info fs-4 me-2"></i>
                                         <div>
-                                            <small class="text-muted d-block">
+                                            <small class="text-muted d-block text-decoration fw-bold">
                                                 Subido: @item.FechaAdjunto?.ToShortDateString()
                                             </small>
                                             <a href="~/uploads/comprobantes/@item.RutaArchivo" target="_blank" class="text-info text-decoration-none fw-bold">
