@@ -28,7 +28,7 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.AddProfile<ClienteProfile>();
     cfg.AddProfile<EventoProfile>();
     cfg.AddProfile<PagoProfile>();
-
+    cfg.AddProfile<FianzaProfile>();
 });
 
 // Repositorios
@@ -40,6 +40,7 @@ builder.Services.AddScoped<IEventoService, EventoService>();
 builder.Services.AddScoped<IPagoService, PagoService>();
 builder.Services.AddScoped<IReporteService, ReporteService>();
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
+builder.Services.AddScoped<IFianzaService, FianzaService>();
 
 
 // Reglas de Negocio (Validaciones complejas)

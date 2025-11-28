@@ -68,7 +68,10 @@ namespace si_td_gestion_eventos.Context
             {
                 f.HasKey("FianzaId");
                 f.Property("FianzaId").ValueGeneratedOnAdd();
-                f.HasOne(fi => fi.Evento).WithMany(ev => ev.Fianzas).HasForeignKey(fi => fi.EventoId).OnDelete(DeleteBehavior.Cascade);
+                f.HasOne(fi => fi.Evento)
+                 .WithOne(ev => ev.Fianza)
+                 .HasForeignKey<Fianza>(fi => fi.EventoId)
+                 .OnDelete(DeleteBehavior.Cascade);
             });
 
             // Configuración de Reporte (relación con Evento)

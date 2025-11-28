@@ -119,11 +119,7 @@ namespace si_td_gestion_eventos.Validators
         private async Task<bool> BeUniqueRUTAsync(ClienteVM cliente, string? rut, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(rut)) return true;
-            // Necesitarás agregar 'IsRUTUniqueAsync' a tu IClienteBusinessRules
-            // return await _businessRules.IsRUTUniqueAsync(rut, cliente.ClienteId == 0 ? null : cliente.ClienteId);
-
-            // Por ahora, lo dejamos pasar (simulación):
-            return await Task.FromResult(true); // REEMPLAZAR LUEGO
+            return await _businessRules.IsRUTUniqueAsync(rut, cliente.ClienteId == 0 ? null : cliente.ClienteId);
         }
     }
 }

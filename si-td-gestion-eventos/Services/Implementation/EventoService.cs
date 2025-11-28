@@ -113,7 +113,7 @@ namespace si_td_gestion_eventos.Services.Implementation
         // --- GetByIdAsync (Corregido para CostoTotal) ---
         public async Task<EventoVM?> GetByIdAsync(int id)
         {
-            var evento = await _eventoRepository.GetByIdWithIncludesAsync(id, e => e.Cliente, e => e.Pagos);
+            var evento = await _eventoRepository.GetByIdWithIncludesAsync(id, e => e.Cliente, e => e.Pagos, e => e.Fianza);
 
             if (evento == null)
                 return null;
@@ -295,6 +295,35 @@ namespace si_td_gestion_eventos.Services.Implementation
             }
         }
 
+        public async Task<IEnumerable<SelectListItem>> GetEventosSinFianzaParaDropdownAsync()
+        {
+            // Buscamos eventos que cumplan 3 condiciones:
+            // 1. No están cancelados.
+            // 2. No están ya realizados (opcional, depende de tu regla de negocio).
+            // 3. ¡IMPORTANTE! No tienen FianzaId (es decir, es null).
+            var eventosDisponibles = await _eventoRepository.FindWithIncludesAsync(
+                e => e.Estado != EventoEstado.Cancelado &&
+                     e.FianzaId == null, // <-- Esta es la clave: solo los que no tienen fianza
+                e => e.Cliente // Incluimos cliente para mostrar el nombre
+            );
+
+            // Si no hay eventos, devolvemos lista vacía
+            if (eventosDisponibles == null || !eventosDisponibles.Any())
+            {
+                return new List<SelectListItem>();
+            }
+
+            // Mapeamos a SelectListItem para el dropdown
+            return eventosDisponibles
+                .OrderBy(e => e.Inicio) // Ordenados por fecha
+                .Select(e => new SelectListItem
+                {
+                    Value = e.EventoId.ToString(),
+                    // Texto: "Juan Perez - Cumpleaños (15/11/2025)"
+                    Text = $"{e.Cliente.Nombre} {e.Cliente.Apellido} - {e.Tipo} ({e.Inicio:dd/MM/yyyy})"
+                });
+        }
+
         // --- SERVICIOS DE FONDO (Corregidos con lógica "Permisiva") ---
 
         public async Task<ServiceResult<int>> MarkCompletedEventsAsync()
@@ -358,7 +387,6 @@ namespace si_td_gestion_eventos.Services.Implementation
                     float costoTotal = evento.CostoAlquiler + (evento.MontoAireAcondicionado ?? 0);
                     float totalPagado = evento.Pagos?.Sum(p => p.Monto) ?? 0;
 
-                    // --- ¡LÓGICA PERMISIVA QUE DISCUTIMOS! ---
                     // Solo cancelamos si no pagaron NADA.
                     if (totalPagado == 0)
                     {
