@@ -1,0 +1,98 @@
+﻿@model IEnumerable<si_td_gestion_eventos.Models.ViewModels.ServicioEsencialVM>
+
+<div class="card shadow-sm mt-4 border-secondary">
+
+    <div class="card-header bg-dark text-white border-secondary">
+        <h5 class="mb-0"><i class="fas fa-file-contract me-2"></i>Servicios Esenciales (AGADU)</h5>
+    </div>
+
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" style="color: #e0e0e0;">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width: 15%;">Servicio</th>
+                        <th style="width: 15%;">Estado</th>
+                        <th style="width: 30%;">Archivo</th>
+                        <th class="text-end" style="width: 40%;">Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @* INICIO DEL FOREACH: La variable 'item' nace aquí *@
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td class="align-middle fw-bold">@item.TipoServicio</td>
+
+                            <td class="align-middle">
+                                @if (item.Verificado)
+                                {
+                                    <span class="badge bg-success"><i class="fas fa-check me-1"></i> Verificado</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary"><i class="fas fa-clock me-1"></i> Pendiente</span>
+                                }
+                            </td>
+
+                            <td class="align-middle">
+                                @if (!string.IsNullOrEmpty(item.RutaArchivo))
+                                {
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-file-pdf text-danger fs-4 me-2"></i>
+                                        <div>
+                                            <small class="text-muted d-block">
+                                                Subido: @item.FechaAdjunto?.ToShortDateString()
+                                            </small>
+                                            <a href="~/uploads/comprobantes/@item.RutaArchivo" target="_blank" class="text-info text-decoration-none fw-bold">
+                                                Ver Comprobante <i class="fas fa-external-link-alt ms-1" style="font-size: 0.8em;"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted fst-italic">Sin archivo adjunto</span>
+                                }
+                            </td>
+
+                            <td class="align-middle text-end" style="min-width: 250px;">
+                                @if (string.IsNullOrEmpty(item.RutaArchivo))
+                                {
+                                    <form asp-controller="ServiciosEsenciales" asp-action="Subir" method="post" enctype="multipart/form-data">
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <input type="hidden" name="EventoId" value="@item.EventoId" />
+
+                                        <input type="file"
+                                               id="fileInput_@item.Id"
+                                               name="ArchivoSubido"
+                                               style="display: none;"
+                                               accept=".pdf,.jpg,.jpeg,.png"
+                                               onchange="this.form.submit()" />
+
+                                        <button type="button"
+                                                class="btn btn-primary btn-sm"
+                                                onclick="document.getElementById('fileInput_@item.Id').click();">
+                                            <i class="fas fa-upload me-2"></i> Subir Comprobante
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form asp-controller="ServiciosEsenciales" asp-action="Eliminar" method="post" onsubmit="return confirm('¿Borrar este comprobante? El estado volverá a Pendiente.');">
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <input type="hidden" name="eventoId" value="@item.EventoId" />
+
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash-alt me-2"></i> Eliminar Comprobante
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }               
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,23 +1,25 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using si_td_gestion_eventos.Entities;
-using si_td_gestion_eventos.Models.Enums; // Asegúrate de importar tus Enums
+using si_td_gestion_eventos.Models.Enums;
 
 namespace si_td_gestion_eventos.Context
 {
     public class AppDbContext : DbContext
     {
-      
+
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
 
         }
-      
+
         public virtual DbSet<Cliente> Cliente { get; set; }
         public virtual DbSet<Evento> Evento { get; set; }
         public virtual DbSet<Pago> Pago { get; set; }
         public virtual DbSet<Fianza> Fianza { get; set; }
         public virtual DbSet<ComprobanteExterno> ComprobanteExterno { get; set; }
         public virtual DbSet<Reporte> Reporte { get; set; }
+        public DbSet<ServicioEsencial> ServiciosEsenciales { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -49,10 +51,6 @@ namespace si_td_gestion_eventos.Context
 
                 // Owned Types
                 e.OwnsOne(ev => ev.ResponsableSalon);
-                e.OwnsOne(ev => ev.ServiciosEsenciales, se =>
-                {
-                    se.OwnsOne(s => s.CertificadoAGADU);
-                });
             });
 
             // Configuración de Pago (relación con Evento)
@@ -89,6 +87,26 @@ namespace si_td_gestion_eventos.Context
                 ce.Property("ComprobanteExternoId").ValueGeneratedOnAdd();
                 ce.HasOne(c => c.Pago).WithOne(p => p.ComprobanteExterno).HasForeignKey<ComprobanteExterno>(c => c.PagoId).OnDelete(DeleteBehavior.Restrict);
             });
+
+
+            //Configuración de Servicios Esenciales (TPH - Herencia)
+
+            modelBuilder.Entity<ServicioEsencial>(se =>
+            {
+                se.HasKey(s => s.Id);
+                se.Property(s => s.Id).ValueGeneratedOnAdd();
+
+                // Estrategia TPH: Una sola tabla con columna discriminadora
+                se.HasDiscriminator<string>("TipoServicio")
+                  .HasValue<CertificadoAGADU>("AGADU");
+
+                // Relación 1 Evento -> N Servicios
+                se.HasOne(s => s.Evento)
+                  .WithMany(e => e.ServiciosEsenciales)
+                  .HasForeignKey(s => s.EventoId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            });
+
         }
     }
 }

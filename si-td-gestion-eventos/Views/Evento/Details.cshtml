@@ -1,5 +1,7 @@
 ﻿@using si_td_gestion_eventos.Models.Enums
 @model si_td_gestion_eventos.Models.ViewModels.EventoVM
+@using si_td_gestion_eventos.Services.Contracts
+@inject IServicioEsencialService _servicioEsencialService
 
 @{
     ViewData["Title"] = $"Detalles del Evento: {Model.Tipo}";
@@ -129,8 +131,8 @@
 
         </div>
     </div>
-    </div>
-
+  </div>
+    
     <div class="card-footer text-muted d-flex justify-content-between align-items-center">
         <div>
             <a asp-action="Edit" asp-route-id="@Model.EventoId" class="btn btn-primary">
@@ -162,5 +164,14 @@
             }
         </div>
     </div>
-</div>
+    <div class="row mt-4">
+        <div class="col-12">
+            @{
+                // Obtenemos la lista de servicios para este evento (ID del modelo actual)
+                var listaServicios = await _servicioEsencialService.GetByEventoIdAsync(Model.EventoId);
+            }
+
+            <partial name="_GestorServicios" model="listaServicios" />
+        </div>
+    </div>
 </div>
