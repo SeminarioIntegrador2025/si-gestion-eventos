@@ -170,19 +170,18 @@ namespace si_td_gestion_eventos.Services.Implementation
 
             var evento = await _eventoRepo.GetByIdAsync(fianza.EventoId);
 
-            // 1. VALIDACIÓN PREVIA (Sin abrir transacción todavía)
-            // Si el evento existe y ya se realizó, bloqueamos el borrado aquí mismo.
+ 
+            // Si el evento existe y ya se realizo no se puede borrar
             if (evento != null && evento.Estado == EventoEstado.Realizado)
             {
-                return ServiceResult<bool>.FailureResult("No se puede eliminar la fianza porque el evento ya fue REALIZADO. Si desea devolver el dinero, utilice la opción de Editar.");
+                return ServiceResult<bool>.FailureResult("No se puede eliminar la fianza porque el evento ya fue realizado. Si desea devolver el dinero, utilice la opción de Editar.");
             }
 
-            // 2. AHORA SÍ, LA TRANSACCIÓN
             await using (var transaction = await _context.Database.BeginTransactionAsync())
             {
                 try
                 {
-                    // A. Desvincular del evento (Si existe)
+                    //Desvincular del evento (Si existe)
                     if (evento != null)
                     {
                         evento.FianzaId = null;
@@ -190,7 +189,7 @@ namespace si_td_gestion_eventos.Services.Implementation
                         await _eventoRepo.SaveChangesAsync();
                     }
 
-                    // B. Borrar la fianza físicamente
+                    //Borrar la fianza físicamente
                     _fianzaRepo.Remove(fianza);
                     await _fianzaRepo.SaveChangesAsync();
 

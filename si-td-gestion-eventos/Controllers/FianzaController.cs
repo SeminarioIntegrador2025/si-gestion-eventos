@@ -181,7 +181,11 @@ namespace si_td_gestion_eventos.Controllers
             }
             else
             {
-                TempData["Error"] = result.Message;
+                string mensajeError = !string.IsNullOrEmpty(result.Message)
+                              ? result.Message
+                              : result.Errors?.FirstOrDefault();
+
+                TempData["Error"] = mensajeError;
             }
 
             return RedirectToAction(nameof(Index));
