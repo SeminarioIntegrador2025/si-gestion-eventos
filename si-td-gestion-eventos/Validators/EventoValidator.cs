@@ -80,7 +80,7 @@ namespace si_td_gestion_eventos.Validators
 
             RuleFor(x => x.MontoAireAcondicionado)
                 .GreaterThanOrEqualTo(0).WithMessage("El monto del aire acondicionado no puede ser negativo.")
-                .When(x => x.MontoAireAcondicionado.HasValue); 
+                .When(x => x.MontoAireAcondicionado.HasValue);
 
             // --- Responsable del Salón (Validaciones detalladas) ---
             RuleFor(x => x.ResponsableNombre)
@@ -145,9 +145,9 @@ namespace si_td_gestion_eventos.Validators
         }
 
 
-// ===== Helpers para validación del Responsable =====
+        // ===== Helpers para validación del Responsable =====
 
-private bool BeOnlyLettersAndSpaces(string value)
+        private bool BeOnlyLettersAndSpaces(string value)
         {
             if (string.IsNullOrWhiteSpace(value)) return false;
             // Permite letras (incluidas tildes), espacios, apóstrofes y guiones (para nombres compuestos)
@@ -184,13 +184,13 @@ private bool BeOnlyLettersAndSpaces(string value)
         private bool BeValidCedulaFormat(string cedula)
         {
             if (string.IsNullOrWhiteSpace(cedula)) return false;
-            
+
             // Limpiar puntos y guiones
             var cleanCedula = cedula.Replace(".", "").Replace("-", "").Trim();
-            
+
             // Validar que solo contenga dígitos después de limpiar
             if (!Regex.IsMatch(cleanCedula, @"^\d+$")) return false;
-            
+
             // Validar longitud (7 u 8 dígitos)
             return cleanCedula.Length >= 7 && cleanCedula.Length <= 8;
         }

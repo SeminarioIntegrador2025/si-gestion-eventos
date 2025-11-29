@@ -4,7 +4,7 @@
 @inject IServicioEsencialService _servicioEsencialService
 
 @{
-    ViewData["Title"] = $"Detalles del Evento: {Model.Tipo}";
+    ViewData["Title"] = $"{Model.Tipo} de {Model.ClienteNombreCompleto}";
 }
 
 @if (TempData["Ok"] != null)
@@ -22,156 +22,263 @@
     </div>
 }
 
-
-<div class="card">
-    <div class="card-header">
-        <h2 class="card-title">@ViewData["Title"]</h2>
+<div class="page-header">
+    <div>
+        <h1 class="page-title">
+            <i class="fa-solid fa-champagne-glasses me-2 text-primary"></i>
+            @Model.Tipo de @Model.ClienteNombreCompleto
+        </h1>
+        <p class="text-muted mb-0">
+            <i class="fa-solid fa-calendar me-1"></i>
+            @Model.Inicio.ToString("dddd, dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-ES"))
+        </p>
     </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <h4>Información General</h4>
-                <hr />
-                <dl class="row">
-                    <dt class="col-sm-5">Cliente</dt>
-                    <dd class="col-sm-7">@Model.ClienteNombreCompleto</dd>
+    <div class="d-flex gap-2">
+        <a asp-action="Edit" asp-route-id="@Model.EventoId" class="btn btn-primary">
+            <i class="fa-solid fa-pen me-2"></i>Editar
+        </a>
+        <a asp-controller="Pago" asp-action="Create" asp-route-eventoId="@Model.EventoId" class="btn btn-success">
+            <i class="fa-solid fa-plus me-2"></i>Agregar Pago
+        </a>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fa-solid fa-arrow-left me-2"></i>Volver
+        </a>
+    </div>
+</div>
 
-                    <dt class="col-sm-5">Tipo de Cliente</dt>
-                    <dd class="col-sm-7">
-                        @(Model.TipoCli == TipoCliente.PersonaFisica ? "Persona Fisica" : "Persona Juridica")
-                    </dd>
-                
-                    <dt class="col-sm-5">Tipo de Evento</dt>
-                    <dd class="col-sm-7">@Model.Tipo</dd>
-
-                    <dt class="col-sm-5">Estado</dt>
-                    <dd class="col-sm-7">@Model.Estado</dd>
-
-                    <dt class="col-sm-5">Cantidad de Personas</dt>
-                    <dd class="col-sm-7">@Model.CantidadPersonas</dd>
-
-                    <dt class="col-sm-5">Observaciones</dt>
-                    <dd class="col-sm-7">@Model.Observaciones</dd>
-
-                </dl>
-
-                <h4>Fechas y Horarios</h4>
-                <hr />
-                <dl class="row">
-                    <dt class="col-sm-5">Fecha del Contrato</dt>
-                    <dd class="col-sm-7">@Model.FechaContrato.ToLongDateString()</dd>
-
-                    <dt class="col-sm-5">Fecha de Inicio</dt>
-                    <dd class="col-sm-7">@Model.Inicio.ToLongDateString()</dd>
-
-                    <dt class="col-sm-5">Fecha de Fin</dt>
-                    <dd class="col-sm-7">@Model.Fin.ToLongDateString()</dd>
-
-                    <dt class="col-sm-5">Horario</dt>
-                    <dd class="col-sm-7">De @Model.HoraInicio.ToString("hh\\:mm") a @Model.HoraFin.ToString("hh\\:mm")</dd>
-                </dl>
+<div class="row g-4">
+    <!-- COLUMNA IZQUIERDA -->
+    <div class="col-lg-8">
+        
+        <!-- SECCIÓN: INFORMACIÓN FINANCIERA -->
+        <div class="detail-section section-financial">
+            <div class="detail-section-title">
+                <i class="fa-solid fa-dollar-sign text-success"></i>
+                Información Financiera
             </div>
-
-            <div class="col-md-6">
-                <h4>Información Financiera</h4>
-                <hr />
-                <div class="col-md-6">
-                <dl class="row">
-                    <dt class="col-sm-5">Costo del Alquiler</dt>
-                    <dd class="col-sm-7">@Model.CostoAlquiler.ToString("C")</dd>
-
-                    <dt class="col-sm-5">Monto de Reserva</dt>
-                    <dd class="col-sm-7">@Model.MontoReserva.ToString("C")</dd>
-
-                    <dt class="col-sm-5">Costo Aire Acond.</dt>
-                    <dd class="col-sm-7">@(Model.MontoAireAcondicionado?.ToString("C") ?? "No incluido")</dd>
-
-                    <dt class="col-sm-5 text-success">Total Pagado</dt>
-                    <dd class="col-sm-7 fw-bold text-success">@Model.TotalPagado.ToString("C")</dd>
-
-                    <dt class="col-sm-5 text-danger">Saldo Restante</dt>
-                    <dd class="col-sm-7 fw-bold text-danger">@Model.SaldoRestante.ToString("C")</dd>
-                </dl>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <small class="text-muted d-block">Costo del Alquiler</small>
+                    <strong class="fs-5">@Model.CostoAlquiler.ToString("C")</strong>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <small class="text-muted d-block">Monto de Reserva</small>
+                    <strong class="fs-5">@Model.MontoReserva.ToString("C")</strong>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <small class="text-muted d-block">Costo Aire Acondicionado</small>
+                    <strong class="fs-5">@(Model.MontoAireAcondicionado?.ToString("C") ?? "No incluido")</strong>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <small class="text-muted d-block">Estado</small>
+                    <span class="badge bg-info fs-6">@Model.Estado</span>
+                </div>
             </div>
-
-            <h4>Informacion del Responsable</h4>
             <hr />
-            <dl class="row">
-                <dt class="col-sm-5">Responsable</dt>
-                <dd class="col-sm-7">@Model.ResponsableNombre</dd>
+            <div class="row">
+                <div class="col-md-6">
+                    <small class="text-muted d-block">Total Pagado</small>
+                    <strong class="fs-4 text-success">@Model.TotalPagado.ToString("C")</strong>
+                </div>
+                <div class="col-md-6">
+                    <small class="text-muted d-block">Saldo Restante</small>
+                    <strong class="fs-4 text-danger">@Model.SaldoRestante.ToString("C")</strong>
+                </div>
+            </div>
+        </div>
 
-                <dt class="col-sm-5">Telefono del Responsable</dt>
-                <dd class="col-sm-7">@Model.ResponsableTelefono</dd>
-
-                <dt class="col-sm-5">CI del Responsable</dt>
-                <dd class="col-sm-7">@Model.ResponsableCedula</dd>
-            </dl>
-
-                @if (Model.FianzaId != null)
+        <!-- SECCIÓN: OBSERVACIONES -->
+        <div class="detail-section section-observaciones">
+            <div class="detail-section-title">
+                <i class="fa-solid fa-file-lines text-primary"></i>
+                Observaciones del Evento
+                <a asp-action="Edit" asp-route-id="@Model.EventoId" class="btn btn-sm btn-outline-primary ms-auto">
+                    <i class="fa-solid fa-pen me-1"></i>Editar
+                </a>
+            </div>
+            <p class="mb-0">
+                @if (!string.IsNullOrEmpty(Model.Observaciones))
                 {
-                    <h4>Fianza</h4>
-                    <hr />
-                    <dl class="row">
-                        <dt class="col-sm-5">Fecha</dt>
-                        <dd class="col-sm-7">@Model.DetalleFianza.FechaRegistro.ToShortDateString()</dd>
+                    @Model.Observaciones
+                }
+                else
+                {
+                    <span class="text-muted fst-italic">Sin observaciones</span>
+                }
+            </p>
+        </div>
 
-                        <dt class="col-sm-5">Estado  Fianza</dt>
-                        <dd class="col-sm-7">@Model.DetalleFianza.Estado</dd>
-
-                        <dt class="col-sm-5">Monto Fianza</dt>
-                        <dd class="col-sm-7">@Model.DetalleFianza.Monto.ToString("C2")</dd>
-
-                        @if (!string.IsNullOrEmpty(Model.DetalleFianza.Observaciones))
-                        {
-                            <dt class="col-sm-5">Observaciones</dt>
-                            <dd class="col-sm-7">@Model.DetalleFianza.Observaciones</dd>
-                        }
-                    </dl>
-}
-
+        <!-- SECCIÓN: INFORMACIÓN DEL CLIENTE -->
+        <div class="detail-section section-client">
+            <div class="detail-section-title">
+                <i class="fa-solid fa-user text-muted"></i>
+                Información del Cliente Contratante
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-2">
+                    <small class="text-dark fw-semibold d-block">Cliente</small>
+                    <strong>@Model.ClienteNombreCompleto</strong>
+                </div>
+                <div class="col-md-6 mb-2">
+                    <small class="text-dark fw-semibold d-block">Tipo de Cliente</small>
+                    <strong>@(Model.TipoCli == TipoCliente.PersonaFisica ? "Persona Física" : "Persona Jurídica")</strong>
+                </div>
+                <div class="col-md-6 mb-2">
+                    <small class="text-dark fw-semibold d-block">Teléfono</small>
+                    <strong>@Model.ClienteTelefono</strong>
+                </div>
+                <div class="col-md-6 mb-2">
+                    <small class="text-dark fw-semibold d-block">Domicilio</small>
+                    <strong>@Model.ClienteDomicilio</strong>
+                </div>
+            </div>
+            
+            <hr class="my-3" />
+            
+            <div class="detail-section-title mb-3">
+                <i class="fa-solid fa-user-tie text-muted"></i>
+                Responsable del Salón
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-2">
+                    <small class="text-dark fw-semibold d-block">Nombre</small>
+                    <strong>@Model.ResponsableNombre</strong>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <small class="text-dark fw-semibold d-block">Teléfono</small>
+                    <strong>@Model.ResponsableTelefono</strong>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <small class="text-dark fw-semibold d-block">Cédula</small>
+                    <strong>@Model.ResponsableCedula</strong>
+                </div>
+            </div>
         </div>
     </div>
-  </div>
-    
-    <div class="card-footer text-muted d-flex justify-content-between align-items-center">
-        <div>
-            <a asp-action="Edit" asp-route-id="@Model.EventoId" class="btn btn-primary">
-                <i class="fa-solid fa-pen me-2"></i>Editar Evento
-            </a>
-            <a asp-action="Index" class="btn btn-secondary">
-                <i class="fa-solid fa-arrow-left me-2"></i>Volver
-            </a>
+
+    <!-- COLUMNA DERECHA -->
+    <div class="col-lg-4">
+        
+        <!-- SECCIÓN: FECHAS Y HORARIOS -->
+        <div class="detail-section section-dates">
+            <div class="detail-section-title">
+                <i class="fa-solid fa-clock text-warning"></i>
+                Fechas y Horarios
+            </div>
+            <div class="mb-3">
+                <small class="text-muted d-block">Fecha del Contrato</small>
+                <strong>@Model.FechaContrato.ToLongDateString()</strong>
+            </div>
+            <div class="mb-3">
+                <small class="text-muted d-block">Fecha de Inicio</small>
+                <strong>@Model.Inicio.ToLongDateString()</strong>
+            </div>
+            <div class="mb-3">
+                <small class="text-muted d-block">Fecha de Fin</small>
+                <strong>@Model.Fin.ToLongDateString()</strong>
+            </div>
+            <div class="mb-0">
+                <small class="text-muted d-block">Horario del Evento</small>
+                <strong>De @Model.HoraInicio.ToString("hh\\:mm") a @Model.HoraFin.ToString("hh\\:mm")</strong>
+            </div>
         </div>
 
-        <div>
-            @if (Model.FianzaId == null)
-            {
-                <a asp-controller="Fianza"
-                   asp-action="Create"
-                   asp-route-eventoId="@Model.EventoId"
-                   class="btn btn-success">
-                    <i class="fas fa-plus-circle me-2"></i>Registrar Fianza
-                </a>
-            }
-            else
-            {
-                <a asp-controller="Fianza"
-                   asp-action="Details"
-                   asp-route-id="@Model.FianzaId"
-                   class="btn btn-info text-white">
-                    <i class="fas fa-hand-holding-usd me-2"></i> Ver Fianza
-                </a>
-            }
+        <!-- SECCIÓN: OTROS DATOS -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fa-solid fa-info-circle me-2"></i>
+                    Otros Datos
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <small class="text-muted d-block">Tipo de Evento</small>
+                    <strong>@Model.Tipo</strong>
+                </div>
+                <div class="mb-0">
+                    <small class="text-muted d-block">Cantidad de Personas</small>
+                    <strong>@Model.CantidadPersonas personas</strong>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="row mt-4">
-        <div class="col-12">
-            @{
-                // Obtenemos la lista de servicios para este evento (ID del modelo actual)
-                var listaServicios = await _servicioEsencialService.GetByEventoIdAsync(Model.EventoId);
-            }
+</div>
 
-            <partial name="_GestorServicios" model="listaServicios" />
+<div class="row mt-4">
+    <div class="col-12">
+        <!-- SECCIÓN: SERVICIOS ESENCIALES (mover aquí) -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fa-solid fa-list-check me-2"></i>
+                    Servicios Esenciales
+                </h5>
+            </div>
+            <div class="card-body">
+                @{
+                    var listaServicios = await _servicioEsencialService.GetByEventoIdAsync(Model.EventoId);
+                }
+                <partial name="_GestorServicios" model="listaServicios" />
+            </div>
         </div>
+    </div>
+</div>
+
+<!-- SECCIÓN FIANZA (ancho completo también) -->
+<div class="row mt-4">
+    <div class="col-12">
+        @if (Model.FianzaId != null)
+        {
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fa-solid fa-shield-alt me-2"></i>
+                        Fianza Registrada
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <small class="text-dark fw-semibold d-block">Fecha de Registro</small>
+                            <strong>@Model.DetalleFianza.FechaRegistro.ToShortDateString()</strong>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-dark fw-semibold d-block">Monto de la Fianza</small>
+                            <strong class="text-success">@Model.DetalleFianza.Monto.ToString("C2")</strong>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-dark fw-semibold d-block">Estado de la Fianza</small>
+                            <span class="badge bg-info">@Model.DetalleFianza.Estado</span>
+                        </div>
+                        <div class="col-md-3 text-end">
+                            <a asp-controller="Fianza" 
+                               asp-action="Details" 
+                               asp-route-id="@Model.FianzaId"
+                               asp-route-returnUrl="@Url.Action("Details", "Evento", new { id = Model.EventoId })"
+                               class="btn btn-outline-warning">
+                                <i class="fa-solid fa-eye me-2"></i>Ver Detalles
+                            </a>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.DetalleFianza.Observaciones))
+                    {
+                        <hr />
+                        <small class="text-dark fw-semibold d-block">Observaciones</small>
+                        <p class="mb-0">@Model.DetalleFianza.Observaciones</p>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-warning border-0">
+                <i class="fa-solid fa-info-circle me-2"></i>
+                <strong>No hay fianza registrada para este evento.</strong>
+                <a asp-controller="Fianza" asp-action="Create" asp-route-eventoId="@Model.EventoId" class="btn btn-warning btn-sm ms-3">
+                    <i class="fa-solid fa-plus me-1"></i>Registrar Fianza
+                </a>
+            </div>
+        }
     </div>
 </div>

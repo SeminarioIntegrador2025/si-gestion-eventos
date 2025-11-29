@@ -18,15 +18,15 @@ namespace si_td_gestion_eventos.Models.ViewModels
         [Required(ErrorMessage = "La fecha de fin es obligatoria.")]
         [Display(Name = "Fecha de Fin")]
         public DateTime Fin { get; set; }
-        
+
         [Required(ErrorMessage = "La hora de inicio es obligatoria.")]
         [Display(Name = "Hora de Inicio")]
         public TimeSpan HoraInicio { get; set; }
-        
+
         [Required(ErrorMessage = "La hora de fin es obligatoria.")]
         [Display(Name = "Hora de Fin")]
         public TimeSpan HoraFin { get; set; }
-        
+
         [Required(ErrorMessage = "El tipo de evento es obligatorio.")]
         [Display(Name = "Tipo de Evento")]
         public TipoEvento? Tipo { get; set; }
@@ -87,5 +87,7 @@ namespace si_td_gestion_eventos.Models.ViewModels
         public int? FianzaId { get; set; }
         public decimal TotalPagado { get; set; }
         public decimal SaldoRestante { get; set; }
+        public string? ClienteTelefono { get; set; }
+        public string? ClienteDomicilio { get; set; }
     }
 }

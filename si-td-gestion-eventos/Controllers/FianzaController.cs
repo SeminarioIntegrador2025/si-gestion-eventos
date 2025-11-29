@@ -46,6 +46,7 @@ namespace si_td_gestion_eventos.Controllers
                 var evento = await _eventoService.GetByIdAsync(eventoId.Value);
                 if (evento == null) return NotFound();
 
+                // FIX: Validar si ya tiene fianza
                 if (evento.FianzaId.HasValue)
                 {
                     TempData["Error"] = "Este evento ya tiene una fianza registrada.";
@@ -53,9 +54,8 @@ namespace si_td_gestion_eventos.Controllers
                 }
 
                 fianzaVM.EventoId = eventoId.Value;
-                fianzaVM.EventoDescripcion = $"{evento.ClienteNombreCompleto} - {evento.Tipo} ({evento.Inicio:dd/MM/yyyy})";
+                fianzaVM.EventoDescripcion = $"{evento.ClienteNombreCompleto} - {evento.Tipo} ({evento.Inicio:dd/MM/yyyy})";                
 
-                // Marcamos que el evento ya está fijo
                 ViewBag.EventoPreseleccionado = true;
             }
             else
@@ -128,21 +128,24 @@ namespace si_td_gestion_eventos.Controllers
             return View(fianzaVM);
         }
 
+        // REEMPLAZAR método Edit [HttpPost] completo
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, FianzaVM fianzaVM)
         {
             if (id != fianzaVM.FianzaId)
-            {
                 return BadRequest();
-            }
 
             if (!ModelState.IsValid)
             {
+                // Recargar datos para la vista
+                var fianzaOriginal = await _fianzaService.GetByIdAsync(id);
+                if (fianzaOriginal != null)
+                    fianzaVM.EventoDescripcion = fianzaOriginal.EventoDescripcion;
+                
                 return View(fianzaVM);
             }
 
-            // Aquí llamamos a la lógica de negocio que calcula si es devolución parcial/total
             var result = await _fianzaService.UpdateAsync(fianzaVM);
 
             if (result.Success)
@@ -151,18 +154,17 @@ namespace si_td_gestion_eventos.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            string errorMsg = result.Message;
-            if (string.IsNullOrEmpty(errorMsg) && result.Errors != null)
-                errorMsg = result.Errors.FirstOrDefault();
+            // Mostrar errores de negocio
+            if (!string.IsNullOrEmpty(result.Message))
+                ModelState.AddModelError(string.Empty, result.Message);
+            
+            foreach (var error in result.Errors ?? new List<string>())
+                ModelState.AddModelError(string.Empty, error);
 
-            ModelState.AddModelError(string.Empty, errorMsg ?? "Error al actualizar la fianza");
-
-            // Recargamos descripción por si acaso, para que la vista no se vea fea
-            var fianzaOriginal = await _fianzaService.GetByIdAsync(id);
-            if (fianzaOriginal != null)
-            {
-                fianzaVM.EventoDescripcion = fianzaOriginal.EventoDescripcion;
-            }
+            // Recargar datos
+            var fianza = await _fianzaService.GetByIdAsync(id);
+            if (fianza != null)
+                fianzaVM.EventoDescripcion = fianza.EventoDescripcion;
 
             return View(fianzaVM);
         }

@@ -115,36 +115,29 @@ namespace si_td_gestion_eventos.Services.Implementation
         public async Task<ServiceResult<FianzaVM>> UpdateAsync(FianzaVM fianzaVM)
         {
             var fianza = await _fianzaRepo.GetByIdAsync(fianzaVM.FianzaId);
-            if (fianza == null) return ServiceResult<FianzaVM>.FailureResult("Fianza no encontrada.");
+            if (fianza == null) 
+                return ServiceResult<FianzaVM>.FailureResult("Fianza no encontrada.");
 
-            // Actualizamos los campos editables
-            fianza.Monto = fianzaVM.Monto; // (Por si hubo error al cargarla)
-            fianza.FechaRegistro = fianzaVM.FechaRegistro;
+            // Validar que el monto devuelto no exceda el monto original
+            if (fianzaVM.MontoDevuelto.HasValue && fianzaVM.MontoDevuelto > fianzaVM.Monto)
+                return ServiceResult<FianzaVM>.FailureResult($"El monto a devolver ({fianzaVM.MontoDevuelto:C2}) no puede ser mayor al monto de la fianza ({fianzaVM.Monto:C2}).");
+
+            // NO modificar el monto original ni la fecha de registro
             fianza.Observaciones = fianzaVM.Observaciones;
 
-            // --- LÓGICA DE DEVOLUCIÓN ---
-            // Si se ingresó un monto devuelto, actualizamos el estado automáticamente
-            if (fianzaVM.MontoDevuelto.HasValue)
+            // Lógica de devolución
+            if (fianzaVM.MontoDevuelto.HasValue && fianzaVM.MontoDevuelto > 0)
             {
                 fianza.MontoDevuelto = fianzaVM.MontoDevuelto;
                 fianza.FechaDevolucion = fianzaVM.FechaDevolucion ?? DateTime.Today;
 
-                if (fianza.MontoDevuelto == fianza.Monto)
-                {
+                if (fianza.MontoDevuelto >= fianza.Monto)
                     fianza.Estado = EstadoFianza.DevueltaTotalmente;
-                }
-                else if (fianza.MontoDevuelto > 0 && fianza.MontoDevuelto < fianza.Monto)
-                {
+                else
                     fianza.Estado = EstadoFianza.DevueltaParcialmente;
-                }
-                else if (fianza.MontoDevuelto == 0)
-                {
-                    fianza.Estado = EstadoFianza.NoDevuelta; // (Ej. se rompió todo)
-                }
             }
             else
             {
-                // Si no hay devolución, mantenemos o reseteamos a Registrada
                 fianza.MontoDevuelto = null;
                 fianza.FechaDevolucion = null;
                 fianza.Estado = EstadoFianza.Registrada;
@@ -154,11 +147,13 @@ namespace si_td_gestion_eventos.Services.Implementation
             {
                 _fianzaRepo.Update(fianza);
                 await _fianzaRepo.SaveChangesAsync();
-                return ServiceResult<FianzaVM>.SuccessResult(fianzaVM, "Fianza actualizada correctamente.");
+                
+                var updatedVM = await GetByIdAsync(fianza.FianzaId);
+                return ServiceResult<FianzaVM>.SuccessResult(updatedVM!, "Fianza actualizada correctamente.");
             }
             catch (Exception ex)
             {
-                return ServiceResult<FianzaVM>.FailureResult($"Error al actualizar: {ex.Message}");
+                return ServiceResult<FianzaVM>.FailureResult($"Error al actualizar: {ex.InnerException?.Message ?? ex.Message}");
             }
         }
 

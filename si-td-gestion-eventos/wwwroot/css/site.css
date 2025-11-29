@@ -115,6 +115,7 @@ body.app {
     color: var(--muted);
     border-bottom: 1px solid var(--line-light);
     margin-bottom: 0.5rem;
+    transition: opacity 0.3s ease, height 0.3s ease, padding 0.3s ease, margin 0.3s ease;
 }
 
 /* Enlaces de navegación */
@@ -131,10 +132,12 @@ body.app {
     position: relative;
     white-space: nowrap;
     overflow: hidden;
+    transition: all 0.3s ease;
 }
 
     .sidebar .nav-link i {
         width: 1.25rem;
+        min-width: 1.25rem; /* FIX: evita que se desplace */
         text-align: center;
         flex-shrink: 0;
         font-size: 1.125rem;
@@ -185,68 +188,6 @@ body.app {
     margin: 0;
     overflow: hidden;
 }
-
-/* Sección de atajos */
-.shortcuts {
-    position: absolute;
-    bottom: 1rem;
-    left: 1rem;
-    right: 1rem;
-    background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%);
-    border-radius: 1rem;
-    padding: 1.25rem;
-    border: 1px solid var(--line);
-}
-
-.layout.collapsed .shortcuts {
-    opacity: 0;
-    pointer-events: none;
-}
-
-.shortcuts-title {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--muted);
-    margin-bottom: 1rem;
-    text-align: center;
-}
-
-.shortcut-btn {
-    width: 100%;
-    padding: 0.75rem;
-    border-radius: 0.5rem;
-    border: none;
-    font-weight: 500;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    justify-content: center;
-    transition: all 0.2s ease;
-}
-
-    .shortcut-btn.primary {
-        background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-        color: white;
-        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
-    }
-
-        .shortcut-btn.primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4);
-        }
-
-    .shortcut-btn.secondary {
-        background: var(--bg-3);
-        color: var(--ink-light);
-        border: 1px solid var(--line);
-    }
-
-        .shortcut-btn.secondary:hover {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
 
 /* ====== Contenido ====== */
 .content {
@@ -409,7 +350,7 @@ body.app {
         outline: none;
     }
 
-/* Evitar “texto blanco sobre blanco” en inputs vacíos */
+/* Evitar "texto blanco sobre blanco" en inputs vacíos */
 .form-control, .form-select {
     color: var(--ink);
 }
@@ -426,13 +367,13 @@ body.app {
 
     /* Inputs de solo lectura / deshabilitados */
     .form-control[readonly],
-    .form-control:disabled, /* <-- ESTO ARREGLA EL FONDO BLANCO */
+    .form-control:disabled,
     .form-control-plaintext[readonly],
     .form-select:disabled {
         background-color: var(--bg-3) !important;
-        color: var(--muted) !important; /* Texto gris, no blanco brillante */
+        color: var(--muted) !important;
         opacity: 1;
-        cursor: not-allowed; /* Cursor de prohibido */
+        cursor: not-allowed;
         border-color: var(--line-light);
     }
 
@@ -450,7 +391,7 @@ body.app {
     color: var(--ink-light);
 }
 
-/* Estilo visual para “bloqueado” (candado y fondo sutil) */
+/* Estilo visual para "bloqueado" (candado y fondo sutil) */
 .input-locked {
     position: relative;
     display: flex;
@@ -462,7 +403,6 @@ body.app {
     color: var(--ink);
 }
 
-    /* Candado fijo a la izquierda */
     .input-locked .lock-left {
         position: absolute;
         left: .65rem;
@@ -472,7 +412,7 @@ body.app {
         font-size: .9rem;
         pointer-events: none;
     }
-    /* Candado fijo a la derecha */
+
     .input-locked .lock-right {
         position: absolute;
         right: .65rem;
@@ -483,7 +423,6 @@ body.app {
         pointer-events: none;
     }
 
-    /* Input desplazado a la derecha para no tapar el ícono */
     .input-locked .form-control-plaintext {
         flex: 1;
         padding-left: 1.5rem;
@@ -493,7 +432,6 @@ body.app {
         font-weight: 500;
     }
 
-/* Alineación correcta para form-control-plaintext dentro de input-group */
 .input-group .form-control-plaintext {
     padding-left: .5rem;
     padding-right: 2rem;
@@ -502,10 +440,10 @@ body.app {
 /* ====== MODO OSCURO ESPECÍFICO PARA BLOQUEADOS ====== */
 @media (prefers-color-scheme: dark) {
     .form-control[readonly],
-    .form-control:disabled, /* <-- ESTO ARREGLA EL FONDO BLANCO EN MODO OSCURO */
+    .form-control:disabled,
     .form-control-plaintext[readonly],
     .form-select:disabled {
-        background-color: rgba(0, 0, 0, 0.3) !important; /* Fondo oscuro semi-transparente */
+        background-color: rgba(0, 0, 0, 0.3) !important;
         color: var(--muted) !important;
         border-color: rgba(255, 255, 255, 0.1);
     }
@@ -646,5 +584,86 @@ body.app {
 @keyframes spin {
     to {
         transform: rotate(360deg);
+    }
+}
+
+/* === ESTILOS PARA DETALLES DEL EVENTO === */
+.detail-section {
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--line);
+}
+
+.detail-section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.section-financial {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.06) 0%, rgba(16, 185, 129, 0.03) 100%);
+    border-left: 4px solid var(--success);
+}
+
+.section-client {
+    background: linear-gradient(135deg, rgba(100, 116, 139, 0.06) 0%, rgba(148, 163, 184, 0.03) 100%);
+    border-left: 4px solid var(--muted);
+}
+
+.section-observaciones {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.06) 0%, rgba(59, 130, 246, 0.03) 100%);
+    border-left: 4px solid var(--primary);
+}
+
+.section-dates {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.06) 0%, rgba(251, 191, 36, 0.03) 100%);
+    border-left: 4px solid var(--warning);
+}
+
+@media (prefers-color-scheme: dark) {
+    .section-financial {
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(16, 185, 129, 0.04) 100%);
+    }
+
+    .section-client {
+        background: linear-gradient(135deg, rgba(100, 116, 139, 0.08) 0%, rgba(148, 163, 184, 0.04) 100%);
+    }
+
+    .section-observaciones {
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(59, 130, 246, 0.04) 100%);
+    }
+
+    .section-dates {
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(251, 191, 36, 0.04) 100%);
+    }
+}
+
+/* Fix para labels en detail sections */
+.detail-section small.text-muted {
+    color: var(--ink) !important;
+    opacity: 0.7;
+}
+
+.detail-section small.text-dark {
+    color: var(--ink) !important;
+    font-weight: 600;
+}
+
+/* Fix para options de selects */
+.form-select option,
+select option {
+    background-color: var(--bg-2) !important;
+    color: var(--ink) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    .form-select option,
+    select option {
+        background-color: var(--bg-3) !important;
+        color: var(--ink-light) !important;
     }
 }

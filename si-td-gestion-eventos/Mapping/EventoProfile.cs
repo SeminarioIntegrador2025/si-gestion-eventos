@@ -47,7 +47,7 @@ namespace si_td_gestion_eventos.Mapping
                 .ForPath(dest => dest.ResponsableSalon.Nombre, opt => opt.MapFrom(src => src.ResponsableNombre))
                 .ForPath(dest => dest.ResponsableSalon.Telefono, opt => opt.MapFrom(src => src.ResponsableTelefono))
                 .ForPath(dest => dest.ResponsableSalon.CI, opt => opt.MapFrom(src => src.ResponsableCedula));
-            
+
         }
     }
 }

@@ -146,8 +146,9 @@ namespace si_td_gestion_eventos.Services.Implementation
                 return ServiceResult<EventoVM>.FailureResult(errors);
             }
 
-            bool isAvailable = await _businessRules.IsDateRangeAvailableAsync(
-            eventoVM.Inicio, eventoVM.Fin, eventoVM.HoraInicio, eventoVM.HoraFin, null);
+                bool isAvailable = await _businessRules.IsDateRangeAvailableAsync(
+                    eventoVM.Inicio, eventoVM.Fin, eventoVM.HoraInicio, eventoVM.HoraFin, null);
+
 
             if (!isAvailable)
             {
@@ -195,6 +196,7 @@ namespace si_td_gestion_eventos.Services.Implementation
             // 2. Validar Reglas de Negocio (sin cambios)
             bool isAvailable = await _businessRules.IsDateRangeAvailableAsync(
                 eventoVM.Inicio, eventoVM.Fin, eventoVM.HoraInicio, eventoVM.HoraFin, null);
+
 
             if (!isAvailable)
             {

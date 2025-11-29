@@ -2,81 +2,222 @@
 
 @{
     ViewData["Title"] = "Registrar Nuevo Pago";
-    // Verificamos si tenemos una lista de eventos en el ViewBag
     bool showEventDropdown = ViewBag.Eventos != null;
-    var eventoId = ViewData["EventoId"]; // Para el botón "Cancelar"
+    var eventoId = ViewData["EventoId"];
+    
+    // Datos financieros del evento
+    var saldoAnterior = (float?)ViewData["SaldoAnterior"] ?? 0f;
+    var totalPagado = (float?)ViewData["TotalPagadoActual"] ?? 0f;
+    var costoTotal = (float?)ViewData["CostoTotalEvento"] ?? 0f;
 }
 
-<h2>Registrar Nuevo Pago</h2>
-<hr />
-
-<div class="row">
-    <div class="col-md-8">
-        <form asp-action="Create" method="post" enctype="multipart/form-data">
-
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-            @if (showEventDropdown)
+<div class="container-fluid">
+    <div class="page-header mb-4">
+        <div>
+            <h2 class="page-title">
+                <i class="fa-solid fa-dollar-sign me-3 text-success"></i>
+                Registrar Nuevo Pago
+            </h2>
+            @if (!showEventDropdown && ViewData["EventoDescripcion"] != null)
             {
-                <div class="form-group mb-3">
-                    <label asp-for="EventoId" class="control-label fw-semibold">Seleccionar Evento</label>
-                    <select asp-for="EventoId" asp-items="@ViewBag.Eventos" class="form-control">
-                        <option value="">-- Seleccione un evento... --</option>
-                    </select>
-                    <span asp-validation-for="EventoId" class="text-danger"></span>
+                <p class="text-muted mb-0">@ViewData["EventoDescripcion"]</p>
+            }
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- COLUMNA IZQUIERDA: FORMULARIO -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fa-solid fa-file-invoice-dollar me-2"></i>
+                        Datos del Pago
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create" method="post" enctype="multipart/form-data" id="formPago">
+
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        @if (showEventDropdown)
+                        {
+                            <div class="form-group mb-3">
+                                <label asp-for="EventoId" class="control-label fw-semibold">Seleccionar Evento</label>
+                                <select asp-for="EventoId" 
+                                        asp-items="@ViewBag.Eventos" 
+                                        class="form-control"
+                                        id="eventoSelect">
+                                    <option value="">-- Seleccione un evento... --</option>
+                                </select>
+                                <span asp-validation-for="EventoId" class="text-danger"></span>
+                            </div>
+                        }
+                        else
+                        {
+                            <input type="hidden" asp-for="EventoId" />
+                        }
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="Monto" class="control-label fw-semibold">Monto del Pago</label>
+                                    <div class="input-group">
+                                        <input asp-for="Monto" 
+                                               class="form-control" 
+                                               type="number" 
+                                               step="0.01" 
+                                               id="montoPago"
+                                               placeholder="0.00" />
+                                        @if (!showEventDropdown && saldoAnterior > 0)
+                                        {
+                                            <button type="button" 
+                                                    class="btn btn-primary" 
+                                                    id="btnPagarTotal"
+                                                    title="Pagar el saldo restante completo">
+                                                <i class="fa-solid fa-check-double me-1"></i>Pagar Total
+                                            </button>
+                                        }
+                                    </div>
+                                    <span asp-validation-for="Monto" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="Fecha" class="control-label fw-semibold">Fecha de Pago</label>
+                                    <input asp-for="Fecha" class="form-control" type="date" />
+                                    <span asp-validation-for="Fecha" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="Metodo" class="control-label fw-semibold">Método de Pago</label>
+                            <select asp-for="Metodo" asp-items="Html.GetEnumSelectList<si_td_gestion_eventos.Models.Enums.MetodoPago>()" class="form-control">
+                                <option value="">Seleccione...</option>
+                            </select>
+                            <span asp-validation-for="Metodo" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="Observaciones" class="control-label fw-semibold">Observaciones</label>
+                            <input asp-for="Observaciones" class="form-control" placeholder="Ej: Pago parcial, saldo..." />
+                            <span asp-validation-for="Observaciones" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="ArchivoComprobante" class="control-label fw-semibold">Adjuntar Comprobante (opcional)</label>
+                            <input asp-for="ArchivoComprobante" type="file" class="form-control" accept=".pdf,.jpg,.jpeg,.png" />
+                            <span asp-validation-for="ArchivoComprobante" class="text-danger"></span>
+                            <small class="text-muted">Formatos aceptados: PDF, JPG, PNG</small>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a asp-action="Index" asp-route-eventoId="@eventoId" class="btn btn-secondary">
+                                <i class="fa-solid fa-times me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fa-solid fa-save me-2"></i>Guardar Pago
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: RESUMEN FINANCIERO -->
+        <div class="col-lg-4">
+            @if (!showEventDropdown)
+            {
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0">
+                            <i class="fa-solid fa-chart-line me-2"></i>
+                            Resumen Financiero
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <small class="text-muted d-block">Costo Total del Evento</small>
+                            <h4 class="mb-0 text-primary">@costoTotal.ToString("C2")</h4>
+                        </div>
+                        <hr />
+                        <div class="mb-3">
+                            <small class="text-muted d-block">Total Pagado Anteriormente</small>
+                            <h5 class="mb-0 text-success">@totalPagado.ToString("C2")</h5>
+                        </div>
+                        <hr />
+                        <div class="mb-0">
+                            <small class="text-muted d-block">Saldo Restante</small>
+                            <h3 class="mb-0 fw-bold text-danger">@saldoAnterior.ToString("C2")</h3>
+                        </div>
+                    </div>
+                    @if (saldoAnterior > 0)
+                    {
+                        <div class="card-footer bg-light text-center">
+                            <small class="text-muted">
+                                <i class="fa-solid fa-info-circle me-1"></i>
+                                Use el botón "Pagar Total" para saldar la deuda completa
+                            </small>
+                        </div>
+                    }
+                    else if (saldoAnterior == 0)
+                    {
+                        <div class="card-footer bg-success text-white text-center">
+                            <i class="fa-solid fa-check-circle me-1"></i>
+                            <strong>Evento completamente pagado</strong>
+                        </div>
+                    }
+                </div>
+
+                <div class="alert alert-info border-0">
+                    <i class="fa-solid fa-lightbulb me-2"></i>
+                    <strong>Consejo:</strong> Si el pago es parcial, indíquelo en las observaciones.
                 </div>
             }
             else
             {
-                <input type="hidden" asp-for="EventoId" />
+                <div class="alert alert-warning border-0">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                    <strong>Atención:</strong> Seleccione un evento para ver el resumen financiero.
+                </div>
             }
-
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group mb-3">
-                        <label asp-for="Monto" class="control-label"></label>
-                        <input asp-for="Monto" class="form-control" type="number" step="0.01" />
-                        <span asp-validation-for="Monto" class="text-danger"></span>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group mb-3">
-                        <label asp-for="Fecha" class="control-label"></label>
-                        <input asp-for="Fecha" class="form-control" type="date" />
-                        <span asp-validation-for="Fecha" class="text-danger"></span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-group mb-3">
-                <label asp-for="Metodo" class="control-label"></label>
-                <select asp-for="Metodo" asp-items="Html.GetEnumSelectList<si_td_gestion_eventos.Models.Enums.MetodoPago>()" class="form-control">
-                    <option value="">Seleccione...</option>
-                </select>
-                <span asp-validation-for="Metodo" class="text-danger"></span>
-            </div>
-
-            <div class="form-group mb-3">
-                <label asp-for="Observaciones" class="control-label"></label>
-                <input asp-for="Observaciones" class="form-control" />
-                <span asp-validation-for="Observaciones" class="text-danger"></span>
-            </div>
-
-            <div class="form-group mb-3">
-                <label asp-for="ArchivoComprobante" class="control-label"></label>
-                <input asp-for="ArchivoComprobante" type="file" class="form-control" />
-                <span asp-validation-for="ArchivoComprobante" class="text-danger"></span>
-            </div>
-
-            <div class="form-group mt-4">
-                <input type="submit" value="Guardar Pago" class="btn btn-primary" />
-
-                <a asp-action="Index" asp-route-eventoId="@eventoId" class="btn btn-secondary">Cancelar</a>
-            </div>
-        </form>
+        </div>
     </div>
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const btnPagarTotal = document.getElementById('btnPagarTotal');
+            const montoPagoInput = document.getElementById('montoPago');
+            const eventoSelect = document.getElementById('eventoSelect');
+            
+            // Botón "Pagar Total"
+            if (btnPagarTotal && montoPagoInput) {
+                btnPagarTotal.addEventListener('click', function() {
+                    const saldoRestante = @saldoAnterior;
+                    montoPagoInput.value = saldoRestante.toFixed(2);
+                    
+                    const obsInput = document.querySelector('input[name="Observaciones"]');
+                    if (obsInput && !obsInput.value) {
+                        obsInput.value = 'Pago total del saldo restante';
+                    }
+                });
+            }
+            
+            // Actualización dinámica al seleccionar evento
+            if (eventoSelect) {
+                eventoSelect.addEventListener('change', function() {
+                    const eventoId = this.value;
+                    if (eventoId) {
+                        // Recargar página con eventoId
+                        window.location.href = '@Url.Action("Create", "Pago")?eventoId=' + eventoId;
+                    }
+                });
+            }
+        });
+    </script>
 }
