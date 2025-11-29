@@ -1,10 +1,7 @@
-﻿
-using AutoMapper;
-using FluentValidation; 
-using Microsoft.AspNetCore.Hosting; // Para saber dónde guardar archivos (wwwroot)
+﻿using AutoMapper;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using QuestPDF.Fluent;
-using si_td_gestion_eventos.Context;
 using si_td_gestion_eventos.Entities;
 using si_td_gestion_eventos.Models.Enums;
 using si_td_gestion_eventos.Models.ViewModels;
@@ -12,22 +9,17 @@ using si_td_gestion_eventos.PDFTemplates;
 using si_td_gestion_eventos.Repositories;
 using si_td_gestion_eventos.Services.Common;
 using si_td_gestion_eventos.Services.Contracts;
-using System;
-using System.Collections.Generic; 
-using System.IO; // Para manejar archivos (Path, File, Directory)
-using System.Linq; // Para usar funciones como .Select(), .Any(), .Sum()
-using System.Threading.Tasks; // Para usar async/await
 
 namespace si_td_gestion_eventos.Services.Implementation
 {
     public class PagoService : IPagoService
     {
         // --- Campos Privados: Guardan las "herramientas" (dependencias) ---        
-        private readonly IGenericRepository<Pago> _pagoRepository; 
-        private readonly IGenericRepository<ComprobanteExterno> _comprobanteRepository; 
-        private readonly IMapper _mapper; 
-        private readonly IValidator<PagoVM> _validator; 
-        private readonly IWebHostEnvironment _webHostEnvironment; 
+        private readonly IGenericRepository<Pago> _pagoRepository;
+        private readonly IGenericRepository<ComprobanteExterno> _comprobanteRepository;
+        private readonly IMapper _mapper;
+        private readonly IValidator<PagoVM> _validator;
+        private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly IEventoService _eventoService;
 
 
@@ -71,13 +63,13 @@ namespace si_td_gestion_eventos.Services.Implementation
         public async Task<PagoVM?> GetByIdAsync(int id)
         {
             var pago = await _pagoRepository.GetByIdWithIncludesAsync(id, p => p.ComprobanteExterno, p => p.Evento.Cliente);
-            
+
             if (pago == null) return null;
 
-           
+
             var pagoVM = _mapper.Map<PagoVM>(pago);
 
-          
+
             pagoVM.EventoDescripcion = $"Evento {pago.Evento?.Tipo} - {pago.Evento?.Inicio:dd/MM/yyyy}";
             pagoVM.RutaArchivoExistente = pago.ComprobanteExterno?.RutaArchivo;
             if (pago.Evento?.Cliente != null)
@@ -135,92 +127,92 @@ namespace si_td_gestion_eventos.Services.Implementation
         }
         public async Task<ServiceResult<PagoVM>> CreateAsync(PagoVM pagoVM)
         {
-         
             var validationResult = await _validator.ValidateAsync(pagoVM);
-          
+
             if (!validationResult.IsValid)
             {
                 var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
                 return ServiceResult<PagoVM>.FailureResult(errors);
             }
-         
-            var pagoEntity = _mapper.Map<Pago>(pagoVM);           
+
+            var pagoEntity = _mapper.Map<Pago>(pagoVM);
             pagoEntity.ComprobanteExterno = null;
 
-           
             ComprobanteExterno? comprobanteEntity = null;
-           
+
             if (pagoVM.ArchivoComprobante != null && pagoVM.ArchivoComprobante.Length > 0)
-            {              
+            {
                 try
                 {
-
                     comprobanteEntity = new ComprobanteExterno
                     {
                         PagoId = 0,
                         Pago = pagoEntity,
                         NombreArchivo = pagoVM.ArchivoComprobante.FileName,
-                        RutaArchivo = string.Empty, 
+                        RutaArchivo = string.Empty,
                         FechaComprobante = DateTime.Now,
                         TipoArchivo = pagoVM.TipoArchivoComprobante ?? TipoArchivo.PDF,
                     };
 
-                    comprobanteEntity.RutaArchivo = await GuardarArchivoComprobanteAsync(pagoVM.ArchivoComprobante, pagoVM.EventoId, 0 /*pagoEntity.PagoId*/);
-
+                    comprobanteEntity.RutaArchivo = await GuardarArchivoComprobanteAsync(pagoVM.ArchivoComprobante, pagoVM.EventoId, 0);
                     pagoEntity.ComprobanteExterno = comprobanteEntity;
                 }
-
                 catch (IOException ex)
                 {
-                    // Loguear 'ex' sería ideal aquí
                     return ServiceResult<PagoVM>.FailureResult($"Error al guardar el archivo: {ex.Message}");
                 }
-              
                 catch (Exception ex)
                 {
-                    // Loguear 'ex'
                     return ServiceResult<PagoVM>.FailureResult("Ocurrió un error inesperado al procesar el archivo del comprobante.");
                 }
             }
 
             try
             {
-              
-                await _pagoRepository.AddAsync(pagoEntity);               
+                await _pagoRepository.AddAsync(pagoEntity);
                 await _pagoRepository.SaveChangesAsync();
 
-                // (Opcional) Si necesitáramos actualizar la RutaArchivo con el PagoId real, lo haríamos aquí.
-                // if (comprobanteEntity != null) { /* lógica para renombrar/actualizar ruta si usó Guid */ }                       
-                var pagoGuardadoVM = await GetByIdAsync(pagoEntity.PagoId);
+                var evento = await _eventoService.GetByIdAsync(pagoVM.EventoId);
 
-              
+                if (evento != null)
+                {
+                    // Calcular el costo total del evento
+                    float costoTotal = (float)(evento.CostoAlquiler + (evento.MontoAireAcondicionado ?? 0));
+
+                    // Calcular el total pagado (incluyendo el pago que acabamos de registrar)
+                    float totalPagado = (float)evento.TotalPagado + pagoEntity.Monto;
+
+                    // Actualizar el estado según el saldo
+                    if (totalPagado >= costoTotal && evento.Estado == EventoEstado.PendienteAdeudado)
+                    {
+                        // Crear un EventoVM para actualizar (necesario para usar el servicio)
+                        var eventoParaActualizar = await _eventoService.GetByIdAsync(evento.EventoId);
+
+                        if (eventoParaActualizar != null)
+                        {
+                            eventoParaActualizar.Estado = EventoEstado.PendientePagado;
+                            await _eventoService.UpdateAsync(eventoParaActualizar);
+                        }
+                    }
+                }
+                var pagoGuardadoVM = await GetByIdAsync(pagoEntity.PagoId);
                 return ServiceResult<PagoVM>.SuccessResult(pagoGuardadoVM!, "Pago registrado exitosamente.");
             }
-          
             catch (DbUpdateException ex)
             {
-                // Loguear ex.InnerException (contiene el detalle del error de SQL Server)
                 return ServiceResult<PagoVM>.FailureResult("Error al guardar en la base de datos. Verifique las relaciones o datos.");
             }
-            // Captura cualquier otro error durante el guardado
             catch (Exception ex)
             {
-                // Loguear ex
-                // --- Lógica de Rollback ---
-                // Si creamos un archivo pero falló al guardar en BD, intentamos borrar el archivo.
                 if (!string.IsNullOrEmpty(comprobanteEntity?.RutaArchivo))
                 {
-                    // Llama a la función helper para borrar el archivo físico
                     BorrarArchivoComprobante(comprobanteEntity.RutaArchivo);
                 }
                 return ServiceResult<PagoVM>.FailureResult("Ocurrió un error inesperado al guardar el pago.");
             }
-
-
         }
-
         //Helpers
-    
+
         private async Task<string> GuardarArchivoComprobanteAsync(IFormFile archivo, int eventoId, int pagoId_AunNoGenerado) // Renombrado para claridad
         {
             // Validación básica
@@ -263,13 +255,13 @@ namespace si_td_gestion_eventos.Services.Implementation
             // 10. Devuelve la ruta relativa.
             return rutaRelativa;
         }
-     
+
         private void BorrarArchivoComprobante(string? rutaRelativa)
         {
             if (string.IsNullOrEmpty(rutaRelativa)) return;
-           
+
             try
-            {             
+            {
                 string rutaAbsoluta = Path.Combine(_webHostEnvironment.WebRootPath, rutaRelativa.TrimStart('/'));
 
                 // Comprueba si el archivo existe en esa ruta absoluta.
@@ -295,12 +287,12 @@ namespace si_td_gestion_eventos.Services.Implementation
 
             if (pagoVM == null)
             {
-                return null; 
+                return null;
             }
 
             var documento = new ReciboPagoDocument(pagoVM);
             return documento.GeneratePdf();
         }
-    } 
+    }
 }
 
