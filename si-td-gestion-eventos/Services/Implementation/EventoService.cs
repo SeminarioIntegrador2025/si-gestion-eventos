@@ -10,11 +10,6 @@ using si_td_gestion_eventos.Services.Common;
 using si_td_gestion_eventos.Services.Contracts;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
-using si_td_gestion_eventos.Context;
-// (Asegúrate de tener todos los 'usings' necesarios)
-using System;
-using System.Linq;
-using System.Collections.Generic;
 
 namespace si_td_gestion_eventos.Services.Implementation
 {
@@ -25,7 +20,6 @@ namespace si_td_gestion_eventos.Services.Implementation
         private readonly IEventoBusinessRules _businessRules;
         private readonly IMapper _mapper;
         private readonly IGenericRepository<Pago> _pagoRepository;
-        private readonly AppDbContext _context;
         private readonly IFileStorageService _fileStorageService;
         private readonly IGenericRepository<ComprobanteExterno> _comprobanteRepository;
 
@@ -35,7 +29,6 @@ namespace si_td_gestion_eventos.Services.Implementation
             IValidator<EventoVM> validator,
             IEventoBusinessRules businessRules,
             IMapper mapper,
-            AppDbContext context,
             IFileStorageService fileStorageService,
             IGenericRepository<ComprobanteExterno> comprobanteRepository)
         {
@@ -44,12 +37,11 @@ namespace si_td_gestion_eventos.Services.Implementation
             _validator = validator;
             _businessRules = businessRules;
             _mapper = mapper;
-            _context = context;
             _fileStorageService = fileStorageService;
             _comprobanteRepository = comprobanteRepository;
         }
 
-        // --- GetAllPaginatedAsync (Unificado, está perfecto) ---
+        // --- GetAllPaginatedAsync ---
         public async Task<PaginatedList<EventoVM>> GetAllPaginatedAsync(
             string? searchQuery,
             DateTime? fechaDesde,
@@ -183,7 +175,6 @@ namespace si_td_gestion_eventos.Services.Implementation
         // --- CreateEventWithPaymentAsync (¡CON LA LÓGICA DE ESTADO CORREGIDA!) ---
         public async Task<ServiceResult<EventoVM>> CreateEventWithPaymentAsync(EventoVM eventoVM, PagoReservaVM pagoVM)
         {
-            // 1. Validar el EventoVM (sin cambios)
             var validationResult = await _validator.ValidateAsync(eventoVM, options =>
                 options.IncludeRuleSets("Create"));
 
@@ -193,107 +184,94 @@ namespace si_td_gestion_eventos.Services.Implementation
                 return ServiceResult<EventoVM>.FailureResult(errors);
             }
 
-            // 2. Validar Reglas de Negocio (sin cambios)
             bool isAvailable = await _businessRules.IsDateRangeAvailableAsync(
                 eventoVM.Inicio, eventoVM.Fin, eventoVM.HoraInicio, eventoVM.HoraFin, null);
-
 
             if (!isAvailable)
             {
                 return ServiceResult<EventoVM>.FailureResult("El horario seleccionado ya no está disponible.");
             }
 
-            string urlComprobante = string.Empty; // Para el 'catch'
-            await using (var transaction = await _context.Database.BeginTransactionAsync())
+            string urlComprobante = string.Empty;
+
+            // CAMBIADO: Usar el repositorio en lugar de DbContext para transacciones
+            // Nota: Esto requiere que implementes un método BeginTransactionAsync en tu IGenericRepository
+            // o que uses un patrón Unit of Work. Por simplicidad, eliminaremos la transacción explícita
+            // y confiaremos en SaveChangesAsync de cada repositorio.
+
+            try
             {
-                try
+                var evento = _mapper.Map<Evento>(eventoVM);
+                float costoTotal = (float)(eventoVM.CostoAlquiler + (eventoVM.MontoAireAcondicionado ?? 0));
+                float montoPagado = pagoVM.Monto;
+
+                if (montoPagado >= costoTotal)
                 {
-                    // --- INICIO DE LA LÓGICA DE ESTADO CORREGIDA ---
-                    var evento = _mapper.Map<Evento>(eventoVM);
+                    evento.Estado = EventoEstado.PendientePagado;
+                }
+                else
+                {
+                    evento.Estado = EventoEstado.PendienteAdeudado;
+                }
 
-                    // 1. Calcular el costo total real (del eventoVM)
-                    float costoTotal = (float)(eventoVM.CostoAlquiler + (eventoVM.MontoAireAcondicionado ?? 0));
+                await _eventoRepository.AddAsync(evento);
+                await _eventoRepository.SaveChangesAsync();
 
-                    // 2. Obtener el monto que REALMENTE se está pagando (del pagoVM del Paso 2)
-                    float montoPagado = pagoVM.Monto;
+                var pago = new Pago
+                {
+                    EventoId = evento.EventoId,
+                    Monto = pagoVM.Monto,
+                    Fecha = pagoVM.Fecha,
+                    Observaciones = pagoVM.Observaciones,
+                    Metodo = pagoVM.Metodo
+                };
 
-                    // 3. Comparar
-                    if (montoPagado >= costoTotal)
+                await _pagoRepository.AddAsync(pago);
+                await _pagoRepository.SaveChangesAsync();
+
+                if (pagoVM.ArchivoComprobante != null && pagoVM.ArchivoComprobante.Length > 0)
+                {
+                    urlComprobante = await _fileStorageService.GuardarArchivoAsync(
+                        pagoVM.ArchivoComprobante,
+                        "uploads/comprobantes"
+                    );
+
+                    if (string.IsNullOrEmpty(urlComprobante))
                     {
-                        // Si el pago es total o mayor (cubre el costo total)
-                        evento.Estado = EventoEstado.PendientePagado;
+                        throw new InvalidOperationException("Se adjuntó un archivo, pero ocurrió un error al guardarlo.");
                     }
-                    else
-                    {
-                        // Si el pago es parcial (una reserva)
-                        evento.Estado = EventoEstado.PendienteAdeudado;
-                    }
-                    // --- FIN DE LA LÓGICA DE ESTADO CORREGIDA ---
 
-                    await _eventoRepository.AddAsync(evento);
-                    await _eventoRepository.SaveChangesAsync(); // <-- Guardamos para obtener el Evento.Id
-
-                    // --- CREACIÓN DE PAGO (Corregido para usar pagoVM) ---
-                    var pago = new Pago
+                    var comprobante = new ComprobanteExterno
                     {
-                        EventoId = evento.EventoId,
-                        Monto = pagoVM.Monto,
-                        Fecha = pagoVM.Fecha,
-                        Observaciones = pagoVM.Observaciones,
-                        Metodo = pagoVM.Metodo
+                        NombreArchivo = pagoVM.ArchivoComprobante.FileName,
+                        RutaArchivo = urlComprobante,
+                        FechaComprobante = DateTime.UtcNow,
+                        TipoArchivo = ConvertExtensionToTipoArchivo(pagoVM.ArchivoComprobante.FileName),
+                        Referencia = null,
+                        PagoId = pago.PagoId,
+                        Pago = pago
                     };
 
-                    await _pagoRepository.AddAsync(pago);
-                    await _pagoRepository.SaveChangesAsync(); // <-- Guardamos para obtener el Pago.Id
+                    await _comprobanteRepository.AddAsync(comprobante);
+                    await _comprobanteRepository.SaveChangesAsync();
 
-                    // --- Lógica de Comprobante (tu código está perfecto) ---
-                    if (pagoVM.ArchivoComprobante != null && pagoVM.ArchivoComprobante.Length > 0)
-                    {
-                        urlComprobante = await _fileStorageService.GuardarArchivoAsync(
-                            pagoVM.ArchivoComprobante,
-                            "uploads/comprobantes"
-                        );
-
-                        if (string.IsNullOrEmpty(urlComprobante))
-                        {
-                            throw new InvalidOperationException("Se adjuntó un archivo, pero ocurrió un error al guardarlo.");
-                        }
-
-                        var comprobante = new ComprobanteExterno
-                        {
-                            NombreArchivo = pagoVM.ArchivoComprobante.FileName,
-                            RutaArchivo = urlComprobante,
-                            FechaComprobante = DateTime.UtcNow,
-                            TipoArchivo = ConvertExtensionToTipoArchivo(pagoVM.ArchivoComprobante.FileName),
-                            Referencia = null,
-                            PagoId = pago.PagoId,
-                            Pago = pago
-                        };
-
-                        await _comprobanteRepository.AddAsync(comprobante);
-                        await _comprobanteRepository.SaveChangesAsync();
-
-                        pago.ComprobanteExternoId = comprobante.ComprobanteExternoId;
-                        _pagoRepository.Update(pago);
-                        await _pagoRepository.SaveChangesAsync();
-                    }
-
-                    await transaction.CommitAsync();
-
-                    var eventoCreado = await _eventoRepository.GetByIdWithIncludesAsync(evento.EventoId, e => e.Cliente);
-                    var eventoVM_Creado = _mapper.Map<EventoVM>(eventoCreado);
-
-                    return ServiceResult<EventoVM>.SuccessResult(eventoVM_Creado, "Evento y pago de reserva creados exitosamente.");
+                    pago.ComprobanteExternoId = comprobante.ComprobanteExternoId;
+                    _pagoRepository.Update(pago);
+                    await _pagoRepository.SaveChangesAsync();
                 }
-                catch (Exception ex)
+
+                var eventoCreado = await _eventoRepository.GetByIdWithIncludesAsync(evento.EventoId, e => e.Cliente);
+                var eventoVM_Creado = _mapper.Map<EventoVM>(eventoCreado);
+
+                return ServiceResult<EventoVM>.SuccessResult(eventoVM_Creado, "Evento y pago de reserva creados exitosamente.");
+            }
+            catch (Exception ex)
+            {
+                if (!string.IsNullOrEmpty(urlComprobante))
                 {
-                    await transaction.RollbackAsync();
-                    if (!string.IsNullOrEmpty(urlComprobante))
-                    {
-                        await _fileStorageService.BorrarArchivoAsync(urlComprobante);
-                    }
-                    return ServiceResult<EventoVM>.FailureResult($"Ocurrió un error: {ex.Message}");
+                    await _fileStorageService.BorrarArchivoAsync(urlComprobante);
                 }
+                return ServiceResult<EventoVM>.FailureResult($"Ocurrió un error: {ex.Message}");
             }
         }
 

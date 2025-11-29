@@ -58,7 +58,8 @@ namespace si_td_gestion_eventos.Entities
         public int? FianzaId { get; set; }
         public Fianza? Fianza { get; set; }
         public ICollection<Reporte> Reportes { get; set; } = new List<Reporte>();
-
-
+        public string ResponsableNombre { get; set; }
+        public string ResponsableTelefono { get; set; }
+        public string ResponsableCedula { get; set; }
     }
 }

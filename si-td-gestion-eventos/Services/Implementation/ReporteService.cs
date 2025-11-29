@@ -1,19 +1,28 @@
-using Microsoft.EntityFrameworkCore;
-using si_td_gestion_eventos.Context;
 using si_td_gestion_eventos.Entities;
 using si_td_gestion_eventos.Models.Enums;
 using si_td_gestion_eventos.Models.ViewModels;
+using si_td_gestion_eventos.Repositories;
 using si_td_gestion_eventos.Services.Contracts;
 
 namespace si_td_gestion_eventos.Services.Implementation
 {
     public class ReporteService : IReporteService
     {
-        private readonly AppDbContext _context;
+        private readonly IGenericRepository<Evento> _eventoRepository;
+        private readonly IGenericRepository<Pago> _pagoRepository;
+        private readonly IGenericRepository<Fianza> _fianzaRepository;
+        private readonly IGenericRepository<Cliente> _clienteRepository;
 
-        public ReporteService(AppDbContext context)
+        public ReporteService(
+            IGenericRepository<Evento> eventoRepository,
+            IGenericRepository<Pago> pagoRepository,
+            IGenericRepository<Fianza> fianzaRepository,
+            IGenericRepository<Cliente> clienteRepository)
         {
-            _context = context;
+            _eventoRepository = eventoRepository;
+            _pagoRepository = pagoRepository;
+            _fianzaRepository = fianzaRepository;
+            _clienteRepository = clienteRepository;
         }
 
         public async Task<ReportesVM> GetReportesConsolidadosAsync()
@@ -42,17 +51,14 @@ namespace si_td_gestion_eventos.Services.Implementation
             var inicioProximoMes = inicioMesActual.AddMonths(1);
             var finProximoMes = inicioProximoMes.AddMonths(1).AddDays(-1);
 
-            var eventosEsteMes = await _context.Evento
-                .Where(e => e.Inicio >= inicioMesActual && e.Inicio <= finMesActual)
-                .ToListAsync();
+            var eventosEsteMes = (await _eventoRepository.FindAsync(
+                e => e.Inicio >= inicioMesActual && e.Inicio <= finMesActual)).ToList();
 
-            var eventosMesAnterior = await _context.Evento
-                .Where(e => e.Inicio >= inicioMesAnterior && e.Inicio <= finMesAnterior)
-                .CountAsync();
+            var eventosMesAnterior = (await _eventoRepository.FindAsync(
+                e => e.Inicio >= inicioMesAnterior && e.Inicio <= finMesAnterior)).Count();
 
-            var eventosProximoMes = await _context.Evento
-                .Where(e => e.Inicio >= inicioProximoMes && e.Inicio <= finProximoMes)
-                .CountAsync();
+            var eventosProximoMes = (await _eventoRepository.FindAsync(
+                e => e.Inicio >= inicioProximoMes && e.Inicio <= finProximoMes)).Count();
 
             var totalEsteMes = eventosEsteMes.Count;
             var realizados = eventosEsteMes.Count(e => e.Estado == EventoEstado.Realizado);
@@ -73,7 +79,7 @@ namespace si_td_gestion_eventos.Services.Implementation
 
             var tasaOcupacion = diasMes > 0 ? (decimal)diasOcupados / diasMes * 100 : 0;
 
-            // ====== NUEVO: Calcular ocupación de fines de semana ======
+            // Calcular ocupación de fines de semana
             var finesDeSemanaOcupados = CalcularFinesDeSemanaOcupados(eventosEsteMes);
             var totalFinesDeSemana = CalcularTotalFinesDeSemana(inicioMesActual, finMesActual);
             var tasaOcupacionFinDeSemana = totalFinesDeSemana > 0 
@@ -105,12 +111,10 @@ namespace si_td_gestion_eventos.Services.Implementation
             var inicioMesAnterior = inicioMesActual.AddMonths(-1);
             var inicioAnio = new DateTime(hoy.Year, 1, 1);
 
-            // ====== CORREGIDO: Ingresos basados en PAGOS RECIBIDOS ======
             // Obtener pagos del mes actual con información del evento
-            var pagosEsteMes = await _context.Pago
-                .Include(p => p.Evento)
-                .Where(p => p.Fecha >= inicioMesActual && p.Evento.Estado != EventoEstado.Cancelado)
-                .ToListAsync();
+            var pagosEsteMes = (await _pagoRepository.FindWithIncludesAsync(
+                p => p.Fecha >= inicioMesActual && p.Evento.Estado != EventoEstado.Cancelado,
+                p => p.Evento)).ToList();
 
             // Clasificar pagos por concepto basándose en la proporción del evento
             decimal totalReservas = 0;
@@ -140,18 +144,16 @@ namespace si_td_gestion_eventos.Services.Implementation
             var totalEsteMes = totalReservas + totalAlquileres + totalAire;
 
             // Mes anterior
-            var pagosMesAnterior = await _context.Pago
-                .Include(p => p.Evento)
-                .Where(p => p.Fecha >= inicioMesAnterior && p.Fecha < inicioMesActual && p.Evento.Estado != EventoEstado.Cancelado)
-                .ToListAsync();
+            var pagosMesAnterior = (await _pagoRepository.FindWithIncludesAsync(
+                p => p.Fecha >= inicioMesAnterior && p.Fecha < inicioMesActual && p.Evento.Estado != EventoEstado.Cancelado,
+                p => p.Evento)).ToList();
 
             var totalMesAnterior = pagosMesAnterior.Sum(p => (decimal)p.Monto);
 
             // Año actual
-            var pagosAnio = await _context.Pago
-                .Include(p => p.Evento)
-                .Where(p => p.Fecha >= inicioAnio && p.Evento.Estado != EventoEstado.Cancelado)
-                .ToListAsync();
+            var pagosAnio = (await _pagoRepository.FindWithIncludesAsync(
+                p => p.Fecha >= inicioAnio && p.Evento.Estado != EventoEstado.Cancelado,
+                p => p.Evento)).ToList();
 
             var totalAnio = pagosAnio.Sum(p => (decimal)p.Monto);
             var mesesTranscurridos = hoy.Month;
@@ -184,23 +186,19 @@ namespace si_td_gestion_eventos.Services.Implementation
             var inicioMesActual = new DateTime(hoy.Year, hoy.Month, 1);
             var inicioMesAnterior = inicioMesActual.AddMonths(-1);
 
-            var pagosEsteMes = await _context.Pago
-                .Where(p => p.Fecha >= inicioMesActual)
-                .ToListAsync();
+            var pagosEsteMes = (await _pagoRepository.FindAsync(p => p.Fecha >= inicioMesActual)).ToList();
 
-            var pagosMesAnterior = await _context.Pago
-                .Where(p => p.Fecha >= inicioMesAnterior && p.Fecha < inicioMesActual)
-                .CountAsync();
+            var pagosMesAnterior = (await _pagoRepository.FindAsync(
+                p => p.Fecha >= inicioMesAnterior && p.Fecha < inicioMesActual)).Count();
 
             var totalPagadoEsteMes = pagosEsteMes.Sum(p => (decimal)p.Monto);
             var pagosEfectivo = pagosEsteMes.Where(p => p.Metodo == MetodoPago.Efectivo).ToList();
             var pagosTransferencia = pagosEsteMes.Where(p => p.Metodo == MetodoPago.Transferencia).ToList();
 
             // Calcular adeudos
-            var eventos = await _context.Evento
-                .Include(e => e.Pagos)
-                .Where(e => e.Estado != EventoEstado.Cancelado)
-                .ToListAsync();
+            var eventos = (await _eventoRepository.FindWithIncludesAsync(
+                e => e.Estado != EventoEstado.Cancelado,
+                e => e.Pagos)).ToList();
 
             var totalAdeudado = eventos.Sum(e =>
             {
@@ -245,16 +243,15 @@ namespace si_td_gestion_eventos.Services.Implementation
             var hoy = DateTime.Today;
             var inicioMesActual = new DateTime(hoy.Year, hoy.Month, 1);
 
-            var todasFianzas = await _context.Fianza.ToListAsync();
+            var todasFianzas = (await _fianzaRepository.GetAllAsync()).ToList();
             var fianzasEsteMes = todasFianzas.Where(f => f.FechaRegistro >= inicioMesActual).ToList();
 
-            // ====== CORREGIDO: Cálculos de fianzas ======
             var totalRegistradas = todasFianzas.Sum(f => f.Monto);
             
-            // Total devuelto: suma de MontoDevuelto de todas las fianzas (independiente del estado)
+            // Total devuelto: suma de MontoDevuelto de todas las fianzas
             var totalDevueltas = todasFianzas.Sum(f => f.MontoDevuelto);
             
-            // Pendientes de devolución: Monto original menos lo devuelto, solo para fianzas no completamente devueltas
+            // Pendientes de devolución: Monto original menos lo devuelto
             var totalPendientesDevolucion = todasFianzas
                 .Where(f => f.Estado == EstadoFianza.Registrada || f.Estado == EstadoFianza.DevueltaParcialmente)
                 .Sum(f => f.Monto - f.MontoDevuelto);
@@ -262,7 +259,7 @@ namespace si_td_gestion_eventos.Services.Implementation
             var porcentajeDevolucion = totalRegistradas > 0 ? totalDevueltas / totalRegistradas * 100 : 0;
             var montoPromedio = todasFianzas.Count > 0 ? todasFianzas.Average(f => f.Monto) : 0;
 
-            // Fianzas vencidas: registradas o parcialmente devueltas con fecha de devolución pasada
+            // Fianzas vencidas
             var fianzasVencidas = todasFianzas.Count(f => 
                 (f.Estado == EstadoFianza.Registrada || f.Estado == EstadoFianza.DevueltaParcialmente) 
                 && f.FechaDevolucion < hoy);
@@ -287,9 +284,7 @@ namespace si_td_gestion_eventos.Services.Implementation
             var hoy = DateTime.Today;
             var inicioMesActual = new DateTime(hoy.Year, hoy.Month, 1);
 
-            var clientes = await _context.Cliente
-                .Include(c => c.Eventos)
-                .ToListAsync();
+            var clientes = (await _clienteRepository.FindWithIncludesAsync(null, c => c.Eventos)).ToList();
 
             var clientesActivos = clientes.Count(c => c.Activo);
             var clientesInactivos = clientes.Count(c => !c.Activo);
@@ -325,57 +320,71 @@ namespace si_td_gestion_eventos.Services.Implementation
 
         private async Task<List<TopClienteVM>> GetTopClientesAsync()
         {
-            var clientes = await _context.Cliente
-                .Include(c => c.Eventos.Where(e => e.Estado != EventoEstado.Cancelado))
-                .ThenInclude(e => e.Pagos)
-                .Where(c => c.Eventos.Any(e => e.Estado != EventoEstado.Cancelado))
-                .ToListAsync();
+            // Obtener clientes con eventos y pagos
+            var clientes = (await _clienteRepository.FindWithIncludesAsync(
+                c => c.Eventos.Any(e => e.Estado != EventoEstado.Cancelado),
+                c => c.Eventos)).ToList();
 
-            var topClientes = clientes
-                .Select(c => new TopClienteVM
+            // Necesitamos cargar los pagos de cada evento manualmente
+            var topClientes = new List<TopClienteVM>();
+
+            foreach (var cliente in clientes)
+            {
+                decimal totalIngresos = 0;
+                
+                foreach (var evento in cliente.Eventos.Where(e => e.Estado != EventoEstado.Cancelado))
                 {
-                    ClienteId = c.ClienteId,
-                    NombreCompleto = c.Tipo == TipoCliente.PersonaFisica 
-                        ? $"{c.Nombre} {c.Apellido}".Trim() 
-                        : c.Nombre,
-                    TotalEventos = c.Eventos.Count,
-                    // Total ingresos basado en pagos recibidos
-                    TotalIngresos = c.Eventos.Sum(e => e.Pagos.Sum(p => (decimal)p.Monto)),
-                    PromedioGasto = c.Eventos.Count > 0 
-                        ? c.Eventos.Average(e => e.Pagos.Sum(p => (decimal)p.Monto))
-                        : 0,
-                    UltimoEvento = c.Eventos.Any() ? c.Eventos.Max(e => e.Inicio) : DateTime.MinValue
-                })
+                    // Obtener pagos del evento
+                    var pagos = await _pagoRepository.FindAsync(p => p.EventoId == evento.EventoId);
+                    totalIngresos += pagos.Sum(p => (decimal)p.Monto);
+                }
+
+                topClientes.Add(new TopClienteVM
+                {
+                    ClienteId = cliente.ClienteId,
+                    NombreCompleto = cliente.Tipo == TipoCliente.PersonaFisica 
+                        ? $"{cliente.Nombre} {cliente.Apellido}".Trim() 
+                        : cliente.Nombre,
+                    TotalEventos = cliente.Eventos.Count(e => e.Estado != EventoEstado.Cancelado),
+                    TotalIngresos = totalIngresos,
+                    PromedioGasto = cliente.Eventos.Any() ? totalIngresos / cliente.Eventos.Count(e => e.Estado != EventoEstado.Cancelado) : 0,
+                    UltimoEvento = cliente.Eventos.Any() ? cliente.Eventos.Max(e => e.Inicio) : DateTime.MinValue
+                });
+            }
+
+            return topClientes
                 .OrderByDescending(c => c.TotalIngresos)
                 .Take(5)
                 .ToList();
-
-            return topClientes;
         }
 
         private async Task<List<EventoPorTipoVM>> GetEventosPorTipoAsync()
         {
-            var eventos = await _context.Evento
-                .Include(e => e.Pagos)
-                .Where(e => e.Estado != EventoEstado.Cancelado)
-                .ToListAsync();
-
+            var eventos = (await _eventoRepository.FindAsync(e => e.Estado != EventoEstado.Cancelado)).ToList();
             var totalEventos = eventos.Count;
 
-            var eventosPorTipo = eventos
-                .GroupBy(e => e.Tipo)
-                .Select(g => new EventoPorTipoVM
-                {
-                    TipoEvento = g.Key.ToString(),
-                    Cantidad = g.Count(),
-                    PorcentajeDelTotal = totalEventos > 0 ? Math.Round((decimal)g.Count() / totalEventos * 100, 2) : 0,
-                    // Ingresos basados en pagos recibidos
-                    IngresoTotal = Math.Round(g.Sum(e => e.Pagos.Sum(p => (decimal)p.Monto)), 2)
-                })
-                .OrderByDescending(e => e.Cantidad)
-                .ToList();
+            var eventosPorTipo = new List<EventoPorTipoVM>();
 
-            return eventosPorTipo;
+            foreach (var grupo in eventos.GroupBy(e => e.Tipo))
+            {
+                decimal ingresoTotal = 0;
+
+                foreach (var evento in grupo)
+                {
+                    var pagos = await _pagoRepository.FindAsync(p => p.EventoId == evento.EventoId);
+                    ingresoTotal += pagos.Sum(p => (decimal)p.Monto);
+                }
+
+                eventosPorTipo.Add(new EventoPorTipoVM
+                {
+                    TipoEvento = grupo.Key.ToString(),
+                    Cantidad = grupo.Count(),
+                    PorcentajeDelTotal = totalEventos > 0 ? Math.Round((decimal)grupo.Count() / totalEventos * 100, 2) : 0,
+                    IngresoTotal = Math.Round(ingresoTotal, 2)
+                });
+            }
+
+            return eventosPorTipo.OrderByDescending(e => e.Cantidad).ToList();
         }
 
         // ====== MÉTODOS AUXILIARES PARA FINES DE SEMANA ======
