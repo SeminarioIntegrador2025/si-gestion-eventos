@@ -3,7 +3,9 @@
     ViewData["Title"] = "Inicio";
     var reportes = ViewBag.Reportes as ReportesVM;
     var proximosEventos = ViewBag.ProximosEventos as List<EventoVM> ?? new List<EventoVM>();
+    var alertasAgadu = ViewBag.AlertasServicios as IEnumerable<EventoVM>;
 }
+
 <div>
     <div class="container-fluid">
         <div class="d-flex align-items-center justify-content-between mb-3">
@@ -16,11 +18,63 @@
             </div>
         </div>
 
+        @if (alertasAgadu != null && alertasAgadu.Any())
+        {
+            <div class="alert alert-danger border-danger shadow-sm mb-4">
+                <div class="d-flex align-items-start">
+                    <div class="me-3 mt-1">
+                        <i class="fas fa-exclamation-triangle fa-2x text-danger"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h4 class="alert-heading fs-5 fw-bold text-danger">
+                            ¡Acción Requerida! Faltan Servicios Esenciales
+                        </h4>
+                        <p class="mb-2 text-dark">
+                            Los siguientes eventos comienzan en menos de 48hs y <strong>no tienen los servicios esenciales verificados</strong>.
+                        </p>
+
+                        <div class="table-responsive bg-transparent rounded border border-danger-subtle">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="table-light text-danger">
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Tipo Evento</th>
+                                        <th>Fecha Inicio</th>
+                                        <th class="text-end">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var evento in alertasAgadu)
+                                    {
+                                        <tr>
+                                            <td class="align-middle">@evento.ClienteNombreCompleto</td>
+                                            <td class="align-middle">@evento.Tipo</td>
+                                            <td class="align-middle fw-bold text-danger">
+                                                @evento.Inicio.ToString("dd/MM/yyyy HH:mm")
+                                            </td>
+                                            <td class="text-end">
+                                                <a asp-controller="Evento" asp-action="Details" asp-route-id="@evento.EventoId"
+                                                   class="btn btn-sm btn-outline-secondary me-1">
+                                                    <i class="fas fa-eye"></i> Gestionar
+                                                </a>
+
+                                                <a asp-controller="Evento" asp-action="Cancel" asp-route-id="@evento.EventoId"
+                                                   class="btn btn-sm btn-danger text-white">
+                                                    <i class="fas fa-ban me-1"></i> Cancelar
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
         @if (reportes != null)
         {
-            <!-- KPIs -->
             <div class="row g-3">
-                <!-- Eventos del mes -->
                 <div class="col-12 col-md-6 col-lg-3">
                     <div class="card card-kpi p-3">
                         <div class="card-title">Eventos del mes</div>
@@ -45,7 +99,6 @@
                     </div>
                 </div>
 
-                <!-- Ingresos del mes -->
                 <div class="col-12 col-md-6 col-lg-3">
                     <div class="card card-kpi p-3">
                         <div class="card-title">Ingresos recibidos (UYU)</div>
@@ -70,7 +123,6 @@
                     </div>
                 </div>
 
-                <!-- Adeudos pendientes -->
                 <div class="col-12 col-md-6 col-lg-3">
                     <div class="card card-kpi p-3">
                         <div class="card-title">Adeudos pendientes</div>
@@ -79,13 +131,12 @@
                     </div>
                 </div>
 
-                <!-- Clientes activos -->
                 <div class="col-12 col-md-6 col-lg-3">
                     <div class="card card-kpi p-3">
                         <div class="card-title">Clientes activos</div>
                         <div class="display-6 fw-semibold">@reportes.Clientes.ClientesActivos</div>
                         <div class="small text-muted">
-                            Total: @reportes.Clientes.TotalClientes | 
+                            Total: @reportes.Clientes.TotalClientes |
                             Promedio: @reportes.Clientes.PromedioEventosPorCliente eventos/cliente
                         </div>
                     </div>
@@ -100,7 +151,6 @@
             </div>
         }
 
-        <!-- Próximos eventos -->
         <div class="card mt-4">
             <div class="card-body">
                 <div class="d-flex align-items-center justify-content-between mb-3">
@@ -171,16 +221,16 @@
                                             }
                                         </td>
                                         <td class="text-end">
-                                            <a class="btn btn-sm btn-outline-secondary" 
-                                               asp-controller="Evento" 
-                                               asp-action="Details" 
+                                            <a class="btn btn-sm btn-outline-secondary"
+                                               asp-controller="Evento"
+                                               asp-action="Details"
                                                asp-route-id="@evento.EventoId"
                                                title="Ver detalles">
                                                 <i class="fa-regular fa-eye"></i>
                                             </a>
-                                            <a class="btn btn-sm btn-outline-secondary" 
-                                               asp-controller="Evento" 
-                                               asp-action="Edit" 
+                                            <a class="btn btn-sm btn-outline-secondary"
+                                               asp-controller="Evento"
+                                               asp-action="Edit"
                                                asp-route-id="@evento.EventoId"
                                                title="Editar">
                                                 <i class="fa-regular fa-pen-to-square"></i>
@@ -206,7 +256,6 @@
             </div>
         </div>
 
-        <!-- Información adicional -->
         <div class="text-center mt-4">
             <h2 class="h5 mb-2">
                 <i class="fa-solid fa-champagne-glasses me-2 text-primary"></i>
@@ -214,7 +263,11 @@
             </h2>
             <p class="text-muted">
                 <i class="fa-brands fa-instagram me-1"></i>
-                Síguenos en <a href="https://www.instagram.com/tata_david_?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" class="text-decoration-none">Instagram</a>
+                Instagram: <a href="https://www.instagram.com/tata_david_?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" class="text-decoration-none">Instagram</a>
+            </p>
+            <p class="text-muted">
+                <i class="fa-brands fa-instagram me-1"></i>
+                Facebook: <a href="https://www.facebook.com/tata.david.5815" target="_blank" class="text-decoration-none">Instagram</a>
             </p>
         </div>
     </div>
@@ -226,19 +279,19 @@
         transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
 
-    .card-kpi:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px var(--shadow);
-    }
+        .card-kpi:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px var(--shadow);
+        }
 
-    .card-kpi .card-title {
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: var(--muted);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 0.75rem;
-    }
+        .card-kpi .card-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+        }
 
     .table-date {
         color: var(--primary);

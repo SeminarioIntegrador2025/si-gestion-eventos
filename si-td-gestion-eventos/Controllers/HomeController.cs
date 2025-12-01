@@ -27,13 +27,15 @@ namespace si_td_gestion_eventos.Controllers
             {
                 // Obtener reportes consolidados
                 var reportes = await _reporteService.GetReportesConsolidadosAsync();
-                
+                var alertas = await _eventoService.GetAlertasServiciosAsync();
+
                 // Obtener próximos 5 eventos usando el método existente
                 var proximosEventos = await _eventoService.GetLatestAsync(5);
                 
                 ViewBag.Reportes = reportes;
                 ViewBag.ProximosEventos = proximosEventos;
-                
+                ViewBag.AlertasServicios = alertas;
+
                 return View();
             }
             catch (Exception ex)

@@ -40,8 +40,6 @@ namespace si_td_gestion_eventos.Services.Implementation
             _fileStorageService = fileStorageService;
             _comprobanteRepository = comprobanteRepository;
         }
-
-        // --- GetAllPaginatedAsync ---
         public async Task<PaginatedList<EventoVM>> GetAllPaginatedAsync(
             string? searchQuery,
             DateTime? fechaDesde,
@@ -113,7 +111,6 @@ namespace si_td_gestion_eventos.Services.Implementation
             var eventoVM = _mapper.Map<EventoVM>(evento);
 
             // Calcula el total pagado
-            // (Asegúrate que tu VM use 'float'. Si usa 'decimal', quita el (float))
             eventoVM.TotalPagado = (decimal)(evento.Pagos?.Sum(p => p.Monto) ?? 0);
 
             // Calcula el costo total real
@@ -125,7 +122,7 @@ namespace si_td_gestion_eventos.Services.Implementation
             return eventoVM;
         }
 
-        // --- CreateAsync (Este método ya no se usa en el wizard, pero puede servir para otro flujo) ---
+        // --- CreateAsync ---
         public async Task<ServiceResult<EventoVM>> CreateAsync(EventoVM eventoVM)
         {
             // Validar usando el RuleSet "Create" + reglas comunes
@@ -154,7 +151,7 @@ namespace si_td_gestion_eventos.Services.Implementation
 
                 await _eventoRepository.AddAsync(evento);
                 await _eventoRepository.SaveChangesAsync();
-                // (Ojo: '_pagoRepository.SaveChangesAsync()' aquí no tiene sentido)
+            
 
                 var eventoCreado = await _eventoRepository.GetByIdWithIncludesAsync(evento.EventoId, e => e.Cliente);
                 var eventoVM_Creado = _mapper.Map<EventoVM>(eventoCreado);
@@ -172,7 +169,7 @@ namespace si_td_gestion_eventos.Services.Implementation
             }
         }
 
-        // --- CreateEventWithPaymentAsync (¡CON LA LÓGICA DE ESTADO CORREGIDA!) ---
+        // --- CreateEventWithPaymentAsync ---
         public async Task<ServiceResult<EventoVM>> CreateEventWithPaymentAsync(EventoVM eventoVM, PagoReservaVM pagoVM)
         {
             var validationResult = await _validator.ValidateAsync(eventoVM, options =>
@@ -194,11 +191,7 @@ namespace si_td_gestion_eventos.Services.Implementation
 
             string urlComprobante = string.Empty;
 
-            // CAMBIADO: Usar el repositorio en lugar de DbContext para transacciones
-            // Nota: Esto requiere que implementes un método BeginTransactionAsync en tu IGenericRepository
-            // o que uses un patrón Unit of Work. Por simplicidad, eliminaremos la transacción explícita
-            // y confiaremos en SaveChangesAsync de cada repositorio.
-
+          
             try
             {
                 var evento = _mapper.Map<Evento>(eventoVM);
@@ -277,14 +270,11 @@ namespace si_td_gestion_eventos.Services.Implementation
 
         public async Task<IEnumerable<SelectListItem>> GetEventosSinFianzaParaDropdownAsync()
         {
-            // Buscamos eventos que cumplan 3 condiciones:
-            // 1. No están cancelados.
-            // 2. No están ya realizados (opcional, depende de tu regla de negocio).
-            // 3. ¡IMPORTANTE! No tienen FianzaId (es decir, es null).
+
             var eventosDisponibles = await _eventoRepository.FindWithIncludesAsync(
                 e => e.Estado != EventoEstado.Cancelado &&
-                     e.FianzaId == null, // <-- Esta es la clave: solo los que no tienen fianza
-                e => e.Cliente // Incluimos cliente para mostrar el nombre
+                     e.FianzaId == null, 
+                e => e.Cliente 
             );
 
             // Si no hay eventos, devolvemos lista vacía
@@ -304,11 +294,27 @@ namespace si_td_gestion_eventos.Services.Implementation
                 });
         }
 
-        // --- SERVICIOS DE FONDO (Corregidos con lógica "Permisiva") ---
+        // --- SERVICIOS DE FONDO ---
 
-        public async Task<ServiceResult<int>> MarkCompletedEventsAsync()
+        public async Task<List<EventoVM>> GetAlertasServiciosAsync()
         {
-            // (Tu código para esto está perfecto)
+            var deadline = DateTime.Now.AddHours(48);
+            var now = DateTime.Now;
+
+            var eventosEnPeligro = await _eventoRepository.FindWithIncludesAsync(
+                e => e.Estado != EventoEstado.Cancelado &&
+                     e.Estado != EventoEstado.Realizado &&
+                     e.Inicio > now &&
+                     e.Inicio < deadline &&
+                    !e.ServiciosEsenciales.OfType<CertificadoAGADU>().Any(c => c.Verificado),
+                e => e.Cliente,
+                e => e.ServiciosEsenciales
+            );
+
+            return _mapper.Map<List<EventoVM>>(eventosEnPeligro);
+        }
+        public async Task<ServiceResult<int>> MarkCompletedEventsAsync()
+        {    
             int completedCount = 0;
             var statesToComplete = new[] {
                 EventoEstado.PendienteAdeudado,
@@ -353,7 +359,7 @@ namespace si_td_gestion_eventos.Services.Implementation
                 var eventsToCancelQuery = await _eventoRepository.FindWithIncludesAsync(
                     e => e.Estado != EventoEstado.Cancelado &&
                          e.Inicio < deadline &&
-                         e.Inicio > now, // <-- Añadido para no cancelar eventos pasados
+                         e.Inicio > now, 
                     e => e.Pagos
                 );
 
@@ -391,11 +397,11 @@ namespace si_td_gestion_eventos.Services.Implementation
             }
         }
 
-        // --- MÉTODOS RESTANTES (Sin cambios) ---
+        // --- MÉTODOS RESTANTES  ---
 
         public async Task<ServiceResult<EventoVM>> UpdateAsync(EventoVM eventoVM)
         {
-            // (Tu código existente está bien)
+
             var validationResult = await _validator.ValidateAsync(eventoVM, options => options.IncludeRuleSets("default"));
             if (!validationResult.IsValid)
             {
@@ -407,7 +413,7 @@ namespace si_td_gestion_eventos.Services.Implementation
                 var evento = await _eventoRepository.GetByIdWithIncludesAsync(eventoVM.EventoId, e => e.Cliente);
                 if (evento == null) { return ServiceResult<EventoVM>.FailureResult("Evento no encontrado."); }
                 if (!await _businessRules.IsClienteActiveAsync(evento.ClienteId)) { return ServiceResult<EventoVM>.FailureResult("...cliente está inactivo."); }
-                if (!await _businessRules.CanModifyEventoAsync(eventoVM.EventoId)) { return ServiceResult<EventoVM>.FailureResult("...no se puede modificar (48hs)."); }
+            
 
                 var fechaContratoOriginal = evento.FechaContrato;
                 var clienteIdOriginal = evento.ClienteId;
@@ -432,7 +438,6 @@ namespace si_td_gestion_eventos.Services.Implementation
 
         public async Task<ServiceResult<bool>> CancelAsync(int id)
         {
-            // (Tu código existente está bien)
             try
             {
                 if (!await _businessRules.CanCancelEventoAsync(id)) { return ServiceResult<bool>.FailureResult("No se puede cancelar..."); }
@@ -448,7 +453,6 @@ namespace si_td_gestion_eventos.Services.Implementation
 
         public async Task<ServiceResult<bool>> RescheduleAsync(int id, DateTime nuevaFechaInicio, DateTime nuevaFechaFin, TimeSpan nuevaHoraInicio, TimeSpan nuevaHoraFin)
         {
-            // (Tu código existente está bien)
             try
             {
                 if (!await _businessRules.CanRescheduleEventoAsync(id)) { return ServiceResult<bool>.FailureResult("No se puede reprogramar..."); }
@@ -471,7 +475,6 @@ namespace si_td_gestion_eventos.Services.Implementation
 
         public async Task<ServiceResult<bool>> ConfirmAsync(int id)
         {
-            // (Tu código existente está bien)
             try
             {
                 var evento = await _eventoRepository.GetByIdAsync(id);
@@ -491,7 +494,6 @@ namespace si_td_gestion_eventos.Services.Implementation
 
         public async Task<List<EventoVM>> GetLatestAsync(int count)
         {
-            // (Tu código existente está bien)
             var eventos = await _eventoRepository.FindWithIncludesAsync(null, e => e.Cliente, e => e.Cliente);
             var eventosOrdenados = eventos.OrderByDescending(e => e.EventoId).Take(count);
             return _mapper.Map<List<EventoVM>>(eventosOrdenados);
@@ -499,7 +501,6 @@ namespace si_td_gestion_eventos.Services.Implementation
 
         public async Task<IEnumerable<SelectListItem>> GetTiposEventoParaDropdownAsync()
         {
-            // (Tu código existente está bien)
             var tiposEvento = Enum.GetValues<TipoEvento>().Select(tipo => new SelectListItem { Value = tipo.ToString(), Text = tipo.ToString() });
             return await Task.FromResult(tiposEvento);
         }
@@ -516,7 +517,6 @@ namespace si_td_gestion_eventos.Services.Implementation
 
         public async Task<IEnumerable<SelectListItem>> GetEventosAdeudadosParaDropdownAsync()
         {
-            // (Tu código existente está bien, pero recordá tu comentario de AGREGAR OTROS ESTADOS)
             var eventosAdeudado = await _eventoRepository.FindWithIncludesAsync(
                 e => e.Estado == EventoEstado.PendienteAdeudado,
                 e => e.Cliente
@@ -532,7 +532,7 @@ namespace si_td_gestion_eventos.Services.Implementation
             });
         }
 
-        // --- Helper de Conversión de Tipo de Archivo (Sin cambios) ---
+        // --- Helper de Conversión de Tipo de Archivo  ---
         private TipoArchivo ConvertExtensionToTipoArchivo(string fileName)
         {
             if (string.IsNullOrEmpty(fileName))
@@ -554,5 +554,7 @@ namespace si_td_gestion_eventos.Services.Implementation
                     throw new InvalidOperationException($"Tipo de archivo no permitido: {extension}. Solo se aceptan PDF, PNG, JPEG o JPG.");
             }
         }
+
+      
     }
 }

@@ -1,3 +1,5 @@
+using si_td_gestion_eventos.Models.ViewModels;
+
 namespace si_td_gestion_eventos.Services.Contracts
 {
     public interface IEventoBusinessRules
@@ -7,6 +9,7 @@ namespace si_td_gestion_eventos.Services.Contracts
         Task<bool> CanModifyEventoAsync(int eventoId);
         Task<bool> HasPaymentsAsync(int eventoId);
         Task<bool> HasFianzaAsync(int eventoId);
+
         Task<bool> IsClienteActiveAsync(int clienteId);
         Task<bool> IsEventoInFutureAsync(DateTime inicio);
         Task<bool> IsValidDateRangeAsync(DateTime inicio, DateTime fin, TimeSpan horaInicio, TimeSpan horaFin);
