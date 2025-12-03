@@ -23,6 +23,7 @@ namespace si_td_gestion_eventos.Services.Contracts
         Task<ServiceResult<bool>> CancelAsync(int id);
         Task<ServiceResult<bool>> RescheduleAsync(int id, DateTime nuevaFechaInicio, DateTime nuevaFechaFin, TimeSpan nuevaHoraInicio, TimeSpan nuevaHoraFin);
         Task<ServiceResult<bool>> ConfirmAsync(int id);
+        Task<List<EventoVM>> GetAlertasServiciosAsync();    
         Task<IEnumerable<SelectListItem>> GetTiposEventoParaDropdownAsync();
         Task<bool> CanModifyEventoAsync(int eventoId);
         Task<bool> HasConflictingEventsAsync(DateTime inicio, DateTime fin, TimeSpan horaInicio, TimeSpan horaFin, int? excludeEventoId = null);
