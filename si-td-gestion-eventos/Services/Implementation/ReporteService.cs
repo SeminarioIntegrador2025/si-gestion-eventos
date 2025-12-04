@@ -73,6 +73,7 @@ namespace si_td_gestion_eventos.Services.Implementation
                 // --- Datos del Evento ---
                 TipoEvento = evento.Tipo.ToString(), // Usando la propiedad 'Tipo' de tu entidad
                 FechaEvento = evento.Inicio.ToString("dd/MM/yyyy"), // Usando 'Inicio' de tu entidad
+                FechaContrato = evento.FechaContrato.ToString("dd/MM/yyyy"),
                 Horario = $"{evento.Inicio:HH:mm} - {evento.Fin:HH:mm}", // Usando Inicio/Fin para horario
                 CantidadInvitados = evento.CantidadPersonas, // Verifica si es 'CantidadPersonas' o 'CantidadInvitados' en tu entidad
 

@@ -105,24 +105,26 @@ namespace si_td_gestion_eventos.PDFTemplates
                     columns.ConstantColumn(100); // Etiqueta
                     columns.RelativeColumn();    // Valor
                 });
-
-                // Fila 1
+                // Fila 1: Cliente y Documento
                 table.Cell().Text("Cliente:").Bold();
                 table.Cell().Text(_model.NombreCliente);
-                table.Cell().Text($"{_model.LabelDocumento}:").Bold();
-                table.Cell().Text(_model.CI_RUT);
-               
-                // Fila 2
                 table.Cell().Text("Evento:").Bold();
                 table.Cell().Text(_model.TipoEvento);
-                table.Cell().Text("Fecha:").Bold();
+
+                table.Cell().Text($"{_model.LabelDocumento}:").Bold();
+                table.Cell().Text(_model.CI_RUT);
+                table.Cell().Text("F. Evento:").Bold();
                 table.Cell().Text($"{_model.FechaEvento} ({_model.Horario})");
 
-                // Fila 3
-                table.Cell().Text("Invitados:").Bold();
-                table.Cell().Text($"{_model.CantidadInvitados} personas");
+      
                 table.Cell().Text("Tel. Cliente:").Bold();
                 table.Cell().Text(_model.TelefonoCliente);
+                table.Cell().Text("Invitados:").Bold();
+                table.Cell().Text($"{_model.CantidadInvitados} personas");
+
+                table.Cell().Text("F. Contrato:").Bold();
+                table.Cell().Text(_model.FechaContrato);
+                table.Cell().ColumnSpan(2); // Espacio vacío para completar la fila
             });
         }
 

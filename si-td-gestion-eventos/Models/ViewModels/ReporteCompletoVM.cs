@@ -15,6 +15,7 @@ namespace si_td_gestion_eventos.Models.ViewModels
         public string TelefonoCliente { get; set; }
         public string TipoEvento { get; set; }
         public string FechaEvento { get; set; }
+        public string FechaContrato { get; set; }
         public string Horario { get; set; }
         public int CantidadInvitados { get; set; }
 
