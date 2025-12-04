@@ -3,31 +3,29 @@
     ViewData["Title"] = "Reportes y Análisis";
 }
 
-<div class="page-header">
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h1 class="page-title">
+        <h1 class="page-title mb-0">
             <i class="fa-solid fa-chart-line me-2 text-primary"></i>
             Reportes y Análisis
         </h1>
-        <p class="text-muted">Dashboard de métricas y estadísticas del negocio (Ingresos basados en pagos recibidos)</p>
+        <p class="text-muted mb-0">Dashboard de métricas y estadísticas del negocio</p>
     </div>
-    <div class="ms-auto">
-        <span class="badge bg-info">
-            <i class="fa-solid fa-calendar me-1"></i>
-            @DateTime.Now.ToString("MMMM yyyy", new System.Globalization.CultureInfo("es-ES"))
-        </span>
+
+    <div class="d-flex align-items-center gap-3">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalReporteEvento">
+            <i class="fa-solid fa-file-pdf me-2"></i> Generar Reporte Por Evento
+        </button>    
     </div>
 </div>
 
-<!-- KPIs Principales -->
 <div class="row g-4 mb-4">
-    <!-- Eventos Este Mes -->
     <div class="col-md-6 col-xl-3">
-        <div class="card metric-card">
+        <div class="card metric-card h-100">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start mb-3">
                     <div>
-                        <p class="text-muted mb-1 text-uppercase" style="font-size: 0.75rem; font-weight: 600;">Eventos Este Mes</p>
+                        <p class="text-muted mb-1 text-uppercase fw-bold" style="font-size: 0.75rem;">Eventos Este Mes</p>
                         <h2 class="mb-0 fw-bold">@Model.Eventos.EventosEsteMes</h2>
                     </div>
                     <div class="metric-icon bg-primary-subtle">
@@ -38,36 +36,27 @@
                     @if (Model.Eventos.CrecimientoPositivo)
                     {
                         <span class="badge bg-success-subtle text-success">
-                            <i class="fa-solid fa-arrow-up me-1"></i>
-                            @Model.Eventos.PorcentajeCambioEventos%
+                            <i class="fa-solid fa-arrow-up me-1"></i> @Model.Eventos.PorcentajeCambioEventos%
                         </span>
                     }
                     else
                     {
                         <span class="badge bg-danger-subtle text-danger">
-                            <i class="fa-solid fa-arrow-down me-1"></i>
-                            @Math.Abs(Model.Eventos.PorcentajeCambioEventos)%
+                            <i class="fa-solid fa-arrow-down me-1"></i> @Math.Abs(Model.Eventos.PorcentajeCambioEventos)%
                         </span>
                     }
-                    <span class="text-muted ms-2" style="font-size: 0.875rem;">vs mes anterior</span>
-                </div>
-                <div class="mt-3 pt-3 border-top">
-                    <small class="text-muted">
-                        <i class="fa-solid fa-check-circle text-success me-1"></i>
-                        @Model.Eventos.EventosRealizadosEsteMes realizados
-                    </small>
+                    <span class="text-muted ms-2 small">vs mes anterior</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Ingresos Este Mes (Pagos Recibidos) -->
     <div class="col-md-6 col-xl-3">
-        <div class="card metric-card">
+        <div class="card metric-card h-100">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start mb-3">
                     <div>
-                        <p class="text-muted mb-1 text-uppercase" style="font-size: 0.75rem; font-weight: 600;">Ingresos Recibidos</p>
+                        <p class="text-muted mb-1 text-uppercase fw-bold" style="font-size: 0.75rem;">Ingresos Recibidos</p>
                         <h2 class="mb-0 fw-bold">$@Model.Ingresos.TotalIngresosEsteMes.ToString("N0")</h2>
                     </div>
                     <div class="metric-icon bg-success-subtle">
@@ -78,36 +67,27 @@
                     @if (Model.Ingresos.CrecimientoPositivo)
                     {
                         <span class="badge bg-success-subtle text-success">
-                            <i class="fa-solid fa-arrow-up me-1"></i>
-                            @Model.Ingresos.PorcentajeCambioIngresos%
+                            <i class="fa-solid fa-arrow-up me-1"></i> @Model.Ingresos.PorcentajeCambioIngresos%
                         </span>
                     }
                     else
                     {
                         <span class="badge bg-danger-subtle text-danger">
-                            <i class="fa-solid fa-arrow-down me-1"></i>
-                            @Math.Abs(Model.Ingresos.PorcentajeCambioIngresos)%
+                            <i class="fa-solid fa-arrow-down me-1"></i> @Math.Abs(Model.Ingresos.PorcentajeCambioIngresos)%
                         </span>
                     }
-                    <span class="text-muted ms-2" style="font-size: 0.875rem;">vs mes anterior</span>
-                </div>
-                <div class="mt-3 pt-3 border-top">
-                    <small class="text-muted">
-                        <i class="fa-solid fa-chart-line text-info me-1"></i>
-                        Promedio: $@Model.Ingresos.PromedioIngresosMensual.ToString("N0")
-                    </small>
+                    <span class="text-muted ms-2 small">vs mes anterior</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Pagos Recibidos -->
     <div class="col-md-6 col-xl-3">
-        <div class="card metric-card">
+        <div class="card metric-card h-100">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start mb-3">
                     <div>
-                        <p class="text-muted mb-1 text-uppercase" style="font-size: 0.75rem; font-weight: 600;">Pagos Recibidos</p>
+                        <p class="text-muted mb-1 text-uppercase fw-bold" style="font-size: 0.75rem;">Pagos Recibidos</p>
                         <h2 class="mb-0 fw-bold">@Model.Pagos.TotalPagosEsteMes</h2>
                     </div>
                     <div class="metric-icon bg-info-subtle">
@@ -117,7 +97,7 @@
                 <div class="d-flex align-items-center">
                     <span class="text-success fw-semibold">$@Model.Pagos.MontoTotalPagadoEsteMes.ToString("N0")</span>
                 </div>
-                <div class="mt-3 pt-3 border-top">
+                <div class="mt-2 pt-2 border-top">
                     <small class="text-muted">
                         <i class="fa-solid fa-percentage text-warning me-1"></i>
                         Recuperación: @Model.Pagos.PorcentajeRecuperacion%
@@ -127,141 +107,108 @@
         </div>
     </div>
 
-    <!-- Ocupación Fines de Semana -->
     <div class="col-md-6 col-xl-3">
-        <div class="card metric-card">
+        <div class="card metric-card h-100">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start mb-3">
                     <div>
-                        <p class="text-muted mb-1 text-uppercase" style="font-size: 0.75rem; font-weight: 600;">Fines de Semana</p>
+                        <p class="text-muted mb-1 text-uppercase fw-bold" style="font-size: 0.75rem;">Fines de Semana</p>
                         <h2 class="mb-0 fw-bold">@Model.Eventos.TasaOcupacionFinesDeSemana%</h2>
                     </div>
                     <div class="metric-icon bg-warning-subtle">
                         <i class="fa-solid fa-calendar-week text-warning"></i>
                     </div>
                 </div>
-                <div class="progress mb-2" style="height: 8px;">
-                    <div class="progress-bar bg-gradient" role="progressbar" 
-                         style="width: @Model.Eventos.TasaOcupacionFinesDeSemana%; background: linear-gradient(135deg, var(--warning) 0%, var(--primary) 100%);" 
-                         aria-valuenow="@Model.Eventos.TasaOcupacionFinesDeSemana" aria-valuemin="0" aria-valuemax="100"></div>
+                <div class="progress mb-2" style="height: 6px;">
+                    <div class="progress-bar bg-warning" role="progressbar"
+                         style="width: @Model.Eventos.TasaOcupacionFinesDeSemana%"></div>
                 </div>
-                <div class="mt-3 pt-3 border-top">
-                    <small class="text-muted">
-                        <i class="fa-solid fa-calendar-days text-primary me-1"></i>
-                        @Model.Eventos.FinesDeSemanaOcupados/@Model.Eventos.TotalFinesDeSemanaDisponibles ocupados
-                    </small>
-                </div>
+                <small class="text-muted">
+                    @Model.Eventos.FinesDeSemanaOcupados de @Model.Eventos.TotalFinesDeSemanaDisponibles ocupados
+                </small>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Segunda Fila: Gráficos y Tablas -->
 <div class="row g-4 mb-4">
-    <!-- Desglose de Ingresos -->
     <div class="col-lg-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fa-solid fa-chart-pie me-2"></i>
-                    Desglose de Ingresos Recibidos
-                </h5>
+        <div class="card h-100">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0"><i class="fa-solid fa-chart-pie me-2"></i> Desglose de Ingresos</h5>
             </div>
             <div class="card-body">
-                <div class="mb-4">
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Reservas</span>
-                        <span class="fw-semibold">$@Model.Ingresos.TotalReservasEsteMes.ToString("N0") (@Model.Ingresos.PorcentajeReservas%)</span>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Reservas</span>
+                        <span class="fw-bold">$@Model.Ingresos.TotalReservasEsteMes.ToString("N0") (@Model.Ingresos.PorcentajeReservas%)</span>
                     </div>
-                    <div class="progress mb-3" style="height: 12px;">
-                        <div class="progress-bar bg-primary" role="progressbar" style="width: @Model.Ingresos.PorcentajeReservas%"></div>
-                    </div>
-
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Alquileres</span>
-                        <span class="fw-semibold">$@Model.Ingresos.TotalAlquileresEsteMes.ToString("N0") (@Model.Ingresos.PorcentajeAlquileres%)</span>
-                    </div>
-                    <div class="progress mb-3" style="height: 12px;">
-                        <div class="progress-bar bg-success" role="progressbar" style="width: @Model.Ingresos.PorcentajeAlquileres%"></div>
-                    </div>
-
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Aire Acondicionado</span>
-                        <span class="fw-semibold">$@Model.Ingresos.TotalAireAcondicionadoEsteMes.ToString("N0") (@Model.Ingresos.PorcentajeAireAcondicionado%)</span>
-                    </div>
-                    <div class="progress mb-3" style="height: 12px;">
-                        <div class="progress-bar bg-info" role="progressbar" style="width: @Model.Ingresos.PorcentajeAireAcondicionado%"></div>
-                    </div>
+                    <div class="progress" style="height: 8px;"><div class="progress-bar bg-primary" style="width: @Model.Ingresos.PorcentajeReservas%"></div></div>
                 </div>
-
-                <div class="alert alert-info border-0">
-                    <i class="fa-solid fa-info-circle me-2"></i>
-                    <strong>Total Año:</strong> $@Model.Ingresos.TotalIngresosAnioActual.ToString("N0")
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Alquileres</span>
+                        <span class="fw-bold">$@Model.Ingresos.TotalAlquileresEsteMes.ToString("N0") (@Model.Ingresos.PorcentajeAlquileres%)</span>
+                    </div>
+                    <div class="progress" style="height: 8px;"><div class="progress-bar bg-success" style="width: @Model.Ingresos.PorcentajeAlquileres%"></div></div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Aire Acond.</span>
+                        <span class="fw-bold">$@Model.Ingresos.TotalAireAcondicionadoEsteMes.ToString("N0") (@Model.Ingresos.PorcentajeAireAcondicionado%)</span>
+                    </div>
+                    <div class="progress" style="height: 8px;"><div class="progress-bar bg-info" style="width: @Model.Ingresos.PorcentajeAireAcondicionado%"></div></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Métodos de Pago -->
     <div class="col-lg-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fa-solid fa-credit-card me-2"></i>
-                    Métodos de Pago
-                </h5>
+        <div class="card h-100">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0"><i class="fa-solid fa-credit-card me-2"></i> Métodos de Pago</h5>
             </div>
             <div class="card-body">
                 <div class="row text-center mb-4">
                     <div class="col-6">
                         <div class="p-3 bg-success-subtle rounded">
-                            <i class="fa-solid fa-money-bill-1 fa-2x text-success mb-2"></i>
-                            <h4 class="mb-0 fw-bold">@Model.Pagos.PagosEfectivoEsteMes</h4>
-                            <small class="text-muted">Efectivo</small>
-                            <p class="mb-0 mt-2 fw-semibold text-success">$@Model.Pagos.MontoEfectivoEsteMes.ToString("N0")</p>
+                            <h4 class="fw-bold text-success mb-0">@Model.Pagos.PagosEfectivoEsteMes</h4>
+                            <small class="text-muted d-block">Efectivo</small>
+                            <span class="fw-bold">$@Model.Pagos.MontoEfectivoEsteMes.ToString("N0")</span>
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="p-3 bg-primary-subtle rounded">
-                            <i class="fa-solid fa-building-columns fa-2x text-primary mb-2"></i>
-                            <h4 class="mb-0 fw-bold">@Model.Pagos.PagosTransferenciaEsteMes</h4>
-                            <small class="text-muted">Transferencia</small>
-                            <p class="mb-0 mt-2 fw-semibold text-primary">$@Model.Pagos.MontoTransferenciaEsteMes.ToString("N0")</p>
+                            <h4 class="fw-bold text-primary mb-0">@Model.Pagos.PagosTransferenciaEsteMes</h4>
+                            <small class="text-muted d-block">Transferencia</small>
+                            <span class="fw-bold">$@Model.Pagos.MontoTransferenciaEsteMes.ToString("N0")</span>
                         </div>
                     </div>
                 </div>
-
-                <div class="alert alert-warning border-0">
+                <div class="alert alert-warning border-0 mb-0">
                     <i class="fa-solid fa-exclamation-triangle me-2"></i>
-                    <strong>Adeudos pendientes:</strong> $@Model.Pagos.TotalAdeudado.ToString("N0") 
-                    (@Model.Pagos.EventosConAdeudo evento(s))
+                    <strong>Adeudos:</strong> $@Model.Pagos.TotalAdeudado.ToString("N0") (@Model.Pagos.EventosConAdeudo eventos)
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Tercera Fila: Top Clientes y Eventos por Tipo -->
 <div class="row g-4 mb-4">
-    <!-- Top 5 Clientes -->
     <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fa-solid fa-trophy me-2 text-warning"></i>
-                    Top 5 Clientes (Por Ingresos Recibidos)
-                </h5>
+        <div class="card h-100">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0"><i class="fa-solid fa-trophy me-2 text-warning"></i> Top 5 Clientes</h5>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover mb-0">
+                    <table class="table table-hover mb-0 align-middle">
                         <thead>
                             <tr>
                                 <th>Cliente</th>
                                 <th class="text-center">Eventos</th>
                                 <th class="text-end">Total Pagado</th>
-                                <th class="text-end">Promedio</th>
-                                <th class="text-center">Último Evento</th>
+                                <th class="text-center">Último</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -269,20 +216,13 @@
                             {
                                 <tr>
                                     <td>
-                                        <a asp-controller="Cliente" asp-action="Details" asp-route-id="@cliente.ClienteId" 
-                                           class="text-decoration-none fw-semibold">
-                                            <i class="fa-solid fa-user-circle me-2 text-primary"></i>
+                                        <a asp-controller="Cliente" asp-action="Details" asp-route-id="@cliente.ClienteId" class="text-decoration-none fw-bold">
                                             @cliente.NombreCompleto
                                         </a>
                                     </td>
-                                    <td class="text-center">
-                                        <span class="badge bg-primary">@cliente.TotalEventos</span>
-                                    </td>
-                                    <td class="text-end fw-semibold text-success">$@cliente.TotalIngresos.ToString("N0")</td>
-                                    <td class="text-end text-muted">$@cliente.PromedioGasto.ToString("N0")</td>
-                                    <td class="text-center">
-                                        <small class="text-muted">@cliente.UltimoEvento.ToString("dd/MM/yyyy")</small>
-                                    </td>
+                                    <td class="text-center"><span class="badge bg-secondary">@cliente.TotalEventos</span></td>
+                                    <td class="text-end text-success fw-bold">$@cliente.TotalIngresos.ToString("N0")</td>
+                                    <td class="text-center small text-muted">@cliente.UltimoEvento.ToString("dd/MM/yyyy")</td>
                                 </tr>
                             }
                         </tbody>
@@ -292,210 +232,187 @@
         </div>
     </div>
 
-    <!-- Estadísticas de Clientes -->
     <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fa-solid fa-users me-2"></i>
-                    Clientes
-                </h5>
+        <div class="card h-100">
+            <div class="card-header bg-transparent">
+                <h5 class="mb-0"><i class="fa-solid fa-users me-2"></i> Clientes</h5>
             </div>
             <div class="card-body">
-                <div class="mb-4">
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Total</span>
-                        <span class="fw-bold">@Model.Clientes.TotalClientes</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">
-                            <i class="fa-solid fa-circle text-success" style="font-size: 0.5rem;"></i>
-                            Activos
-                        </span>
-                        <span>@Model.Clientes.ClientesActivos</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-3">
-                        <span class="text-muted">
-                            <i class="fa-solid fa-circle text-danger" style="font-size: 0.5rem;"></i>
-                            Inactivos
-                        </span>
-                        <span>@Model.Clientes.ClientesInactivos</span>
-                    </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Total</span>
+                    <span class="fw-bold">@Model.Clientes.TotalClientes</span>
                 </div>
-
-                <hr>
-
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="text-muted">Nuevos este mes</span>
-                        <span class="badge bg-success">@Model.Clientes.NuevosClientesEsteMes</span>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="text-muted">Recurrentes</span>
-                        <span class="badge bg-primary">@Model.Clientes.ClientesRecurrentesEsteMes</span>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="text-muted">Tasa recurrencia</span>
-                        <span class="fw-semibold text-info">@Model.Clientes.PorcentajeRecurrencia%</span>
-                    </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted"><i class="fa-solid fa-circle text-success small me-1"></i> Activos</span>
+                    <span>@Model.Clientes.ClientesActivos</span>
                 </div>
-
-                <hr>
-
-                <div class="text-center p-3 bg-light rounded">
-                    <small class="text-muted d-block mb-1">Promedio Eventos/Cliente</small>
-                    <h4 class="mb-0 fw-bold text-primary">@Model.Clientes.PromedioEventosPorCliente</h4>
+                <hr />
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Nuevos (Mes)</span>
+                    <span class="badge bg-success">@Model.Clientes.NuevosClientesEsteMes</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Tasa Recurrencia</span>
+                    <span class="fw-bold text-info">@Model.Clientes.PorcentajeRecurrencia%</span>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Cuarta Fila: Eventos por Tipo y Fianzas -->
-<div class="row g-4">
-    <!-- Eventos por Tipo -->
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fa-solid fa-list-check me-2"></i>
-                    Eventos por Tipo (Ingresos Recibidos)
+<div class="modal fade" id="modalReporteEvento" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">
+                    <i class="fa-solid fa-file-pdf me-2"></i> Buscar Evento para Ficha Técnica
                 </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>Tipo de Evento</th>
-                                <th class="text-center">Cantidad</th>
-                                <th class="text-center">% del Total</th>
-                                <th class="text-end">Ingresos Recibidos</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var tipo in Model.EventosPorTipo)
-                            {
+
+            <form asp-controller="Reporte" asp-action="DescargarReportes" method="post">
+                <div class="modal-body">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text bg-secondary text-white border-secondary">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" id="txtBuscadorModal" class="form-control bg-dark text-white border-secondary"
+                               placeholder="Escriba el nombre del cliente, tipo o fecha..." autocomplete="off">
+                    </div>
+
+                    <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+                        <table class="table table-dark table-hover table-sm align-middle">
+                            <thead>
                                 <tr>
-                                    <td>
-                                        <i class="fa-solid fa-champagne-glasses me-2 text-primary"></i>
-                                        <strong>@tipo.TipoEvento</strong>
-                                    </td>
-                                    <td class="text-center">
-                                        <span class="badge bg-info">@tipo.Cantidad</span>
-                                    </td>
-                                    <td class="text-center">
-                                        <div class="d-flex align-items-center justify-content-center">
-                                            <div class="progress me-2" style="width: 100px; height: 8px;">
-                                                <div class="progress-bar bg-primary" role="progressbar" style="width: @tipo.PorcentajeDelTotal%"></div>
-                                            </div>
-                                            <span class="text-muted">@tipo.PorcentajeDelTotal%</span>
-                                        </div>
-                                    </td>
-                                    <td class="text-end fw-semibold text-success">$@tipo.IngresoTotal.ToString("N0")</td>
+                                    <th style="width: 50px;" class="text-center">Sel.</th>
+                                    <th>Cliente</th>
+                                    <th>Tipo</th>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
                                 </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Fianzas -->
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fa-solid fa-handshake me-2"></i>
-                    Fianzas
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="mb-4">
-                    <div class="d-flex justify-content-between mb-3">
-                        <span class="text-muted">Registradas</span>
-                        <span class="fw-semibold">$@Model.Fianzas.TotalFianzasRegistradas.ToString("N0")</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-3">
-                        <span class="text-success">
-                            <i class="fa-solid fa-check-circle me-1"></i>
-                            Devueltas
-                        </span>
-                        <span class="fw-semibold text-success">$@Model.Fianzas.TotalFianzasDevueltas.ToString("N0")</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-3">
-                        <span class="text-warning">
-                            <i class="fa-solid fa-clock me-1"></i>
-                            Pendientes
-                        </span>
-                        <span class="fw-semibold text-warning">$@Model.Fianzas.TotalFianzasPendientesDevolucion.ToString("N0")</span>
+                            </thead>
+                            <tbody id="tablaEventosBody">
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        <i class="fa-solid fa-spinner fa-spin me-2"></i> Cargando eventos recientes...
+                                    </td>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-
-                <hr>
-
-                <div class="mb-3">
-                    <div class="text-center p-3 bg-success-subtle rounded mb-3">
-                        <small class="text-muted d-block mb-1">Tasa de Devolución</small>
-                        <h4 class="mb-0 fw-bold text-success">@Model.Fianzas.PorcentajeDevolucionTotal%</h4>
-                    </div>
-
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="text-muted">Promedio Fianza</span>
-                        <span class="fw-semibold">$@Model.Fianzas.MontoPromedioFianza.ToString("N0")</span>
-                    </div>
-
-                    @if (Model.Fianzas.FianzasVencidas > 0)
-                    {
-                        <div class="alert alert-danger border-0 mt-3 mb-0">
-                            <i class="fa-solid fa-exclamation-circle me-2"></i>
-                            <strong>@Model.Fianzas.FianzasVencidas</strong> fianza(s) vencida(s)
-                        </div>
-                    }
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" name="formato" value="PDF" class="btn btn-success">
+                        <i class="fas fa-download me-2"></i> Descargar Seleccionados
+                    </button>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var inputBuscador = document.getElementById('txtBuscadorModal');
+
+            // Cargar eventos al abrir el modal
+            var modalReporte = document.getElementById('modalReporteEvento');
+            modalReporte.addEventListener('shown.bs.modal', function () {
+                buscarEventos(''); // Trae los recientes
+                inputBuscador.focus();
+            });
+
+            // Búsqueda con retardo (debounce)
+            var timeout = null;
+            inputBuscador.addEventListener('keyup', function() {
+                clearTimeout(timeout);
+                timeout = setTimeout(function () {
+                    buscarEventos(inputBuscador.value);
+                }, 300);
+            });
+
+            function buscarEventos(termino) {
+                var tbody = document.getElementById('tablaEventosBody');
+
+                fetch('/Reporte/BuscarEventos?q=' + encodeURIComponent(termino))
+                    .then(response => response.json())
+                    .then(data => {
+                        tbody.innerHTML = ''; // Limpiar tabla
+
+                        if (data.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">No se encontraron resultados.</td></tr>';
+                            return;
+                        }
+
+                        data.forEach(item => {
+                            var badgeClass = 'bg-secondary';
+                            if(item.estado === 'Realizado') badgeClass = 'bg-success';
+                            if(item.estado === 'PendienteAdeudado') badgeClass = 'bg-warning text-dark';
+                            if(item.estado === 'Cancelado') badgeClass = 'bg-danger';
+
+                            var row = `
+                                <tr>
+                                    <td class="text-center">
+                                        <input type="checkbox" class="form-check-input" name="eventosSeleccionados" value="${item.idEvento}" style="cursor:pointer;" />
+                                    </td>
+                                    <td class="fw-semibold">${item.cliente}</td>
+                                    <td>${item.tipo}</td>
+                                    <td>${item.fecha}</td>
+                                    <td><span class="badge ${badgeClass}">${item.estado}</span></td>
+                                </tr>
+                            `;
+                            tbody.innerHTML += row;
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar datos.</td></tr>';
+                    });
+            }
+        });
+    </script>
+}
 
 <style>
     .metric-card {
         transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 
-    .metric-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 40px var(--shadow) !important;
-    }
+        .metric-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 20px rgba(0,0,0,0.1) !important;
+        }
 
     .metric-icon {
-        width: 56px;
-        height: 56px;
-        border-radius: 12px;
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.5rem;
+        font-size: 1.25rem;
     }
-
+    /* Fondos sutiles */
     .bg-primary-subtle {
-        background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+        background-color: rgba(13, 110, 253, 0.1);
     }
 
     .bg-success-subtle {
-        background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+        background-color: rgba(25, 135, 84, 0.1);
     }
 
     .bg-info-subtle {
-        background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%);
+        background-color: rgba(13, 202, 240, 0.1);
     }
 
     .bg-warning-subtle {
-        background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(234, 179, 8, 0.05) 100%);
+        background-color: rgba(255, 193, 7, 0.1);
     }
 
     .bg-danger-subtle {
-        background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%);
+        background-color: rgba(220, 53, 69, 0.1);
     }
 </style>

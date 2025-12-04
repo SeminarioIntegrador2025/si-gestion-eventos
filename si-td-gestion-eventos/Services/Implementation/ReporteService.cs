@@ -1,4 +1,5 @@
 using si_td_gestion_eventos.Entities;
+using Microsoft.EntityFrameworkCore;
 using si_td_gestion_eventos.Models.Enums;
 using si_td_gestion_eventos.Models.ViewModels;
 using si_td_gestion_eventos.Repositories;
@@ -24,6 +25,93 @@ namespace si_td_gestion_eventos.Services.Implementation
             _fianzaRepository = fianzaRepository;
             _clienteRepository = clienteRepository;
         }
+
+        #region NUEVO MÉTODO PARA PDF (Adaptado a Repositorios)
+
+        public async Task<ReporteCompletoViewModel> GenerarFichaCompletaAsync(int idEvento)
+        {
+            // 1. Obtener el evento usando el Repositorio con sus relaciones
+            // Usamos FindWithIncludesAsync para traer Cliente, Pagos y Fianza
+            var eventosEncontrados = await _eventoRepository.FindWithIncludesAsync(
+                e => e.EventoId == idEvento,
+                e => e.Cliente,
+                e => e.Pagos,
+                e => e.Fianza
+            );
+
+            var evento = eventosEncontrados.FirstOrDefault();
+
+            if (evento == null) return null;
+
+            // 2. Lógica de Negocio y Cálculos Financieros (RF-11)
+
+            // Filtramos pagos (convertimos a lista para operar en memoria)
+            var pagosLista = evento.Pagos.ToList();
+            var totalPagado = pagosLista.Sum(p => (decimal)p.Monto); // Casteo explícito a decimal por seguridad
+
+            // Costo Total = Alquiler Base + Aire Acondicionado (si aplica)
+            var costoAC = evento.MontoAireAcondicionado ?? 0;
+            var totalEvento = (decimal)evento.CostoAlquiler + (decimal)costoAC;
+
+            // Cálculo automático del saldo
+            var saldoRestante = totalEvento - totalPagado;
+
+            // 3. Mapeo manual al ViewModel específico para el PDF
+            var reporte = new ReporteCompletoViewModel
+            {
+                FechaGeneracion = DateTime.Now,
+
+                // --- Datos del Cliente ---
+                // Ajuste para mostrar Nombre Completo o Razón Social según corresponda
+                NombreCliente = evento.Cliente.Tipo == TipoCliente.PersonaFisica
+                    ? $"{evento.Cliente.Nombre} {evento.Cliente.Apellido}"
+                    : evento.Cliente.Nombre, // Si es jurídica suele usarse Nombre o Razón Social
+                LabelDocumento = evento.Cliente.Tipo == TipoCliente.PersonaFisica ? "C.I." : "RUT",
+                CI_RUT = evento.Cliente.CedulaIdentidad ?? evento.Cliente.RUT,
+                TelefonoCliente = evento.Cliente.Telefono,
+
+                // --- Datos del Evento ---
+                TipoEvento = evento.Tipo.ToString(), // Usando la propiedad 'Tipo' de tu entidad
+                FechaEvento = evento.Inicio.ToString("dd/MM/yyyy"), // Usando 'Inicio' de tu entidad
+                Horario = $"{evento.Inicio:HH:mm} - {evento.Fin:HH:mm}", // Usando Inicio/Fin para horario
+                CantidadInvitados = evento.CantidadPersonas, // Verifica si es 'CantidadPersonas' o 'CantidadInvitados' en tu entidad
+
+                // --- Responsable del Salón ---
+                // Verifica los nombres exactos en tu entidad Evento.cs (ej: NombreResponsableSalon)
+                ResponsableNombre = evento.ResponsableNombre,
+                ResponsableTelefono = evento.ResponsableTelefono,
+                ResponsableCI = evento.ResponsableCedula,
+
+                // --- Resumen Financiero ---
+                CostoAlquilerBase = (decimal)evento.CostoAlquiler,
+                CostoAireAcondicionado = (decimal)costoAC,
+                TotalGeneral = totalEvento,
+                TotalPagado = totalPagado,
+                SaldoPendiente = saldoRestante,
+
+                // --- Fianza (RF-18) ---
+                MontoFianza = evento.Fianza != null ? (decimal)evento.Fianza.Monto : 0,
+                EstadoFianza = evento.Fianza != null ? evento.Fianza.Estado.ToString() : "No Registrada",
+                ObservacionesFianza = evento.Fianza != null && !string.IsNullOrWhiteSpace(evento.Fianza.Observaciones)
+                          ? evento.Fianza.Observaciones
+                          : "-",
+
+                // --- Historial de Pagos ---
+                HistorialPagos = pagosLista.Select(p => new DetallePagoDTO
+                {
+                    Fecha = p.Fecha.ToString("dd/MM/yyyy"),
+                    Metodo = p.Metodo.ToString(),
+                    Monto = (decimal)p.Monto,
+                    Observacion = p.Observaciones ?? "-"
+                }).OrderByDescending(p => p.Fecha).ToList()
+            };
+
+            return reporte;
+        }
+
+        #endregion
+
+        #region MÉTODOS DEL DASHBOARD (Existentes)
 
         public async Task<ReportesVM> GetReportesConsolidadosAsync()
         {
@@ -82,8 +170,8 @@ namespace si_td_gestion_eventos.Services.Implementation
             // Calcular ocupación de fines de semana
             var finesDeSemanaOcupados = CalcularFinesDeSemanaOcupados(eventosEsteMes);
             var totalFinesDeSemana = CalcularTotalFinesDeSemana(inicioMesActual, finMesActual);
-            var tasaOcupacionFinDeSemana = totalFinesDeSemana > 0 
-                ? (decimal)finesDeSemanaOcupados / totalFinesDeSemana * 100 
+            var tasaOcupacionFinDeSemana = totalFinesDeSemana > 0
+                ? (decimal)finesDeSemanaOcupados / totalFinesDeSemana * 100
                 : 0;
 
             return new ReporteEventosVM
@@ -125,14 +213,14 @@ namespace si_td_gestion_eventos.Services.Implementation
             {
                 var evento = pago.Evento;
                 var totalEvento = (decimal)(evento.MontoReserva + evento.CostoAlquiler + (evento.MontoAireAcondicionado ?? 0));
-                
+
                 if (totalEvento > 0)
                 {
                     // Distribuir el pago proporcionalmente
                     var proporcionReserva = (decimal)evento.MontoReserva / totalEvento;
                     var proporcionAlquiler = (decimal)evento.CostoAlquiler / totalEvento;
-                    var proporcionAire = evento.MontoAireAcondicionado.HasValue 
-                        ? (decimal)evento.MontoAireAcondicionado.Value / totalEvento 
+                    var proporcionAire = evento.MontoAireAcondicionado.HasValue
+                        ? (decimal)evento.MontoAireAcondicionado.Value / totalEvento
                         : 0;
 
                     totalReservas += (decimal)pago.Monto * proporcionReserva;
@@ -247,10 +335,10 @@ namespace si_td_gestion_eventos.Services.Implementation
             var fianzasEsteMes = todasFianzas.Where(f => f.FechaRegistro >= inicioMesActual).ToList();
 
             var totalRegistradas = todasFianzas.Sum(f => f.Monto);
-            
+
             // Total devuelto: suma de MontoDevuelto de todas las fianzas
             var totalDevueltas = todasFianzas.Sum(f => f.MontoDevuelto);
-            
+
             // Pendientes de devolución: Monto original menos lo devuelto
             var totalPendientesDevolucion = todasFianzas
                 .Where(f => f.Estado == EstadoFianza.Registrada || f.Estado == EstadoFianza.DevueltaParcialmente)
@@ -260,21 +348,21 @@ namespace si_td_gestion_eventos.Services.Implementation
             var montoPromedio = todasFianzas.Count > 0 ? todasFianzas.Average(f => f.Monto) : 0;
 
             // Fianzas vencidas
-            var fianzasVencidas = todasFianzas.Count(f => 
-                (f.Estado == EstadoFianza.Registrada || f.Estado == EstadoFianza.DevueltaParcialmente) 
+            var fianzasVencidas = todasFianzas.Count(f =>
+                (f.Estado == EstadoFianza.Registrada || f.Estado == EstadoFianza.DevueltaParcialmente)
                 && f.FechaDevolucion < hoy);
 
             return new ReporteFianzasVM
             {
-                TotalFianzasRegistradas = Math.Round(totalRegistradas, 2),
+                TotalFianzasRegistradas = Math.Round((decimal)totalRegistradas, 2),
                 TotalFianzasDevueltas = Math.Round((decimal)totalDevueltas, 2),
                 TotalFianzasPendientesDevolucion = Math.Round((decimal)totalPendientesDevolucion, 2),
                 FianzasRegistradasEsteMes = fianzasEsteMes.Count,
-                FianzasDevueltasEsteMes = fianzasEsteMes.Count(f => 
-                    f.Estado == EstadoFianza.DevueltaTotalmente || 
+                FianzasDevueltasEsteMes = fianzasEsteMes.Count(f =>
+                    f.Estado == EstadoFianza.DevueltaTotalmente ||
                     f.Estado == EstadoFianza.DevueltaParcialmente),
                 PorcentajeDevolucionTotal = Math.Round((decimal)porcentajeDevolucion, 2),
-                MontoPromedioFianza = Math.Round(montoPromedio, 2),
+                MontoPromedioFianza = Math.Round((decimal)montoPromedio, 2),
                 FianzasVencidas = fianzasVencidas
             };
         }
@@ -290,20 +378,20 @@ namespace si_td_gestion_eventos.Services.Implementation
             var clientesInactivos = clientes.Count(c => !c.Activo);
 
             // Clientes nuevos: primera vez que contrataron fue este mes
-            var nuevosClientes = clientes.Count(c => 
+            var nuevosClientes = clientes.Count(c =>
                 c.Eventos.Any() && c.Eventos.Min(e => e.FechaContrato) >= inicioMesActual);
 
             // Clientes recurrentes: tienen eventos anteriores y contrataron este mes
-            var recurrentes = clientes.Count(c => 
-                c.Eventos.Any(e => e.FechaContrato < inicioMesActual) && 
+            var recurrentes = clientes.Count(c =>
+                c.Eventos.Any(e => e.FechaContrato < inicioMesActual) &&
                 c.Eventos.Any(e => e.FechaContrato >= inicioMesActual));
 
             var totalEventos = clientes.Sum(c => c.Eventos.Count);
             var promedioEventos = clientes.Count > 0 ? (decimal)totalEventos / clientes.Count : 0;
 
             var totalClientesConEventosEsteMes = nuevosClientes + recurrentes;
-            var porcentajeRecurrencia = totalClientesConEventosEsteMes > 0 
-                ? (decimal)recurrentes / totalClientesConEventosEsteMes * 100 
+            var porcentajeRecurrencia = totalClientesConEventosEsteMes > 0
+                ? (decimal)recurrentes / totalClientesConEventosEsteMes * 100
                 : 0;
 
             return new ReporteClientesVM
@@ -331,7 +419,7 @@ namespace si_td_gestion_eventos.Services.Implementation
             foreach (var cliente in clientes)
             {
                 decimal totalIngresos = 0;
-                
+
                 foreach (var evento in cliente.Eventos.Where(e => e.Estado != EventoEstado.Cancelado))
                 {
                     // Obtener pagos del evento
@@ -342,8 +430,8 @@ namespace si_td_gestion_eventos.Services.Implementation
                 topClientes.Add(new TopClienteVM
                 {
                     ClienteId = cliente.ClienteId,
-                    NombreCompleto = cliente.Tipo == TipoCliente.PersonaFisica 
-                        ? $"{cliente.Nombre} {cliente.Apellido}".Trim() 
+                    NombreCompleto = cliente.Tipo == TipoCliente.PersonaFisica
+                        ? $"{cliente.Nombre} {cliente.Apellido}".Trim()
                         : cliente.Nombre,
                     TotalEventos = cliente.Eventos.Count(e => e.Estado != EventoEstado.Cancelado),
                     TotalIngresos = totalIngresos,
@@ -387,8 +475,32 @@ namespace si_td_gestion_eventos.Services.Implementation
             return eventosPorTipo.OrderByDescending(e => e.Cantidad).ToList();
         }
 
+        public async Task<List<Evento>> BuscarEventosParaModalAsync(string termino)
+        {
+            if (string.IsNullOrWhiteSpace(termino))
+            {
+                return (await _eventoRepository.FindWithIncludesAsync(
+                    e => e.Estado != EventoEstado.Cancelado,
+                    e => e.Cliente
+                ))
+                .OrderByDescending(e => e.Inicio)
+                .Take(10)
+                .ToList();
+            }
+
+            termino = termino.ToLower();
+            var eventos = await _eventoRepository.FindWithIncludesAsync(
+                e => (e.Cliente.Nombre.ToLower().Contains(termino) ||
+                      e.Cliente.Apellido.ToLower().Contains(termino) ||
+                      e.Tipo.ToString().ToLower().Contains(termino))
+                      && e.Estado != EventoEstado.Cancelado,
+                e => e.Cliente
+            );
+
+            return eventos.OrderByDescending(e => e.Inicio).Take(20).ToList();
+        }
         // ====== MÉTODOS AUXILIARES PARA FINES DE SEMANA ======
-        
+
         /// <summary>
         /// Calcula cuántos fines de semana están ocupados por eventos
         /// </summary>
@@ -408,8 +520,8 @@ namespace si_td_gestion_eventos.Services.Implementation
                     if (dia.DayOfWeek == DayOfWeek.Saturday || dia.DayOfWeek == DayOfWeek.Sunday)
                     {
                         // Agrupar por fin de semana (usar el sábado como identificador)
-                        var sabado = dia.DayOfWeek == DayOfWeek.Saturday 
-                            ? dia 
+                        var sabado = dia.DayOfWeek == DayOfWeek.Saturday
+                            ? dia
                             : dia.AddDays(-1);
                         finesDeSemanaConEventos.Add(sabado);
                     }
@@ -430,8 +542,8 @@ namespace si_td_gestion_eventos.Services.Implementation
             {
                 if (fecha.DayOfWeek == DayOfWeek.Saturday || fecha.DayOfWeek == DayOfWeek.Sunday)
                 {
-                    var sabado = fecha.DayOfWeek == DayOfWeek.Saturday 
-                        ? fecha 
+                    var sabado = fecha.DayOfWeek == DayOfWeek.Saturday
+                        ? fecha
                         : fecha.AddDays(-1);
                     finesDeSemana.Add(sabado);
                 }
@@ -439,5 +551,7 @@ namespace si_td_gestion_eventos.Services.Implementation
 
             return finesDeSemana.Count;
         }
+
+        #endregion
     }
 }
