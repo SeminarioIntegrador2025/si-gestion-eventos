@@ -29,6 +29,7 @@ namespace si_td_gestion_eventos.Models.ViewModels
 
         [StringLength(500)]
         public string? Observaciones { get; set; }
+        public bool Valido { get; set; } = true;
 
         // --- Para Comprobante Adjunto (Transferencia/Externo) ---
         [Display(Name = "Adjuntar Comprobante")]

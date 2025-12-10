@@ -50,7 +50,29 @@ namespace si_td_gestion_eventos.Controllers
 
             return Json(resultados);
         }
+        // GET: Reporte/DescargarPdfIndividual/5
+        [HttpGet]
+        public async Task<IActionResult> DescargarPdfIndividual(int id)
+        {
+            // 1. Reutilizamos la lógica del servicio que ya creamos
+            var datosReporte = await _reporteService.GenerarFichaCompletaAsync(id);
 
+            if (datosReporte == null)
+            {
+                return NotFound(); // O redirigir con un mensaje de error
+            }
+
+            // 2. Generamos el PDF usando QuestPDF (igual que en el ZIP)
+            var documento = new ReporteEventoDocument(datosReporte);
+            byte[] pdfBytes = documento.GeneratePdf();
+
+            // 3. Devolver archivo PDF directo (no ZIP)
+            // Limpiamos el nombre del archivo para evitar caracteres inválidos
+            string nombreClienteLimpio = datosReporte.NombreCliente.Replace(" ", "_");
+            string nombreArchivo = $"Ficha_{nombreClienteLimpio}_{id}.pdf";
+
+            return File(pdfBytes, "application/pdf", nombreArchivo);
+        }
 
         [HttpPost]
         public async Task<IActionResult> DescargarReportes(List<int> eventosSeleccionados, string formato)

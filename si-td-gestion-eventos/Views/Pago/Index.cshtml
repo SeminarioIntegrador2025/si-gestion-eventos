@@ -9,7 +9,7 @@
 
     // KPIs
     int totalPagosPmes = (int)ViewBag.TotalPagosPMes;
-    decimal totalMontoPMes = (decimal)ViewBag.TotalMontoPMes ;
+    decimal totalMontoPMes = (decimal)ViewBag.TotalMontoPMes;
     int countTransferPMes = (int)ViewBag.CountTransferenciasPMes;
     int countEfectivoPMes = (int)ViewBag.CountEfectivoPMes;
 
@@ -40,12 +40,18 @@
 @if (TempData["SuccessMessage"] != null)
 {
     <div class="alert alert-success alert-dismissible fade show" role="alert">
-        @TempData["SuccessMessage"]
+        <i class="fa-solid fa-check-circle me-2"></i> @TempData["SuccessMessage"]
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 }
 
-
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-circle-exclamation me-2"></i> @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
 <div class="row g-4">
     <div class="col-xl-9 col-lg-8">
 
@@ -53,15 +59,16 @@
             <div class="col-md-3">
                 <div class="card card-kpi text-center">
                     <div class="card-body">
-                        <div class="card-title mb-1">Monto Generado en el Mes</div>
+                        <div class="card-title mb-1">Monto Generado (Mes)</div>
                         <div class="h3 text-primary fw-bold">@totalMontoPMes.ToString("N1")</div>
+                        <small class="text-muted">Solo pagos válidos</small>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="card card-kpi text-center">
                     <div class="card-body">
-                        <div class="card-title mb-1"># Pagos del mes</div>
+                        <div class="card-title mb-1"># Pagos (Mes)</div>
                         <div class="display-6 text-info fw-bold">@totalPagosPmes</div>
                     </div>
                 </div>
@@ -69,7 +76,7 @@
             <div class="col-md-3">
                 <div class="card card-kpi text-center">
                     <div class="card-body">
-                        <div class="card-title mb-1"># Transferencias del Mes</div>
+                        <div class="card-title mb-1"># Transferencias</div>
                         <div class="display-6 text-success fw-bold">@countTransferPMes</div>
                     </div>
                 </div>
@@ -77,7 +84,7 @@
             <div class="col-md-3">
                 <div class="card card-kpi text-center">
                     <div class="card-body">
-                        <div class="card-title mb-1"># Efectivo en el mes</div>
+                        <div class="card-title mb-1"># Efectivo</div>
                         <div class="display-6 text-warning fw-bold">@countEfectivoPMes</div>
                     </div>
                 </div>
@@ -116,10 +123,10 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span><i class="fa-solid fa-table me-2"></i>Lista de Pagos</span>
-                <span class="badge bg-primary">@Model.Count pagos</span>
+                <span class="badge bg-primary">@Model.Count pagos listados</span>
             </div>
             <div class="table-responsive">
-                <table class="table table-hover mb-0">
+                <table class="table table-hover mb-0 align-middle">
                     <thead>
                         <tr>
                             @if (!isFilteredByEvent)
@@ -140,39 +147,75 @@
                         {
                             foreach (var pago in Model)
                             {
-                                <tr>
+                                // --- CAMBIO VISUAL AQUÍ ---
+                                // Usamos 'table-active' (gris suave) en lugar de 'table-danger' (rojo fuerte)
+                                // Agregamos 'text-decoration-line-through' para tachar todo el texto de la fila
+                                string rowClass = pago.Valido ? "" : "table-active text-muted text-decoration-line-through";
+
+                                <tr class="@rowClass">
                                     @if (!isFilteredByEvent)
                                     {
                                         <td>@pago.ClienteNombre</td>
                                         <td>@pago.EventoDescripcion</td>
                                     }
                                     <td>@pago.Fecha.ToString("dd/MM/yyyy")</td>
-                                    <td>@pago.Monto.ToString("C")</td>
+
+                                    <td>
+                                        <span class="fw-bold">@pago.Monto.ToString("C")</span>
+                                        @if (!pago.Valido)
+                                        {
+                                            // 'text-decoration-none' evita que el badge salga tachado
+                                            <span class="badge bg-danger ms-1 text-decoration-none" style="opacity: 1;">ANULADO</span>
+                                        }
+                                    </td>
+
                                     <td>@pago.Metodo</td>
-                                    <td>@pago.Observaciones</td>
+                                    <td class="small">@pago.Observaciones</td>
+
                                     <td>
                                         @if (!string.IsNullOrEmpty(pago.RutaArchivoExistente))
                                         {
                                             <a href="@pago.RutaArchivoExistente" target="_blank" class="btn btn-sm btn-info" title="Ver comprobante">
-                                                <i class="fas fa-file-alt"></i> Ver
+                                                <i class="fas fa-file-alt"></i>
                                             </a>
                                         }
                                         else
                                         {
-                                            <span class="text-muted">N/A</span>
+                                            <span class="text-muted small">-</span>
                                         }
                                     </td>
+
                                     <td class="text-center">
                                         <div class="btn-group" role="group">
-                                            <a asp-action="Edit" asp-route-id="@pago.PagoId" class="btn btn-sm btn-outline-secondary" title="Editar">
-                                                <i class="fa-solid fa-pen"></i>
-                                            </a>
-                                            <a asp-action="Delete" asp-route-id="@pago.PagoId" class="btn btn-sm btn-outline-danger" title="Borrar">
-                                                <i class="fa-solid fa-trash"></i>
-                                            </a>
+
+                                            @if (pago.Valido)
+                                            {
+                                                <a asp-action="Edit" asp-route-id="@pago.PagoId" class="btn btn-sm btn-outline-secondary" title="Editar">
+                                                    <i class="fa-solid fa-pen"></i>
+                                                </a>
+                                            }
+
                                             <a asp-action="DescargarRecibo" asp-route-pagoId="@pago.PagoId" class="btn btn-sm btn-outline-info" title="Descargar Recibo">
                                                 <i class="fa-solid fa-file-pdf"></i>
                                             </a>
+
+                                            @if (pago.Valido)
+                                            {
+                                                <form asp-action="Anular" asp-route-id="@pago.PagoId" method="post" class="d-inline"
+                                                      onsubmit="return confirm('ATENCIÓN: ¿Está seguro de anular este pago?\n\nEl monto se restará del total pagado del evento y el saldo pendiente aumentará.');">
+
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Anular Pago">
+                                                        <i class="fa-solid fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                            else
+                                            {
+                                                <button class="btn btn-sm btn-secondary disabled" title="Ya anulado">
+                                                    <i class="fa-solid fa-ban"></i>
+                                                </button>
+                                            }
                                         </div>
                                     </td>
                                 </tr>
@@ -180,14 +223,16 @@
                         }
                         else
                         {
-                        <td colspan="@(isFilteredByEvent ? 6 : 8)" class="text-center py-5">
-                            <div class="text-muted">
-                                <i class="fa-solid fa-search-dollar fa-3x mb-3 d-block"></i>
-                                <h5>No se encontraron pagos</h5>
-                                <p>Intenta ajustar los filtros o <a asp-action="Create" class="text-decoration-none">agregar un nuevo pago</a>.</p>
-                            </div>
-                        </td>
-                    }
+                            <tr>
+                                <td colspan="@(isFilteredByEvent ? 7 : 9)" class="text-center py-5">
+                                    <div class="text-muted">
+                                        <i class="fa-solid fa-search-dollar fa-3x mb-3 d-block"></i>
+                                        <h5>No se encontraron pagos</h5>
+                                        <p>Intenta ajustar los filtros o <a asp-action="Create" class="text-decoration-none">agregar un nuevo pago</a>.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
                     </tbody>
                 </table>
             </div>
@@ -203,13 +248,24 @@
             <div class="list-group list-group-flush">
                 @foreach (var p in Model.OrderByDescending(x => x.PagoId).Take(5))
                 {
-                    <a class="list-group-item list-group-item-action" href="#">
+                    // Lógica visual también aquí: Gris suave si está anulado
+                    string itemClass = p.Valido ? "list-group-item list-group-item-action" : "list-group-item list-group-item-action list-group-item-light text-muted";
+
+                    <a class="@itemClass" href="#">
                         <div class="d-flex justify-content-between">
                             <div>
-                                <div class="fw-semibold">@p.Monto.ToString("C")</div>
+                                <div class="fw-semibold @(!p.Valido ? "text-decoration-line-through" : "")">
+                                    @p.Monto.ToString("C")
+                                </div>
                                 <small class="text-muted">@p.ClienteNombre</small>
                             </div>
-                            <small class="text-muted">@p.Fecha.ToString("dd/MM")</small>
+                            <div class="text-end">
+                                <small class="text-muted d-block">@p.Fecha.ToString("dd/MM")</small>
+                                @if (!p.Valido)
+                                {
+                                    <span class="badge bg-danger" style="font-size: 0.6rem;"> Anulado </span>
+                                }
+                            </div>
                         </div>
                     </a>
                 }

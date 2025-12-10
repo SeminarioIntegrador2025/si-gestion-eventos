@@ -10,7 +10,7 @@ namespace si_td_gestion_eventos.Services.Contracts
         Task<ServiceResult<PagoVM>> CreateAsync(PagoVM pagoVM);
         Task<List<PagoVM>> GetAllAsync();
         Task<byte[]?> GenerarReciboPdfAsync(int pagoId);
-        // Futuros metodos
+        Task<ServiceResult<bool>> AnularPagoAsync(int pagoId);
         // Task<ServiceResult<PagoVM>> UpdateAsync(PagoVM pagoVM);
         // Task<ServiceResult> DeleteAsync(int pagoId);
 

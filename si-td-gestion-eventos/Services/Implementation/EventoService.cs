@@ -110,14 +110,27 @@ namespace si_td_gestion_eventos.Services.Implementation
 
             var eventoVM = _mapper.Map<EventoVM>(evento);
 
-            // Calcula el total pagado
-            eventoVM.TotalPagado = (decimal)(evento.Pagos?.Sum(p => p.Monto) ?? 0);
+            if (evento.Pagos != null && evento.Pagos.Any())
+            {
+                // Sumamos solo los válidos
+                decimal totalPagadoReal = evento.Pagos
+                                            .Where(p => p.Valido)
+                                            .Sum(p => (decimal)p.Monto);
 
-            // Calcula el costo total real
-            float costoTotal = (float)(eventoVM.CostoAlquiler + (eventoVM.MontoAireAcondicionado ?? 0));
+                // Asignamos ese valor real al ViewModel
+                eventoVM.TotalPagado = (decimal)totalPagadoReal;
 
-            // Calcula el saldo restante
-            eventoVM.SaldoRestante = (decimal)(costoTotal) - (eventoVM.TotalPagado);
+                // Recalculamos el saldo restante también para asegurar consistencia
+                decimal costoTotal = (decimal) (evento.CostoAlquiler )+ (decimal)(evento.MontoAireAcondicionado ?? 0);
+                eventoVM.SaldoRestante = (decimal)costoTotal - eventoVM.TotalPagado;
+            }
+            else
+            {
+                // Si no hay pagos (o la lista es nula), el pagado es 0
+                eventoVM.TotalPagado = 0;
+                float costoTotal = (evento.CostoAlquiler + (evento.MontoAireAcondicionado ?? 0));
+                eventoVM.SaldoRestante = (decimal)costoTotal;
+            }
 
             return eventoVM;
         }

@@ -257,6 +257,9 @@ namespace si_td_gestion_eventos.Migrations
                     b.Property<string>("Observaciones")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("Valido")
+                        .HasColumnType("bit");
+
                     b.HasKey("PagoId");
 
                     b.HasIndex("EventoId");

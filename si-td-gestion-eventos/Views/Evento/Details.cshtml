@@ -5,6 +5,11 @@
 
 @{
     ViewData["Title"] = $"{Model.Tipo} de {Model.ClienteNombreCompleto}";
+
+    // Cálculo local para visualización rápida en la vista
+    // Nota: Model.TotalPagado viene de la BD ya corregido (sin los pagos anulados)
+    float costoTotal = (float)(Model.CostoAlquiler + (Model.MontoAireAcondicionado ?? 0));
+    float saldo = costoTotal - (float)Model.TotalPagado;
 }
 
 @if (TempData["Ok"] != null)
@@ -34,6 +39,9 @@
         </p>
     </div>
     <div class="d-flex gap-2">
+        <a asp-controller="Reporte" asp-action="DescargarPdfIndividual" asp-route-id="@Model.EventoId" target="_blank" class="btn btn-danger">
+            <i class="fa-solid fa-file-pdf me-2"></i>Reporte PDF
+        </a>
         <a asp-action="Edit" asp-route-id="@Model.EventoId" class="btn btn-primary">
             <i class="fa-solid fa-pen me-2"></i>Editar
         </a>
@@ -47,10 +55,8 @@
 </div>
 
 <div class="row g-4">
-    <!-- COLUMNA IZQUIERDA -->
     <div class="col-lg-8">
-        
-        <!-- SECCIÓN: INFORMACIÓN FINANCIERA -->
+
         <div class="detail-section section-financial">
             <div class="detail-section-title">
                 <i class="fa-solid fa-dollar-sign text-success"></i>
@@ -77,18 +83,26 @@
             <hr />
             <div class="row">
                 <div class="col-md-6">
-                    <small class="text-muted d-block">Total Pagado</small>
+                    <small class="text-muted d-block">Total Pagado (Real)</small>
                     <strong class="fs-4 text-success">@Model.TotalPagado.ToString("C")</strong>
                 </div>
                 <div class="col-md-6">
                     <small class="text-muted d-block">Saldo Restante</small>
-                    <strong class="fs-4 text-danger">@Model.SaldoRestante.ToString("C")</strong>
+                    <strong class="fs-4 @(saldo > 0 ? "text-danger" : "text-success")">
+                        @saldo.ToString("C")
+                    </strong>
+                </div>
+                <div class="mt-3 text-end">
+                    <a asp-controller="Pago" asp-action="Index" asp-route-eventoId="@Model.EventoId" class="btn btn-outline-primary">
+                        <i class="fa-solid fa-list me-2"></i>Ver Lista Detallada de Pagos
+                    </a>
                 </div>
             </div>
         </div>
 
-        <!-- SECCIÓN: OBSERVACIONES -->
-        <div class="detail-section section-observaciones">
+     
+
+        <div class="detail-section section-observaciones mt-4">
             <div class="detail-section-title">
                 <i class="fa-solid fa-file-lines text-primary"></i>
                 Observaciones del Evento
@@ -108,7 +122,6 @@
             </p>
         </div>
 
-        <!-- SECCIÓN: INFORMACIÓN DEL CLIENTE -->
         <div class="detail-section section-client">
             <div class="detail-section-title">
                 <i class="fa-solid fa-user text-muted"></i>
@@ -132,9 +145,9 @@
                     <strong>@Model.ClienteDomicilio</strong>
                 </div>
             </div>
-            
+
             <hr class="my-3" />
-            
+
             <div class="detail-section-title mb-3">
                 <i class="fa-solid fa-user-tie text-muted"></i>
                 Responsable del Salón
@@ -156,10 +169,8 @@
         </div>
     </div>
 
-    <!-- COLUMNA DERECHA -->
     <div class="col-lg-4">
-        
-        <!-- SECCIÓN: FECHAS Y HORARIOS -->
+
         <div class="detail-section section-dates">
             <div class="detail-section-title">
                 <i class="fa-solid fa-clock text-warning"></i>
@@ -183,7 +194,6 @@
             </div>
         </div>
 
-        <!-- SECCIÓN: OTROS DATOS -->
         <div class="card">
             <div class="card-header">
                 <h6 class="mb-0">
@@ -207,7 +217,6 @@
 
 <div class="row mt-4">
     <div class="col-12">
-        <!-- SECCIÓN: SERVICIOS ESENCIALES (mover aquí) -->
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0">
@@ -225,7 +234,6 @@
     </div>
 </div>
 
-<!-- SECCIÓN FIANZA (ancho completo también) -->
 <div class="row mt-4">
     <div class="col-12">
         @if (Model.FianzaId != null)
@@ -252,8 +260,8 @@
                             <span class="badge bg-info">@Model.DetalleFianza.Estado</span>
                         </div>
                         <div class="col-md-3 text-end">
-                            <a asp-controller="Fianza" 
-                               asp-action="Details" 
+                            <a asp-controller="Fianza"
+                               asp-action="Details"
                                asp-route-id="@Model.FianzaId"
                                asp-route-returnUrl="@Url.Action("Details", "Evento", new { id = Model.EventoId })"
                                class="btn btn-outline-warning">

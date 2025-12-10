@@ -49,5 +49,6 @@ namespace si_td_gestion_eventos.Models.ViewModels
         public string Metodo { get; set; }
         public decimal Monto { get; set; }
         public string Observacion { get; set; }
+        public bool EsAnulado { get; set; }
     }
 }

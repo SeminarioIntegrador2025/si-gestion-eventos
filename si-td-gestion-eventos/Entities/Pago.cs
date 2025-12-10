@@ -9,6 +9,7 @@ namespace si_td_gestion_eventos.Entities
         public float Monto { get; set; }
         public MetodoPago Metodo { get; set; }
         public string? Observaciones { get; set; }
+        public bool Valido { get; set; } = true;
         public int EventoId { get; set; }
         public Evento Evento { get; set; }
         public int? ComprobanteExternoId { get; set; } // Para la relación 1-a-1
