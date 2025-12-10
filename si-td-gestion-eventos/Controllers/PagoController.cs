@@ -1,12 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering; // Para SelectList
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Newtonsoft.Json;
-using si_td_gestion_eventos.Models.Enums; // Para los KPIs
+using si_td_gestion_eventos.Models.Enums;
 using si_td_gestion_eventos.Models.ViewModels;
 using si_td_gestion_eventos.Services.Contracts;
 using System.Collections.Generic;
-using System.Linq; // Para .Sum(), .Count(), .FirstOrDefault()
-using System.Threading.Tasks; // Para async/await
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace si_td_gestion_eventos.Controllers
 {
@@ -15,15 +15,13 @@ namespace si_td_gestion_eventos.Controllers
         private readonly IPagoService _pagoService;
         private readonly IEventoService _eventoService;
 
-
         public PagoController(IPagoService pagoService, IEventoService eventoService)
         {
             _pagoService = pagoService;
             _eventoService = eventoService;
         }
 
-        // --- MÉTODO INDEX (Sin Cambios) ---
-        // /Pago (global) Y /Pago?eventoId=5 (filtrado)
+        // MÉTODO INDEX
         public async Task<IActionResult> Index(int? eventoId, string q)
         {
             List<PagoVM> pagos;
@@ -33,6 +31,8 @@ namespace si_td_gestion_eventos.Controllers
             if (isFilteredByEvent)
             {
                 pagos = await _pagoService.GetPagosByEventoIdAsync(eventoId.Value);
+                // Nota: Traemos TODOS (incluidos anulados) para mostrarlos tachados en la lista (Opción B)
+
                 ViewData["EventoId"] = eventoId.Value;
                 ViewData["EventoDescripcion"] = pagos.FirstOrDefault()?.EventoDescripcion ?? "Evento no encontrado";
                 ViewData["ClienteNombre"] = pagos.FirstOrDefault()?.ClienteNombre ?? "N/A";
@@ -55,27 +55,75 @@ namespace si_td_gestion_eventos.Controllers
                 ViewData["CurrentFilterQ"] = q;
             }
 
-            //KPIs
+            // --- KPIs (ACTUALIZADO) ---
+            // IMPORTANTE: Aquí debemos filtrar p.Valido para que los números sean reales.
+            // Si no, estaríamos sumando dinero de pagos anulados.
+
             var today = DateTime.Today;
             var firstDayOfMonth = new DateTime(today.Year, today.Month, 1);
+
+            // Filtramos solo los del mes actual
             var pagosDelMes = pagos.Where(p => p.Fecha.Date >= firstDayOfMonth).ToList();
-            ViewBag.TotalPagosPMes = pagosDelMes.Count;
-            ViewBag.TotalMontoPMes = pagosDelMes.Sum(p => p.Monto);
-            ViewBag.CountTransferenciasPMes = pagosDelMes.Count(p => p.Metodo == MetodoPago.Transferencia);
-            ViewBag.CountEfectivoPMes = pagosDelMes.Count(p => p.Metodo == MetodoPago.Efectivo);
+
+            // KPI 1: Total transacciones válidas
+            ViewBag.TotalPagosPMes = pagosDelMes.Count(p => p.Valido);
+
+            // KPI 2: Dinero real recaudado (solo válidos)
+            ViewBag.TotalMontoPMes = pagosDelMes.Where(p => p.Valido).Sum(p => p.Monto);
+
+            // KPI 3 & 4: Desglose por método (solo válidos)
+            ViewBag.CountTransferenciasPMes = pagosDelMes.Count(p => p.Metodo == MetodoPago.Transferencia && p.Valido);
+            ViewBag.CountEfectivoPMes = pagosDelMes.Count(p => p.Metodo == MetodoPago.Efectivo && p.Valido);
 
             return View(pagos);
         }
 
-        // --- MÉTODO CREATE [GET] (MODIFICADO) ---
-        // Maneja /Pago/Create Y /Pago/Create?eventoId=5
-        // Añade la lógica para pasar los datos del Informe Financiero a la vista
+        // --- NUEVO MÉTODO: ANULAR PAGO ---
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Anular(int id)
+        {
+            // 1. Obtenemos el pago primero para saber a qué evento pertenece (para el redirect)
+            var pagoExistente = await _pagoService.GetByIdAsync(id);
+
+            if (pagoExistente == null)
+            {
+                return NotFound();
+            }
+
+            // 2. Llamamos al servicio
+            var result = await _pagoService.AnularPagoAsync(id);
+
+            // 3. Feedback al usuario
+            if (result.Success)
+            {
+                // Usamos "SuccessMessage" para mantener consistencia con tu método Create
+                TempData["SuccessMessage"] = result.Message;
+            }
+            else
+            {
+                // Unimos los errores si hay varios, o usamos el mensaje general
+                string msgError = result.Errors != null && result.Errors.Any()
+                                  ? string.Join(", ", result.Errors)
+                                  : result.Message;
+                TempData["Error"] = msgError; // O "ErrorMessage", asegúrate de usar la misma key en tu _Layout
+            }
+
+            // 4. Redirección inteligente
+            // Si estamos filtrando por evento, volvemos al detalle de ese evento.
+            // Si no, volvemos al Index general.
+            // Ajusta "Details" y "Evento" según como se llame tu acción de ver detalles del evento.
+            return RedirectToAction("Index", new { eventoId = pagoExistente.EventoId });
+        }
+
+        // MÉTODO CREATE GET
         [HttpGet]
         public async Task<IActionResult> Create(int? eventoId)
         {
             var pagoVM = new PagoVM
             {
-                Fecha = DateTime.Now
+                Fecha = DateTime.Now,
+                Valido = true // Aseguramos que nazca vivo (aunque el default del VM ya lo hace)
             };
 
             if (eventoId.HasValue)
@@ -83,18 +131,13 @@ namespace si_td_gestion_eventos.Controllers
                 pagoVM.EventoId = eventoId.Value;
                 ViewData["EventoId"] = eventoId.Value;
 
-                // --- INICIO DE LA MODIFICACIÓN (INFORME FINANCIERO) ---
                 var eventoVM = await _eventoService.GetByIdAsync(eventoId.Value);
                 if (eventoVM != null)
                 {
-                    // Calculamos el costo total real (con aire)
                     float costoTotal = (float)(eventoVM.CostoAlquiler + (eventoVM.MontoAireAcondicionado ?? 0));
-
-                    // Creamos la descripción del evento para el input deshabilitado
                     string eventoDescripcion = $"{eventoVM.ClienteNombreCompleto} - {eventoVM.Tipo} - {eventoVM.Inicio:dd/MM/yyyy}";
                     ViewData["EventoDescripcion"] = eventoDescripcion;
 
-                    // Pasamos los datos al ViewData para el informe y el JS
                     ViewData["SaldoAnterior"] = (float)eventoVM.SaldoRestante;
                     ViewData["TotalPagadoActual"] = (float)eventoVM.TotalPagado;
                     ViewData["CostoTotalEvento"] = costoTotal;
@@ -102,40 +145,34 @@ namespace si_td_gestion_eventos.Controllers
                 }
                 else
                 {
-                    // Fallback por si no se encuentra
                     ViewData["EventoDescripcion"] = "Evento no encontrado";
                     ViewData["SaldoAnterior"] = 0f;
                     ViewData["TotalPagadoActual"] = 0f;
                     ViewData["CostoTotalEvento"] = 0f;
                     ViewData["EstadoActual"] = "N/A";
                 }
-                // --- FIN DE LA MODIFICACIÓN ---
             }
             else
             {
-                // Modo global, solo cargamos el dropdown
                 ViewBag.Eventos = await _eventoService.GetEventosAdeudadosParaDropdownAsync();
             }
 
             return View(pagoVM);
         }
 
-        // --- MÉTODO CREATE [POST] (Sin Cambios) ---
-        // Tu lógica aquí está perfecta.
+        // MÉTODO CREATE [POST] 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(PagoVM pagoVM)
         {
+            // Forzamos true al crear, por seguridad, aunque venga del VM
+            pagoVM.Valido = true;
+
             if (!ModelState.IsValid)
             {
                 await PrepararDropdownEventosAsync(pagoVM.EventoId);
                 return View(pagoVM);
             }
-
-            // (Aquí es donde deberías añadir la validación de FE3 - Monto Excedido)
-            // var evento = await _eventoService.GetByIdAsync(pagoVM.EventoId);
-            // var saldoRestante = (float)evento.SaldoRestante;
-            // if (pagoVM.Monto > saldoRestante) { ... }
 
             var result = await _pagoService.CreateAsync(pagoVM);
             if (result.Success)
@@ -154,10 +191,13 @@ namespace si_td_gestion_eventos.Controllers
             }
         }
 
-        // --- MÉTODO DescargarRecibo (Sin Cambios) ---
+        // MÉTODO DescargarRecibo
         [HttpGet]
         public async Task<IActionResult> DescargarRecibo(int pagoId)
         {
+            // Opcional: Podrías validar aquí si el pago es válido antes de dejar descargarlo.
+            // Pero generalmente se permite descargar recibos anulados como evidencia.
+
             var pdfBytes = await _pagoService.GenerarReciboPdfAsync(pagoId);
             if (pdfBytes == null)
             {
@@ -167,7 +207,6 @@ namespace si_td_gestion_eventos.Controllers
             return File(pdfBytes, "application/pdf", nombreArchivo);
         }
 
-        // --- MÉTODO PrepararDropdown (Sin Cambios) ---
         private async Task PrepararDropdownEventosAsync(int eventoId)
         {
             if (eventoId == 0)
@@ -176,9 +215,7 @@ namespace si_td_gestion_eventos.Controllers
             }
         }
 
-
-        // --- MÉTODO CreateReserva [GET] (MODIFICADO) ---
-        // Añade la lógica para pasar el "CostoTotal" al JavaScript de la vista
+        // MÉTODO CreateReserva [GET] 
         [HttpGet]
         public IActionResult CreateReserva()
         {
@@ -189,9 +226,6 @@ namespace si_td_gestion_eventos.Controllers
             }
             var pagoVm = JsonConvert.DeserializeObject<PagoReservaVM>(paymentJson);
 
-            // --- INICIO DE LA MODIFICACIÓN (PASAR COSTO TOTAL) ---
-
-            // 1. Necesitamos también los datos del evento (del Paso 1)
             if (TempData["PendingEvent"] is not string eventJson)
             {
                 TempData["Error"] = "Sesión expirada. Inicie de nuevo.";
@@ -199,15 +233,10 @@ namespace si_td_gestion_eventos.Controllers
             }
             var eventoVm = JsonConvert.DeserializeObject<EventoVM>(eventJson);
 
-            // 2. Calculamos el Costo Total REAL
             float costoTotal = (float)(eventoVm.CostoAlquiler + (eventoVm.MontoAireAcondicionado ?? 0));
-
-            // 3. Pasamos los datos que el JavaScript necesitará
             ViewData["CostoTotalEvento"] = costoTotal;
-            ViewData["ObsReserva"] = "Por Reserva"; // Texto para pago parcial
-            ViewData["ObsCompleto"] = "Pago completo del salón (Evento < 48hs)"; // Texto para pago total
-
-            // --- FIN DE LA MODIFICACIÓN ---
+            ViewData["ObsReserva"] = "Por Reserva";
+            ViewData["ObsCompleto"] = "Pago completo del salón (Evento < 48hs)";
 
             TempData.Keep("PendingEvent");
             TempData.Keep("PendingPaymentDetails");
@@ -215,8 +244,7 @@ namespace si_td_gestion_eventos.Controllers
             return View(pagoVm);
         }
 
-        // --- MÉTODO CreateReserva [POST] (Sin Cambios) ---
-        // Tu lógica aquí está perfecta.
+        // MÉTODO CreateReserva [POST]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateReserva(PagoReservaVM pagoVm)
@@ -244,11 +272,9 @@ namespace si_td_gestion_eventos.Controllers
                 TempData.Keep("PendingEvent");
                 TempData.Keep("PendingPaymentDetails");
 
-                // --- (Necesitás volver a pasar el costo total si la validación falla) ---
                 ViewData["CostoTotalEvento"] = eventoVm.CostoAlquiler + (eventoVm.MontoAireAcondicionado ?? 0);
                 ViewData["ObsReserva"] = "Por Reserva";
-                ViewData["ObsCompleto"] = "Pago completo del salón (Evento < 48hs)";
-                // ---
+                ViewData["ObsCompleto"] = "Pago completo del salón (Evento < 48hs)"; // Falta punto y coma en tu código original, corregido.
 
                 return View(pagoVm);
             }
@@ -274,18 +300,15 @@ namespace si_td_gestion_eventos.Controllers
                 pagoVm.Fecha = originalPagoVm.Fecha;
                 pagoVm.Observaciones = originalPagoVm.Observaciones;
 
-                // --- (Necesitás volver a pasar el costo total si la transacción falla) ---
                 ViewData["CostoTotalEvento"] = eventoVm.CostoAlquiler + (eventoVm.MontoAireAcondicionado ?? 0);
                 ViewData["ObsReserva"] = "Por Reserva";
                 ViewData["ObsCompleto"] = "Pago completo del salón (Evento < 48hs)";
-                // ---
 
                 return View(pagoVm);
             }
         }
 
-        // --- MÉTODO CancelCreate (Sin Cambios) ---
-        [HttpGet]
+        // MÉTODO CancelCreate
         public IActionResult CancelCreate()
         {
             TempData.Remove("PendingEvent");

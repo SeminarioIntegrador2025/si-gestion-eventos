@@ -43,11 +43,9 @@ namespace si_td_gestion_eventos.Services.Implementation
 
             if (evento == null) return null;
 
-            // 2. Lógica de Negocio y Cálculos Financieros (RF-11)
-
-            // Filtramos pagos (convertimos a lista para operar en memoria)
-            var pagosLista = evento.Pagos.ToList();
-            var totalPagado = pagosLista.Sum(p => (decimal)p.Monto); // Casteo explícito a decimal por seguridad
+            var todosLosPagos = evento.Pagos.ToList();
+            var pagosValidos = evento.Pagos.Where(p => p.Valido).ToList();
+            var totalPagado = pagosValidos.Sum(p => (decimal)p.Monto); // Casteo explícito a decimal por seguridad
 
             // Costo Total = Alquiler Base + Aire Acondicionado (si aplica)
             var costoAC = evento.MontoAireAcondicionado ?? 0;
@@ -98,12 +96,13 @@ namespace si_td_gestion_eventos.Services.Implementation
                           : "-",
 
                 // --- Historial de Pagos ---
-                HistorialPagos = pagosLista.Select(p => new DetallePagoDTO
+                HistorialPagos = todosLosPagos.Select(p => new DetallePagoDTO
                 {
                     Fecha = p.Fecha.ToString("dd/MM/yyyy"),
                     Metodo = p.Metodo.ToString(),
                     Monto = (decimal)p.Monto,
-                    Observacion = p.Observaciones ?? "-"
+                    Observacion = p.Observaciones ?? "-",
+                    EsAnulado = !p.Valido
                 }).OrderByDescending(p => p.Fecha).ToList()
             };
 
@@ -112,7 +111,7 @@ namespace si_td_gestion_eventos.Services.Implementation
 
         #endregion
 
-        #region MÉTODOS DEL DASHBOARD (Existentes)
+        #region MÉTODOS DEL DASHBOARD
 
         public async Task<ReportesVM> GetReportesConsolidadosAsync()
         {
@@ -202,7 +201,7 @@ namespace si_td_gestion_eventos.Services.Implementation
 
             // Obtener pagos del mes actual con información del evento
             var pagosEsteMes = (await _pagoRepository.FindWithIncludesAsync(
-                p => p.Fecha >= inicioMesActual && p.Evento.Estado != EventoEstado.Cancelado,
+                p => p.Fecha >= inicioMesActual && p.Evento.Estado != EventoEstado.Cancelado && p.Valido,
                 p => p.Evento)).ToList();
 
             // Clasificar pagos por concepto basándose en la proporción del evento
@@ -234,14 +233,14 @@ namespace si_td_gestion_eventos.Services.Implementation
 
             // Mes anterior
             var pagosMesAnterior = (await _pagoRepository.FindWithIncludesAsync(
-                p => p.Fecha >= inicioMesAnterior && p.Fecha < inicioMesActual && p.Evento.Estado != EventoEstado.Cancelado,
+                p => p.Fecha >= inicioMesAnterior && p.Fecha < inicioMesActual && p.Evento.Estado != EventoEstado.Cancelado && p.Valido,
                 p => p.Evento)).ToList();
 
             var totalMesAnterior = pagosMesAnterior.Sum(p => (decimal)p.Monto);
 
             // Año actual
             var pagosAnio = (await _pagoRepository.FindWithIncludesAsync(
-                p => p.Fecha >= inicioAnio && p.Evento.Estado != EventoEstado.Cancelado,
+                p => p.Fecha >= inicioAnio && p.Evento.Estado != EventoEstado.Cancelado && p.Valido,
                 p => p.Evento)).ToList();
 
             var totalAnio = pagosAnio.Sum(p => (decimal)p.Monto);
@@ -275,10 +274,10 @@ namespace si_td_gestion_eventos.Services.Implementation
             var inicioMesActual = new DateTime(hoy.Year, hoy.Month, 1);
             var inicioMesAnterior = inicioMesActual.AddMonths(-1);
 
-            var pagosEsteMes = (await _pagoRepository.FindAsync(p => p.Fecha >= inicioMesActual)).ToList();
+            var pagosEsteMes = (await _pagoRepository.FindAsync(p => p.Fecha >= inicioMesActual && p.Valido)).ToList();
 
             var pagosMesAnterior = (await _pagoRepository.FindAsync(
-                p => p.Fecha >= inicioMesAnterior && p.Fecha < inicioMesActual)).Count();
+                p => p.Fecha >= inicioMesAnterior && p.Fecha < inicioMesActual && p.Valido)).Count();
 
             var totalPagadoEsteMes = pagosEsteMes.Sum(p => (decimal)p.Monto);
             var pagosEfectivo = pagosEsteMes.Where(p => p.Metodo == MetodoPago.Efectivo).ToList();
@@ -292,19 +291,19 @@ namespace si_td_gestion_eventos.Services.Implementation
             var totalAdeudado = eventos.Sum(e =>
             {
                 var totalEvento = (decimal)(e.MontoReserva + e.CostoAlquiler + (e.MontoAireAcondicionado ?? 0));
-                var totalPagado = e.Pagos.Sum(p => (decimal)p.Monto);
+                var totalPagado = e.Pagos.Where(p => p.Valido).Sum(p => (decimal)p.Monto);
                 return Math.Max(0, totalEvento - totalPagado);
             });
 
             var eventosConAdeudo = eventos.Count(e =>
             {
                 var totalEvento = (decimal)(e.MontoReserva + e.CostoAlquiler + (e.MontoAireAcondicionado ?? 0));
-                var totalPagado = e.Pagos.Sum(p => (decimal)p.Monto);
+                var totalPagado = e.Pagos.Where(p => p.Valido).Sum(p => (decimal)p.Monto);
                 return totalEvento > totalPagado;
             });
 
             var totalEsperado = eventos.Sum(e => (decimal)(e.MontoReserva + e.CostoAlquiler + (e.MontoAireAcondicionado ?? 0)));
-            var totalPagadoGeneral = eventos.Sum(e => e.Pagos.Sum(p => (decimal)p.Monto));
+            var totalPagadoGeneral = eventos.Sum(e => e.Pagos.Where(p => p.Valido).Sum(p => (decimal)p.Monto));
             var porcentajeRecuperacion = totalEsperado > 0 ? totalPagadoGeneral / totalEsperado * 100 : 0;
 
             var porcentajeCambio = pagosMesAnterior > 0
@@ -424,7 +423,7 @@ namespace si_td_gestion_eventos.Services.Implementation
                 foreach (var evento in cliente.Eventos.Where(e => e.Estado != EventoEstado.Cancelado))
                 {
                     // Obtener pagos del evento
-                    var pagos = await _pagoRepository.FindAsync(p => p.EventoId == evento.EventoId);
+                    var pagos = await _pagoRepository.FindAsync(p => p.EventoId == evento.EventoId && p.Valido);
                     totalIngresos += pagos.Sum(p => (decimal)p.Monto);
                 }
 
@@ -460,7 +459,7 @@ namespace si_td_gestion_eventos.Services.Implementation
 
                 foreach (var evento in grupo)
                 {
-                    var pagos = await _pagoRepository.FindAsync(p => p.EventoId == evento.EventoId);
+                    var pagos = await _pagoRepository.FindAsync(p => p.EventoId == evento.EventoId && p.Valido);
                     ingresoTotal += pagos.Sum(p => (decimal)p.Monto);
                 }
 

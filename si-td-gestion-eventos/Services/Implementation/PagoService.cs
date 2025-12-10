@@ -211,48 +211,102 @@ namespace si_td_gestion_eventos.Services.Implementation
                 return ServiceResult<PagoVM>.FailureResult("Ocurrió un error inesperado al guardar el pago.");
             }
         }
+
+        public async Task<ServiceResult<bool>> AnularPagoAsync(int pagoId)
+        {
+            // 1. Obtener el pago
+            var pago = await _pagoRepository.GetByIdAsync(pagoId);
+
+            if (pago == null)
+            {
+                return ServiceResult<bool>.FailureResult("El pago no existe.");
+            }
+
+            if (!pago.Valido)
+            {
+                return ServiceResult<bool>.FailureResult("El pago ya estaba anulado anteriormente.");
+            }
+
+            try
+            {
+                // 2. Baja Lógica
+                pago.Valido = false;
+                // Agregamos la fecha de anulación al historial
+                pago.Observaciones = $"{pago.Observaciones} [Anulado: {DateTime.Now:dd/MM/yyyy HH:mm}]".Trim();
+
+                // 3. Actualizar Saldos del Evento (CRÍTICO)
+                var evento = await _eventoService.GetByIdAsync(pago.EventoId);
+
+                if (evento != null)
+                {
+                    // CORRECCIÓN 1: Casteo explícito a decimal para la resta
+                    // (Asumiendo que TotalPagado es decimal y pago.Monto es float)
+                    evento.TotalPagado -= (decimal)pago.Monto;
+
+                    // CORRECCIÓN 2: Calcular el costo total todo en DECIMAL
+                    // Convertimos todo a decimal para comparar "peras con peras"
+                    decimal costoAlquilerDecimal = (decimal)evento.CostoAlquiler;
+                    decimal costoAireDecimal = (decimal)(evento.MontoAireAcondicionado ?? 0);
+
+                    decimal costoTotal = costoAlquilerDecimal + costoAireDecimal;
+
+                    // CORRECCIÓN 3: Comparación segura (Decimal vs Decimal)
+                    if (evento.TotalPagado < costoTotal && evento.Estado == EventoEstado.PendientePagado)
+                    {
+                        evento.Estado = EventoEstado.PendienteAdeudado;
+                        await _eventoService.UpdateAsync(evento);
+                    }
+                }
+
+                // CORRECCIÓN 4: Update Síncrono
+                // Quitamos el 'await' y el 'Async' porque el método suele ser void Update(T entity)
+                _pagoRepository.Update(pago);
+
+                // El guardado sí es asíncrono
+                await _pagoRepository.SaveChangesAsync();
+
+                return ServiceResult<bool>.SuccessResult(true, "Pago anulado correctamente.");
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<bool>.FailureResult($"Error al anular el pago: {ex.Message}");
+            }
+        }
+
+
+
+
         //Helpers
 
         private async Task<string> GuardarArchivoComprobanteAsync(IFormFile archivo, int eventoId, int pagoId_AunNoGenerado) // Renombrado para claridad
         {
-            // Validación básica
             if (archivo == null || archivo.Length == 0)
             {
                 throw new ArgumentException("Archivo inválido o vacío."); // Lanza un error si el archivo es incorrecto
             }
 
-            // --- Construcción de la Ruta ---
-            // 1. Obtiene la ruta de la carpeta 'wwwroot' (donde van los archivos públicos web)
             string wwwRootPath = _webHostEnvironment.WebRootPath;
-            // 2. Define la carpeta base DENTRO de wwwroot
             string carpetaBase = Path.Combine(wwwRootPath, "uploads", "comprobantes");
-            // 3. Crea una subcarpeta específica para este evento (si no existe)
             string carpetaEvento = Path.Combine(carpetaBase, eventoId.ToString());
-            Directory.CreateDirectory(carpetaEvento); // No hace nada si ya existe
+            Directory.CreateDirectory(carpetaEvento);
 
-            // --- Generación del Nombre Único ---         
+            // Generación del Nombre Único        
             string extension = Path.GetExtension(archivo.FileName);
             // 5. Crea GUID
             string nombreUnico = $"{Guid.NewGuid()}{extension}";
             // 6. Combina la ruta de la carpeta del evento con el nombre único para obtener la ruta completa donde se guardará.
             string rutaCompleta = Path.Combine(carpetaEvento, nombreUnico);
 
-            // --- Guardado del Archivo ---
-            // 7. Abre un flujo de archivo (FileStream) en la ruta completa, en modo Creación (sobreescribe si existe).
-            //    'using' asegura que el stream se cierre correctamente aunque haya errores.
+            // Guardado del Archivo 
+            // 'using' asegura que el stream se cierre correctamente aunque haya errores.
             using (var stream = new FileStream(rutaCompleta, FileMode.Create))
             {
-                // 8. Copia el contenido del archivo subido (archivo.CopyToAsync) al flujo del archivo en el servidor.
-                //    'await' espera a que la copia termine.
                 await archivo.CopyToAsync(stream);
             }
 
-            // --- Devolución de la Ruta Relativa ---
-            // 9. Construye la ruta RELATIVA (la que se guarda en la BD).
-            //    Empieza con '/' para indicar que es relativa a la raíz del sitio web.
+            
             string rutaRelativa = $"/uploads/comprobantes/{eventoId}/{nombreUnico}";
 
-            // 10. Devuelve la ruta relativa.
             return rutaRelativa;
         }
 
@@ -273,10 +327,7 @@ namespace si_td_gestion_eventos.Services.Implementation
             }
             catch (Exception ex)
             {
-                // Si ocurre un error al borrar, lo ideal es loguearlo.
-                // Usamos Console.WriteLine como ejemplo simple.
-                // NO lanzamos el error de nuevo ('throw') para no interrumpir
-                // la operación principal (ej: el borrado del pago en la BD).
+                
                 Console.WriteLine($"Error al borrar archivo {rutaRelativa}: {ex.Message}");
             }
         }

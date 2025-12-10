@@ -181,10 +181,28 @@ namespace si_td_gestion_eventos.PDFTemplates
                     // Filas
                     foreach (var pago in _model.HistorialPagos)
                     {
-                        table.Cell().Element(CellStyle).Text(pago.Fecha);
-                        table.Cell().Element(CellStyle).Text(pago.Metodo);
-                        table.Cell().Element(CellStyle).Text(pago.Observacion);
-                        table.Cell().Element(CellStyle).AlignRight().Text($"{pago.Monto:C}");
+                        // Definimos el color según si es anulado
+                        var colorTexto = pago.EsAnulado ? Colors.Red.Medium : Colors.Black;
+
+                        // Si está anulado, agregamos "(Anulado)" al método para mayor claridad
+                        var textoMetodo = pago.EsAnulado ? $"{pago.Metodo} (Anulado)" : pago.Metodo;
+
+                        table.Cell().Element(CellStyle).Text(pago.Fecha).FontColor(colorTexto);
+                        table.Cell().Element(CellStyle).Text(textoMetodo).FontColor(colorTexto);
+                        table.Cell().Element(CellStyle).Text(pago.Observacion).FontColor(colorTexto);
+
+                        // === AQUÍ ESTÁ EL CAMBIO CLAVE PARA QUE TACHE Y COMPILE ===
+                        // Usamos una función lambda (txt => ...) para configurar el estilo
+                        table.Cell().Element(CellStyle).AlignRight().Text(txt =>
+                        {
+                            var span = txt.Span($"{pago.Monto:C}").FontColor(colorTexto);
+
+                            // Si es anulado, aplicamos el tachado al span directamente
+                            if (pago.EsAnulado)
+                            {
+                                span.Strikethrough();
+                            }
+                        });
 
                         static IContainer CellStyle(IContainer container)
                         {
