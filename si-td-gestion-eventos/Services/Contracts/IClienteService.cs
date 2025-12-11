@@ -8,6 +8,7 @@ namespace si_td_gestion_eventos.Services.Contracts
     {
         Task<IEnumerable<ClienteVM>> GetAllAsync();
         Task<ClienteVM?> GetByIdAsync(int id);
+        Task<ClienteVM?> GetByCedulaAsync(string cedula);
         Task<ServiceResult<ClienteVM>> CreateAsync(ClienteVM clienteVM);
         Task<ServiceResult<ClienteVM>> UpdateAsync(ClienteVM clienteVM);
         Task<ServiceResult<bool>> DeactivateAsync(int id);

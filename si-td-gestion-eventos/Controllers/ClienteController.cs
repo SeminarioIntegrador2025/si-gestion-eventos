@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using si_td_gestion_eventos.Models.Enums;
 using si_td_gestion_eventos.Models.ViewModels;
 using si_td_gestion_eventos.Services.Contracts;
 
@@ -100,6 +101,33 @@ namespace si_td_gestion_eventos.Controllers
             return View(clienteVM);
         }
 
+        //GET: Cliente/BuscarPorCI?ci=XXXXXX
+        [HttpGet]
+        public async Task<IActionResult> BuscarPorCI(string ci)
+        {
+            var cliente = await _clienteService.GetByCedulaAsync(ci);
+
+            if (cliente == null)
+            {
+                return NotFound();
+            }
+
+            // Preparamos el nombre completo según el tipo de cliente
+            string nombreMostrar = cliente.Tipo == TipoCliente.PersonaFisica
+                ? $"{cliente.Nombre} {cliente.Apellido}".Trim()
+                : cliente.Nombre;
+
+            return Json(new
+            {
+                success = true,
+                nombre = nombreMostrar,
+                telefono = cliente.Telefono,
+                ci = cliente.CedulaIdentidad
+            });
+        }
+
+
+        // POST: Cliente/ToggleUnactive/{id}
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleUnactive(int id)
@@ -118,6 +146,7 @@ namespace si_td_gestion_eventos.Controllers
             return RedirectToAction("Index");
         }
 
+        // POST: Cliente/ToggleActive/{id}
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleActive(int id)
