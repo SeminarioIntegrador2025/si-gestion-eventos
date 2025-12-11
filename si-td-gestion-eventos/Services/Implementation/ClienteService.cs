@@ -42,6 +42,26 @@ namespace si_td_gestion_eventos.Services.Implementation
             return cliente != null ? _mapper.Map<ClienteVM>(cliente) : null;
         }
 
+        public async Task<ClienteVM?> GetByCedulaAsync(string cedula)
+        {
+            if (string.IsNullOrWhiteSpace(cedula)) return null;
+
+            // Esto permite que si el usuario escribe "1.234.567-8" y en BD está "12345678", lo encuentre igual.
+            string cedulaLimpia = cedula.Replace(".", "").Replace("-", "").Replace(" ", "").Trim();
+
+    
+            var clientes = await _clienteRepository.FindAsync(c =>
+                c.CedulaIdentidad != null &&
+                (c.CedulaIdentidad == cedula || c.CedulaIdentidad == cedulaLimpia)
+            );
+
+            var cliente = clientes.FirstOrDefault();
+
+            if (cliente == null) return null;
+
+            return _mapper.Map<ClienteVM>(cliente);
+        }
+
         public async Task<ServiceResult<ClienteVM>> CreateAsync(ClienteVM clienteVM)
         {
             var validationResult = await _validator.ValidateAsync(clienteVM);
