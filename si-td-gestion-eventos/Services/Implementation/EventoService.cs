@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using si_td_gestion_eventos.Entities;
 using si_td_gestion_eventos.Infrastructure;
 using si_td_gestion_eventos.Models.Enums;
@@ -9,7 +10,6 @@ using si_td_gestion_eventos.Repositories;
 using si_td_gestion_eventos.Services.Common;
 using si_td_gestion_eventos.Services.Contracts;
 using System.Linq.Expressions;
-using Microsoft.EntityFrameworkCore;
 
 namespace si_td_gestion_eventos.Services.Implementation
 {
@@ -40,6 +40,9 @@ namespace si_td_gestion_eventos.Services.Implementation
             _fileStorageService = fileStorageService;
             _comprobanteRepository = comprobanteRepository;
         }
+
+        #region 1. Consultas (Queries)
+
         public async Task<PaginatedList<EventoVM>> GetAllPaginatedAsync(
             string? searchQuery,
             DateTime? fechaDesde,
@@ -58,23 +61,18 @@ namespace si_td_gestion_eventos.Services.Implementation
                     e.Tipo.ToString().Contains(searchQuery);
 
                 var eventosQuery = (await _eventoRepository.FindWithIncludesAsync(
-                                    textPredicate,
-                                    q => q.Cliente
-                                )).AsQueryable();
+                                        textPredicate,
+                                        q => q.Cliente
+                                    )).AsQueryable();
 
                 if (fechaDesde.HasValue)
-                {
                     eventosQuery = eventosQuery.Where(e => e.Inicio.Date >= fechaDesde.Value.Date);
-                }
+
                 if (fechaHasta.HasValue)
-                {
                     eventosQuery = eventosQuery.Where(e => e.Inicio.Date <= fechaHasta.Value.Date);
-                }
 
                 if (estado.HasValue)
-                {
                     eventosQuery = eventosQuery.Where(e => e.Estado == estado.Value);
-                }
 
                 IOrderedQueryable<Evento> eventosOrdenados = ordenarPor switch
                 {
@@ -93,100 +91,65 @@ namespace si_td_gestion_eventos.Services.Implementation
 
                 return new PaginatedList<EventoVM>(items, totalCount, page, pageSize);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                // Loggear el error
                 return new PaginatedList<EventoVM>(new List<EventoVM>(), 0, page, pageSize);
             }
         }
 
-        // --- GetByIdAsync (Corregido para CostoTotal) ---
         public async Task<EventoVM?> GetByIdAsync(int id)
         {
             var evento = await _eventoRepository.GetByIdWithIncludesAsync(id, e => e.Cliente, e => e.Pagos, e => e.Fianza);
 
-            if (evento == null)
-                return null;
+            if (evento == null) return null;
 
             var eventoVM = _mapper.Map<EventoVM>(evento);
+            decimal costoTotal = (decimal)(evento.CostoAlquiler + (evento.MontoAireAcondicionado ?? 0));
 
+            // Lógica de Saldos Reales (Filtrando Pagos Anulados)
             if (evento.Pagos != null && evento.Pagos.Any())
             {
-                // Sumamos solo los válidos
                 decimal totalPagadoReal = evento.Pagos
-                                            .Where(p => p.Valido)
+                                            .Where(p => p.Valido) // Solo sumamos válidos
                                             .Sum(p => (decimal)p.Monto);
 
-                // Asignamos ese valor real al ViewModel
                 eventoVM.TotalPagado = (decimal)totalPagadoReal;
-
-                // Recalculamos el saldo restante también para asegurar consistencia
-                decimal costoTotal = (decimal) (evento.CostoAlquiler )+ (decimal)(evento.MontoAireAcondicionado ?? 0);
-                eventoVM.SaldoRestante = (decimal)costoTotal - eventoVM.TotalPagado;
+                eventoVM.SaldoRestante = costoTotal - eventoVM.TotalPagado;
             }
             else
             {
-                // Si no hay pagos (o la lista es nula), el pagado es 0
                 eventoVM.TotalPagado = 0;
-                float costoTotal = (evento.CostoAlquiler + (evento.MontoAireAcondicionado ?? 0));
-                eventoVM.SaldoRestante = (decimal)costoTotal;
+                eventoVM.SaldoRestante = costoTotal;
+            }
+
+            // LÓGICA FECHA INDEFINIDA (Detectamos si está "estacionado" en el pasado lejano)
+            if (evento.Estado == EventoEstado.Reprogramado)
+            {
+                // Si el año es menor a 2000, asumimos que es una fecha de "estacionamiento" (1900)
+                eventoVM.EsFechaIndefinida = evento.Inicio.Year < 2000;
+            }
+            else
+            {
+                eventoVM.EsFechaIndefinida = false;
             }
 
             return eventoVM;
         }
 
-        // --- CreateAsync ---
-        public async Task<ServiceResult<EventoVM>> CreateAsync(EventoVM eventoVM)
+        public async Task<List<EventoVM>> GetLatestAsync(int count)
         {
-            // Validar usando el RuleSet "Create" + reglas comunes
-            var validationResult = await _validator.ValidateAsync(eventoVM, options =>
-                options.IncludeRuleSets("Create"));
-
-            if (!validationResult.IsValid)
-            {
-                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                return ServiceResult<EventoVM>.FailureResult(errors);
-            }
-
-                bool isAvailable = await _businessRules.IsDateRangeAvailableAsync(
-                    eventoVM.Inicio, eventoVM.Fin, eventoVM.HoraInicio, eventoVM.HoraFin, null);
-
-
-            if (!isAvailable)
-            {
-                return ServiceResult<EventoVM>.FailureResult("El horario seleccionado ya no está disponible...");
-            }
-
-            try
-            {
-                var evento = _mapper.Map<Evento>(eventoVM);
-                evento.Estado = EventoEstado.PendienteAdeudado;
-
-                await _eventoRepository.AddAsync(evento);
-                await _eventoRepository.SaveChangesAsync();
-            
-
-                var eventoCreado = await _eventoRepository.GetByIdWithIncludesAsync(evento.EventoId, e => e.Cliente);
-                var eventoVM_Creado = _mapper.Map<EventoVM>(eventoCreado);
-
-                if (eventoCreado == null)
-                {
-                    return ServiceResult<EventoVM>.FailureResult("Error al recuperar el evento recién creado.");
-                }
-                return ServiceResult<EventoVM>.SuccessResult(eventoVM_Creado, "Evento creado exitosamente.");
-            }
-            catch (Exception ex)
-            {
-                // Loggear error
-                return ServiceResult<EventoVM>.FailureResult("Ocurrió un error inesperado al crear el evento.");
-            }
+            var eventos = await _eventoRepository.FindWithIncludesAsync(null, e => e.Cliente);
+            var eventosOrdenados = eventos.OrderByDescending(e => e.EventoId).Take(count);
+            return _mapper.Map<List<EventoVM>>(eventosOrdenados);
         }
 
-        // --- CreateEventWithPaymentAsync ---
-        public async Task<ServiceResult<EventoVM>> CreateEventWithPaymentAsync(EventoVM eventoVM, PagoReservaVM pagoVM)
+        #endregion
+
+        #region 2. CRUD Básico (Create / Update)
+
+        public async Task<ServiceResult<EventoVM>> CreateAsync(EventoVM eventoVM)
         {
-            var validationResult = await _validator.ValidateAsync(eventoVM, options =>
-                options.IncludeRuleSets("Create"));
+            var validationResult = await _validator.ValidateAsync(eventoVM, options => options.IncludeRuleSets("Create"));
 
             if (!validationResult.IsValid)
             {
@@ -202,23 +165,47 @@ namespace si_td_gestion_eventos.Services.Implementation
                 return ServiceResult<EventoVM>.FailureResult("El horario seleccionado ya no está disponible.");
             }
 
+            try
+            {
+                var evento = _mapper.Map<Evento>(eventoVM);
+                evento.Estado = EventoEstado.PendienteAdeudado;
+
+                await _eventoRepository.AddAsync(evento);
+                await _eventoRepository.SaveChangesAsync();
+
+                var eventoCreado = await _eventoRepository.GetByIdWithIncludesAsync(evento.EventoId, e => e.Cliente);
+                var eventoVM_Creado = _mapper.Map<EventoVM>(eventoCreado);
+
+                return ServiceResult<EventoVM>.SuccessResult(eventoVM_Creado, "Evento creado exitosamente.");
+            }
+            catch (Exception)
+            {
+                return ServiceResult<EventoVM>.FailureResult("Ocurrió un error inesperado al crear el evento.");
+            }
+        }
+
+        public async Task<ServiceResult<EventoVM>> CreateEventWithPaymentAsync(EventoVM eventoVM, PagoReservaVM pagoVM)
+        {
+            var validationResult = await _validator.ValidateAsync(eventoVM, options => options.IncludeRuleSets("Create"));
+            if (!validationResult.IsValid)
+            {
+                return ServiceResult<EventoVM>.FailureResult(validationResult.Errors.Select(e => e.ErrorMessage).ToList());
+            }
+
+            bool isAvailable = await _businessRules.IsDateRangeAvailableAsync(
+                eventoVM.Inicio, eventoVM.Fin, eventoVM.HoraInicio, eventoVM.HoraFin, null);
+
+            if (!isAvailable)
+                return ServiceResult<EventoVM>.FailureResult("El horario seleccionado ya no está disponible.");
+
             string urlComprobante = string.Empty;
 
-          
             try
             {
                 var evento = _mapper.Map<Evento>(eventoVM);
                 float costoTotal = (float)(eventoVM.CostoAlquiler + (eventoVM.MontoAireAcondicionado ?? 0));
-                float montoPagado = pagoVM.Monto;
 
-                if (montoPagado >= costoTotal)
-                {
-                    evento.Estado = EventoEstado.PendientePagado;
-                }
-                else
-                {
-                    evento.Estado = EventoEstado.PendienteAdeudado;
-                }
+                evento.Estado = pagoVM.Monto >= costoTotal ? EventoEstado.PendientePagado : EventoEstado.PendienteAdeudado;
 
                 await _eventoRepository.AddAsync(evento);
                 await _eventoRepository.SaveChangesAsync();
@@ -235,17 +222,13 @@ namespace si_td_gestion_eventos.Services.Implementation
                 await _pagoRepository.AddAsync(pago);
                 await _pagoRepository.SaveChangesAsync();
 
+                // Manejo de Comprobante
                 if (pagoVM.ArchivoComprobante != null && pagoVM.ArchivoComprobante.Length > 0)
                 {
-                    urlComprobante = await _fileStorageService.GuardarArchivoAsync(
-                        pagoVM.ArchivoComprobante,
-                        "uploads/comprobantes"
-                    );
+                    urlComprobante = await _fileStorageService.GuardarArchivoAsync(pagoVM.ArchivoComprobante, "uploads/comprobantes");
 
                     if (string.IsNullOrEmpty(urlComprobante))
-                    {
-                        throw new InvalidOperationException("Se adjuntó un archivo, pero ocurrió un error al guardarlo.");
-                    }
+                        throw new InvalidOperationException("Error al guardar el archivo.");
 
                     var comprobante = new ComprobanteExterno
                     {
@@ -253,7 +236,6 @@ namespace si_td_gestion_eventos.Services.Implementation
                         RutaArchivo = urlComprobante,
                         FechaComprobante = DateTime.UtcNow,
                         TipoArchivo = ConvertExtensionToTipoArchivo(pagoVM.ArchivoComprobante.FileName),
-                        Referencia = null,
                         PagoId = pago.PagoId,
                         Pago = pago
                     };
@@ -267,47 +249,158 @@ namespace si_td_gestion_eventos.Services.Implementation
                 }
 
                 var eventoCreado = await _eventoRepository.GetByIdWithIncludesAsync(evento.EventoId, e => e.Cliente);
-                var eventoVM_Creado = _mapper.Map<EventoVM>(eventoCreado);
-
-                return ServiceResult<EventoVM>.SuccessResult(eventoVM_Creado, "Evento y pago de reserva creados exitosamente.");
+                return ServiceResult<EventoVM>.SuccessResult(_mapper.Map<EventoVM>(eventoCreado), "Evento y pago creados exitosamente.");
             }
             catch (Exception ex)
             {
                 if (!string.IsNullOrEmpty(urlComprobante))
-                {
                     await _fileStorageService.BorrarArchivoAsync(urlComprobante);
-                }
+
                 return ServiceResult<EventoVM>.FailureResult($"Ocurrió un error: {ex.Message}");
             }
         }
 
-        public async Task<IEnumerable<SelectListItem>> GetEventosSinFianzaParaDropdownAsync()
+        public async Task<ServiceResult<EventoVM>> UpdateAsync(EventoVM eventoVM)
         {
+            var validationResult = await _validator.ValidateAsync(eventoVM, options => options.IncludeRuleSets("default"));
+            if (!validationResult.IsValid)
+                return ServiceResult<EventoVM>.FailureResult(validationResult.Errors.Select(e => e.ErrorMessage).ToList());
 
-            var eventosDisponibles = await _eventoRepository.FindWithIncludesAsync(
-                e => e.Estado != EventoEstado.Cancelado &&
-                     e.FianzaId == null, 
-                e => e.Cliente 
-            );
-
-            // Si no hay eventos, devolvemos lista vacía
-            if (eventosDisponibles == null || !eventosDisponibles.Any())
+            try
             {
-                return new List<SelectListItem>();
-            }
+                var evento = await _eventoRepository.GetByIdWithIncludesAsync(eventoVM.EventoId, e => e.Cliente);
+                if (evento == null) return ServiceResult<EventoVM>.FailureResult("Evento no encontrado.");
 
-            // Mapeamos a SelectListItem para el dropdown
-            return eventosDisponibles
-                .OrderBy(e => e.Inicio) // Ordenados por fecha
-                .Select(e => new SelectListItem
-                {
-                    Value = e.EventoId.ToString(),
-                    // Texto: "Juan Perez - Cumpleaños (15/11/2025)"
-                    Text = $"{e.Cliente.Nombre} {e.Cliente.Apellido} - {e.Tipo} ({e.Inicio:dd/MM/yyyy})"
-                });
+                if (evento.Estado == EventoEstado.Cancelado || evento.Estado == EventoEstado.Realizado)
+                    return ServiceResult<EventoVM>.FailureResult("No se puede editar un evento finalizado o cancelado.");
+
+                if (!await _businessRules.IsClienteActiveAsync(evento.ClienteId))
+                    return ServiceResult<EventoVM>.FailureResult("El cliente asociado está inactivo.");
+
+                // Preservar datos inmutables
+                var fechaContratoOriginal = evento.FechaContrato;
+                var clienteIdOriginal = evento.ClienteId;
+
+                // Aplicar cambios
+                _mapper.Map(eventoVM, evento);
+
+                // Restaurar inmutables
+                evento.FechaContrato = fechaContratoOriginal;
+                evento.ClienteId = clienteIdOriginal;
+
+                _eventoRepository.Update(evento);
+                await _eventoRepository.SaveChangesAsync();
+
+                var eventoActualizado = await _eventoRepository.GetByIdWithIncludesAsync(evento.EventoId, e => e.Cliente);
+                return ServiceResult<EventoVM>.SuccessResult(_mapper.Map<EventoVM>(eventoActualizado), "Evento actualizado correctamente.");
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<EventoVM>.FailureResult($"Error al actualizar: {ex.Message}");
+            }
         }
 
-        // --- SERVICIOS DE FONDO ---
+        #endregion
+
+        #region 3. Acciones de Negocio (Estado y Fechas)
+
+        public async Task<ServiceResult<bool>> CancelAsync(int id)
+        {
+            try
+            {
+                if (!await _businessRules.CanCancelEventoAsync(id)) return ServiceResult<bool>.FailureResult("No se puede cancelar este evento.");
+
+                var evento = await _eventoRepository.GetByIdAsync(id);
+                if (evento == null) return ServiceResult<bool>.FailureResult("Evento no encontrado.");
+
+                evento.Estado = EventoEstado.Cancelado;
+                _eventoRepository.Update(evento);
+                await _eventoRepository.SaveChangesAsync();
+
+                return ServiceResult<bool>.SuccessResult(true, "El evento ha sido cancelado.");
+            }
+            catch (Exception) { return ServiceResult<bool>.FailureResult("Error inesperado al cancelar."); }
+        }
+
+        public async Task<ServiceResult<bool>> ConfirmAsync(int id)
+        {
+            try
+            {
+                var evento = await _eventoRepository.GetByIdAsync(id);
+                if (evento == null) return ServiceResult<bool>.FailureResult("Evento no encontrado.");
+                if (evento.Estado == EventoEstado.Cancelado) return ServiceResult<bool>.FailureResult("No se puede confirmar un evento cancelado.");
+                if (evento.Estado == EventoEstado.PendienteAdeudado || evento.Estado == EventoEstado.PendientePagado)
+                    return ServiceResult<bool>.FailureResult("El evento ya se encuentra confirmado.");
+                if (!await _businessRules.IsEventoInFutureAsync(evento.Inicio)) return ServiceResult<bool>.FailureResult("No se puede confirmar un evento pasado.");
+
+                evento.Estado = EventoEstado.PendienteAdeudado;
+                _eventoRepository.Update(evento);
+                await _eventoRepository.SaveChangesAsync();
+
+                return ServiceResult<bool>.SuccessResult(true, "Evento confirmado.");
+            }
+            catch (Exception) { return ServiceResult<bool>.FailureResult("Error inesperado al confirmar."); }
+        }
+
+        // --- REPROGRAMACIÓN SEGURA (Usa lógica de 1900) ---
+        public async Task<ServiceResult<bool>> ReprogramarAsync(ReprogramarEventoVM model)
+        {
+            try
+            {
+                var evento = await _eventoRepository.GetByIdAsync(model.EventoId);
+                if (evento == null) return ServiceResult<bool>.FailureResult("Evento no encontrado.");
+
+                string fechaOriginal = evento.Inicio.ToString("dd/MM/yyyy HH:mm");
+                string historial = $"[REPROGRAMADO]: Fecha original era {fechaOriginal}. Cambio el {DateTime.Now:dd/MM/yyyy}.";
+
+                if (model.FechaIndefinida) historial += " (Pasado a fecha por definir).";
+
+                if (!string.IsNullOrEmpty(evento.Observaciones))
+                    evento.Observaciones += $"\n\n{historial}";
+                else
+                    evento.Observaciones = historial;
+
+                if (model.FechaIndefinida)
+                {
+                    // ESTACIONAMIENTO INTELIGENTE (1900)
+                    // Movemos al pasado manteniendo día/hora para evitar colisiones Unique Key
+                    int aniosAtras = 1900 - evento.Inicio.Year;
+                    evento.Inicio = evento.Inicio.AddYears(aniosAtras);
+                    evento.Fin = evento.Fin.AddYears(aniosAtras);
+                }
+                else
+                {
+                    if (model.NuevaFecha.HasValue && model.NuevaHoraInicio.HasValue && model.NuevaHoraFin.HasValue)
+                    {
+                        evento.Inicio = model.NuevaFecha.Value.Date + model.NuevaHoraInicio.Value;
+                        evento.Fin = model.NuevaFecha.Value.Date + model.NuevaHoraFin.Value;
+                    }
+                }
+
+                evento.Estado = EventoEstado.Reprogramado;
+
+                _eventoRepository.Update(evento);
+                await _eventoRepository.SaveChangesAsync();
+
+                return ServiceResult<bool>.SuccessResult(true, "Evento reprogramado correctamente.");
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<bool>.FailureResult($"Error al reprogramar: {ex.Message}");
+            }
+        }
+
+        // [OBSOLETO] Este método es antiguo y no maneja la lógica de fechas indefinidas (1900).
+        // Se recomienda eliminarlo y usar siempre ReprogramarAsync.
+        /* public async Task<ServiceResult<bool>> RescheduleAsync(int id, DateTime nuevaFechaInicio, DateTime nuevaFechaFin, TimeSpan nuevaHoraInicio, TimeSpan nuevaHoraFin)
+        {
+             // Implementación antigua... mejor usar ReprogramarAsync
+        } 
+        */
+
+        #endregion
+
+        #region 4. Background Services (Servicios de Fondo)
 
         public async Task<List<EventoVM>> GetAlertasServiciosAsync()
         {
@@ -317,6 +410,7 @@ namespace si_td_gestion_eventos.Services.Implementation
             var eventosEnPeligro = await _eventoRepository.FindWithIncludesAsync(
                 e => e.Estado != EventoEstado.Cancelado &&
                      e.Estado != EventoEstado.Realizado &&
+                     e.Estado != EventoEstado.Reprogramado && // FIX: Ignorar los reprogramados
                      e.Inicio > now &&
                      e.Inicio < deadline &&
                     !e.ServiciosEsenciales.OfType<CertificadoAGADU>().Any(c => c.Verificado),
@@ -326,39 +420,39 @@ namespace si_td_gestion_eventos.Services.Implementation
 
             return _mapper.Map<List<EventoVM>>(eventosEnPeligro);
         }
+
         public async Task<ServiceResult<int>> MarkCompletedEventsAsync()
-        {    
+        {
             int completedCount = 0;
+            // FIX: Eliminamos 'EventoEstado.Reprogramado' de esta lista para no cerrar eventos en 1900
             var statesToComplete = new[] {
                 EventoEstado.PendienteAdeudado,
                 EventoEstado.PendientePagado,
-                EventoEstado.Reprogramado
             };
+
             try
             {
                 var eventsToMark = await _eventoRepository.FindAsync(
                     e => e.Fin.Date < DateTime.Today &&
                          statesToComplete.Contains(e.Estado)
                 );
-                if (!eventsToMark.Any())
-                {
-                    return ServiceResult<int>.SuccessResult(0, "No hay eventos para marcar como realizados.");
-                }
+
+                if (!eventsToMark.Any()) return ServiceResult<int>.SuccessResult(0, "No hay eventos para marcar.");
+
                 foreach (var evento in eventsToMark)
                 {
                     evento.Estado = EventoEstado.Realizado;
                     _eventoRepository.Update(evento);
                     completedCount++;
                 }
-                if (completedCount > 0)
-                {
-                    await _eventoRepository.SaveChangesAsync();
-                }
+
+                if (completedCount > 0) await _eventoRepository.SaveChangesAsync();
+
                 return ServiceResult<int>.SuccessResult(completedCount, $"Se marcaron {completedCount} eventos como Realizados.");
             }
             catch (Exception ex)
             {
-                return ServiceResult<int>.FailureResult($"Error al marcar eventos como realizados: {ex.Message}");
+                return ServiceResult<int>.FailureResult($"Error al marcar completados: {ex.Message}");
             }
         }
 
@@ -371,151 +465,86 @@ namespace si_td_gestion_eventos.Services.Implementation
             {
                 var eventsToCancelQuery = await _eventoRepository.FindWithIncludesAsync(
                     e => e.Estado != EventoEstado.Cancelado &&
+                         e.Estado != EventoEstado.Reprogramado && // Seguridad extra
+                         e.Estado != EventoEstado.Realizado &&
                          e.Inicio < deadline &&
-                         e.Inicio > now, 
+                         e.Inicio > now,
                     e => e.Pagos
                 );
 
                 var eventsToCancel = eventsToCancelQuery.ToList();
-                if (!eventsToCancel.Any())
-                {
-                    return ServiceResult<int>.SuccessResult(0, "No hay eventos por vencer.");
-                }
+                if (!eventsToCancel.Any()) return ServiceResult<int>.SuccessResult(0, "No hay eventos por vencer.");
+
                 foreach (var evento in eventsToCancel)
                 {
-                    float costoTotal = evento.CostoAlquiler + (evento.MontoAireAcondicionado ?? 0);
-                    float totalPagado = evento.Pagos?.Sum(p => p.Monto) ?? 0;
+                    // FIX: Sumar solo pagos VÁLIDOS.
+                    float totalPagado = evento.Pagos?
+                                        .Where(p => p.Valido) // <--- CRÍTICO
+                                        .Sum(p => p.Monto) ?? 0;
 
-                    // Solo cancelamos si no pagaron NADA.
                     if (totalPagado == 0)
                     {
                         evento.Estado = EventoEstado.Cancelado;
-                        evento.Observaciones = (evento.Observaciones ?? "") +
-                            $" [Cancelado automáticamente por falta de pago 48hs antes.]";
+                        evento.Observaciones = (evento.Observaciones ?? "") + " [Cancelado automáticamente por falta de pago 48hs antes.]";
                         _eventoRepository.Update(evento);
                         cancelledCount++;
                     }
                 }
+
                 if (cancelledCount > 0)
                 {
                     await _eventoRepository.SaveChangesAsync();
                     return ServiceResult<int>.SuccessResult(cancelledCount, $"Se cancelaron {cancelledCount} eventos.");
                 }
 
-                return ServiceResult<int>.SuccessResult(0, "Eventos por vencer están todos pagos (o con reserva).");
+                return ServiceResult<int>.SuccessResult(0, "Eventos por vencer están todos pagos.");
             }
             catch (Exception ex)
             {
-                return ServiceResult<int>.FailureResult($"Error en el servicio de cancelación: {ex.Message}");
+                return ServiceResult<int>.FailureResult($"Error cancelación auto: {ex.Message}");
             }
         }
 
-        // --- MÉTODOS RESTANTES  ---
+        #endregion
 
-        public async Task<ServiceResult<EventoVM>> UpdateAsync(EventoVM eventoVM)
+        #region 5. Helpers y Dropdowns
+
+        public async Task<IEnumerable<SelectListItem>> GetEventosSinFianzaParaDropdownAsync()
         {
+            var eventos = await _eventoRepository.FindWithIncludesAsync(
+                e => e.Estado != EventoEstado.Cancelado && e.FianzaId == null,
+                e => e.Cliente
+            );
 
-            var validationResult = await _validator.ValidateAsync(eventoVM, options => options.IncludeRuleSets("default"));
-            if (!validationResult.IsValid)
+            if (eventos == null || !eventos.Any()) return new List<SelectListItem>();
+
+            return eventos.OrderBy(e => e.Inicio).Select(e => new SelectListItem
             {
-                var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-                return ServiceResult<EventoVM>.FailureResult(errors);
-            }
-            try
-            {
-                var evento = await _eventoRepository.GetByIdWithIncludesAsync(eventoVM.EventoId, e => e.Cliente);
-                if (evento == null) { return ServiceResult<EventoVM>.FailureResult("Evento no encontrado."); }
-                if (!await _businessRules.IsClienteActiveAsync(evento.ClienteId)) { return ServiceResult<EventoVM>.FailureResult("...cliente está inactivo."); }
-            
-
-                var fechaContratoOriginal = evento.FechaContrato;
-                var clienteIdOriginal = evento.ClienteId;
-                var costoAlquilerOriginal = evento.CostoAlquiler;
-                var montoReservaOriginal = evento.MontoReserva;
-
-                _mapper.Map(eventoVM, evento);
-
-                evento.FechaContrato = fechaContratoOriginal;
-                evento.ClienteId = clienteIdOriginal;
-                evento.CostoAlquiler = costoAlquilerOriginal;
-                evento.MontoReserva = montoReservaOriginal;
-
-                _eventoRepository.Update(evento);
-                await _eventoRepository.SaveChangesAsync();
-                var eventoActualizado = await _eventoRepository.GetByIdWithIncludesAsync(evento.EventoId, e => e.Cliente);
-                var eventoVM_Actualizado = _mapper.Map<EventoVM>(eventoActualizado);
-                return ServiceResult<EventoVM>.SuccessResult(eventoVM_Actualizado, "Evento actualizado correctamente.");
-            }
-            catch (Exception ex) { return ServiceResult<EventoVM>.FailureResult("Ocurrió un error inesperado al actualizar."); }
-        }
-
-        public async Task<ServiceResult<bool>> CancelAsync(int id)
-        {
-            try
-            {
-                if (!await _businessRules.CanCancelEventoAsync(id)) { return ServiceResult<bool>.FailureResult("No se puede cancelar..."); }
-                var evento = await _eventoRepository.GetByIdAsync(id);
-                if (evento == null) { return ServiceResult<bool>.FailureResult("Evento no encontrado."); }
-                evento.Estado = EventoEstado.Cancelado;
-                _eventoRepository.Update(evento);
-                await _eventoRepository.SaveChangesAsync();
-                return ServiceResult<bool>.SuccessResult(true, "El evento ha sido cancelado correctamente.");
-            }
-            catch (Exception ex) { return ServiceResult<bool>.FailureResult("Ocurrió un error inesperado al cancelar."); }
-        }
-
-        public async Task<ServiceResult<bool>> RescheduleAsync(int id, DateTime nuevaFechaInicio, DateTime nuevaFechaFin, TimeSpan nuevaHoraInicio, TimeSpan nuevaHoraFin)
-        {
-            try
-            {
-                if (!await _businessRules.CanRescheduleEventoAsync(id)) { return ServiceResult<bool>.FailureResult("No se puede reprogramar..."); }
-                var evento = await _eventoRepository.GetByIdAsync(id);
-                if (evento == null) { return ServiceResult<bool>.FailureResult("Evento no encontrado."); }
-                if (!await _businessRules.IsValidDateRangeAsync(nuevaFechaInicio, nuevaFechaFin, nuevaHoraInicio, nuevaHoraFin)) { return ServiceResult<bool>.FailureResult("El nuevo rango no es válido."); }
-                if (!await _businessRules.IsDateRangeAvailableAsync(nuevaFechaInicio, nuevaFechaFin, nuevaHoraInicio, nuevaHoraFin, id)) { return ServiceResult<bool>.FailureResult("Ya existe otro evento..."); }
-
-                evento.Inicio = nuevaFechaInicio;
-                evento.Fin = nuevaFechaFin;
-                evento.HoraInicio = nuevaHoraInicio;
-                evento.HoraFin = nuevaHoraFin;
-                evento.Estado = EventoEstado.Reprogramado;
-                _eventoRepository.Update(evento);
-                await _eventoRepository.SaveChangesAsync();
-                return ServiceResult<bool>.SuccessResult(true, "El evento ha sido reprogramado correctamente.");
-            }
-            catch (Exception ex) { return ServiceResult<bool>.FailureResult("Ocurrió un error inesperado al reprogramar."); }
-        }
-
-        public async Task<ServiceResult<bool>> ConfirmAsync(int id)
-        {
-            try
-            {
-                var evento = await _eventoRepository.GetByIdAsync(id);
-                if (evento == null) { return ServiceResult<bool>.FailureResult("Evento no encontrado."); }
-                if (evento.Estado == EventoEstado.Cancelado) { return ServiceResult<bool>.FailureResult("No se puede confirmar un evento cancelado."); }
-                if (evento.Estado == EventoEstado.PendienteAdeudado) { return ServiceResult<bool>.FailureResult("El evento ya se encuentra pendiente y adeudado."); }
-                if (evento.Estado == EventoEstado.PendientePagado) { return ServiceResult<bool>.FailureResult("El evento ya se encuentra pendiente y pagado."); }
-                if (!await _businessRules.IsEventoInFutureAsync(evento.Inicio)) { return ServiceResult<bool>.FailureResult("No se puede confirmar un evento que ya pasó."); }
-
-                evento.Estado = EventoEstado.PendienteAdeudado;
-                _eventoRepository.Update(evento);
-                await _eventoRepository.SaveChangesAsync();
-                return ServiceResult<bool>.SuccessResult(true, "El evento ha sido confirmado correctamente.");
-            }
-            catch (Exception ex) { return ServiceResult<bool>.FailureResult("Ocurrió un error inesperado al confirmar."); }
-        }
-
-        public async Task<List<EventoVM>> GetLatestAsync(int count)
-        {
-            var eventos = await _eventoRepository.FindWithIncludesAsync(null, e => e.Cliente, e => e.Cliente);
-            var eventosOrdenados = eventos.OrderByDescending(e => e.EventoId).Take(count);
-            return _mapper.Map<List<EventoVM>>(eventosOrdenados);
+                Value = e.EventoId.ToString(),
+                Text = $"{e.Cliente.Nombre} {e.Cliente.Apellido} - {e.Tipo} ({e.Inicio:dd/MM/yyyy})"
+            });
         }
 
         public async Task<IEnumerable<SelectListItem>> GetTiposEventoParaDropdownAsync()
         {
-            var tiposEvento = Enum.GetValues<TipoEvento>().Select(tipo => new SelectListItem { Value = tipo.ToString(), Text = tipo.ToString() });
-            return await Task.FromResult(tiposEvento);
+            var tipos = Enum.GetValues<TipoEvento>().Select(t => new SelectListItem { Value = t.ToString(), Text = t.ToString() });
+            return await Task.FromResult(tipos);
+        }
+
+        public async Task<IEnumerable<SelectListItem>> GetEventosAdeudadosParaDropdownAsync()
+        {
+            var eventos = await _eventoRepository.FindWithIncludesAsync(
+                e => e.Estado == EventoEstado.PendienteAdeudado,
+                e => e.Cliente
+            );
+
+            if (eventos == null || !eventos.Any()) return new List<SelectListItem>();
+
+            return eventos.OrderBy(e => e.Inicio).Select(e => new SelectListItem
+            {
+                Value = e.EventoId.ToString(),
+                Text = $"{e.Cliente.Nombre} {e.Cliente?.Apellido} - {e.Tipo} - {e.Inicio:dd/MM/yyyy}"
+            });
         }
 
         public async Task<bool> CanModifyEventoAsync(int eventoId)
@@ -528,46 +557,20 @@ namespace si_td_gestion_eventos.Services.Implementation
             return !await _businessRules.IsDateRangeAvailableAsync(inicio, fin, horaInicio, horaFin, excludeEventoId);
         }
 
-        public async Task<IEnumerable<SelectListItem>> GetEventosAdeudadosParaDropdownAsync()
-        {
-            var eventosAdeudado = await _eventoRepository.FindWithIncludesAsync(
-                e => e.Estado == EventoEstado.PendienteAdeudado,
-                e => e.Cliente
-            );
-            if (eventosAdeudado == null || !eventosAdeudado.Any())
-            {
-                return new List<SelectListItem>();
-            }
-            return eventosAdeudado.OrderBy(e => e.Inicio).Select(e => new SelectListItem
-            {
-                Value = e.EventoId.ToString(),
-                Text = $"{e.Cliente.Nombre} {e.Cliente?.Apellido} - {e.Tipo} - {e.Inicio:dd/MM/yyyy}"
-            });
-        }
-
-        // --- Helper de Conversión de Tipo de Archivo  ---
         private TipoArchivo ConvertExtensionToTipoArchivo(string fileName)
         {
-            if (string.IsNullOrEmpty(fileName))
-                throw new InvalidOperationException("El archivo no tiene nombre o extensión.");
-
-            string extension = System.IO.Path.GetExtension(fileName).ToLower();
-
-            switch (extension)
+            if (string.IsNullOrEmpty(fileName)) throw new InvalidOperationException("Archivo sin nombre.");
+            string ext = System.IO.Path.GetExtension(fileName).ToLower();
+            return ext switch
             {
-                case ".pdf":
-                    return TipoArchivo.PDF;
-                case ".png":
-                    return TipoArchivo.PNG;
-                case ".jpeg":
-                    return TipoArchivo.JPEG;
-                case ".jpg":
-                    return TipoArchivo.JPG;
-                default:
-                    throw new InvalidOperationException($"Tipo de archivo no permitido: {extension}. Solo se aceptan PDF, PNG, JPEG o JPG.");
-            }
+                ".pdf" => TipoArchivo.PDF,
+                ".png" => TipoArchivo.PNG,
+                ".jpeg" => TipoArchivo.JPEG,
+                ".jpg" => TipoArchivo.JPG,
+                _ => throw new InvalidOperationException($"Tipo no permitido: {ext}")
+            };
         }
 
-      
+        #endregion
     }
 }

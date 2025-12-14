@@ -46,12 +46,14 @@ builder.Services.AddScoped<IServicioEsencialService, ServicioEsencialService>();
 
 // Reglas de Negocio (Validaciones complejas)
 builder.Services.AddScoped<IClienteBusinessRules, ClienteBusinessRules>();
-builder.Services.AddScoped<IEventoBusinessRules, EventoBusinessRules>(); 
+builder.Services.AddScoped<IEventoBusinessRules, EventoBusinessRules>();
+builder.Services.AddScoped<IValidator<ReprogramarEventoVM>, ReprogramarEventoValidator>();
 
 // Validadores con FluentValidation
 builder.Services.AddScoped<IValidator<ClienteVM>, ClienteValidator>();
 builder.Services.AddScoped<IValidator<EventoVM>, EventoValidator>();
 builder.Services.AddScoped<IValidator<PagoVM>, PagoValidator>();
+builder.Services.AddScoped<IValidator<ReprogramarEventoVM>, ReprogramarEventoValidator>();
 builder.Services.AddHostedService<si_td_gestion_eventos.BackgroundServices.PaymentDeadlineService>();
 
 var app = builder.Build();
