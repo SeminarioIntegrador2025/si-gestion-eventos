@@ -59,7 +59,8 @@ namespace si_td_gestion_eventos.Services.Implementation
 
                 var eventosQuery = (await _eventoRepository.FindWithIncludesAsync(
                                     textPredicate,
-                                    q => q.Cliente
+                                    q => q.Cliente,
+                                    q => q.Pagos
                                 )).AsQueryable();
 
                 if (fechaDesde.HasValue)
@@ -91,6 +92,27 @@ namespace si_td_gestion_eventos.Services.Implementation
                 var eventosPaginados = eventosOrdenados.Skip((page - 1) * pageSize).Take(pageSize).ToList();
                 var items = _mapper.Map<List<EventoVM>>(eventosPaginados);
 
+                // Calcular saldo y permisos para cada evento
+                foreach (var eventoVM in items)
+                {
+                    var eventoEntity = eventosPaginados.FirstOrDefault(e => e.EventoId == eventoVM.EventoId);
+                    if (eventoEntity != null)
+                    {
+                        // Calcular totales pagados (solo válidos)
+                        decimal totalPagadoReal = eventoEntity.Pagos?
+                                                        .Where(p => p.Valido)
+                                                        .Sum(p => (decimal)p.Monto) ?? 0;
+
+                        eventoVM.TotalPagado = totalPagadoReal;
+
+                        decimal costoTotal = (decimal)eventoEntity.CostoAlquiler + (decimal)(eventoEntity.MontoAireAcondicionado ?? 0);
+                        eventoVM.SaldoRestante = costoTotal - totalPagadoReal;
+
+                        // Determinar si permite agregar pago
+                        eventoVM.PermiteAgregarPago = DeterminarSiPermiteAgregarPago(eventoVM);
+                    }
+                }
+
                 return new PaginatedList<EventoVM>(items, totalCount, page, pageSize);
             }
             catch (Exception ex)
@@ -121,7 +143,7 @@ namespace si_td_gestion_eventos.Services.Implementation
                 eventoVM.TotalPagado = (decimal)totalPagadoReal;
 
                 // Recalculamos el saldo restante también para asegurar consistencia
-                decimal costoTotal = (decimal) (evento.CostoAlquiler )+ (decimal)(evento.MontoAireAcondicionado ?? 0);
+                decimal costoTotal = (decimal)(evento.CostoAlquiler) + (decimal)(evento.MontoAireAcondicionado ?? 0);
                 eventoVM.SaldoRestante = (decimal)costoTotal - eventoVM.TotalPagado;
             }
             else
@@ -132,7 +154,30 @@ namespace si_td_gestion_eventos.Services.Implementation
                 eventoVM.SaldoRestante = (decimal)costoTotal;
             }
 
+            // Determinar si se permite agregar pago
+            eventoVM.PermiteAgregarPago = DeterminarSiPermiteAgregarPago(eventoVM);
+
             return eventoVM;
+        }
+
+        // Método para ver si permite agregar pago
+        private bool DeterminarSiPermiteAgregarPago(EventoVM eventoVM)
+        {
+            // No se permite si está cancelado
+            if (eventoVM.Estado == EventoEstado.Cancelado)
+                return false;
+
+            // No se permite si está reprogramado (sin nueva fecha confirmada)
+            // Se asume que si está reprogramado todavía está pendiente de confirmación de nueva fecha
+            if (eventoVM.Estado == EventoEstado.Reprogramado && eventoVM.Inicio == default(DateTime))
+                return false;
+
+            // No se permite si está totalmente pagado (saldo restante <= 0)
+            if (eventoVM.SaldoRestante <= 0)
+                return false;
+
+            // En todos los demás casos, sí se permite
+            return true;
         }
 
         // --- CreateAsync ---

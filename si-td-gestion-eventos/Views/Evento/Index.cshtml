@@ -108,7 +108,7 @@
         {
             @foreach (var e in Model)
             {
-                // --- Lógica para el estado (Tu código está perfecto) ---
+                // --- Lógica para el estado ---
                 string estadoClass = "bg-secondary";
                 string estadoIcon = "fa-question-circle";
                 string estadoTexto = e.Estado.ToString();
@@ -165,17 +165,64 @@
                     <td class="text-center">
                         <a asp-action="Details" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-info" title="Ver Detalles"><i class="fa-solid fa-eye"></i></a>
                         <a asp-action="Edit" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="fa-solid fa-pen"></i></a>
-                        @if (e.Estado != EventoEstado.Cancelado)
+                        
+                        @* Lógica condicional para botones según estado *@
+                        @if (e.Estado == EventoEstado.Cancelado)
                         {
-                            <a asp-action="Cancel" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-danger" title="Cancelar Evento"><i class="fa-solid fa-ban"></i></a>
+                            @* Si está cancelado: Mostrar Reprogramar en lugar de Cancelar *@
+                            <a asp-action="Reprogramar" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-warning" title="Reprogramar Evento">
+                                <i class="fa-solid fa-clock"></i>
+                            </a>
                         }
                         else
                         {
-                            <a asp-action="Reprogramar" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-warning" title="Reprogramar Evento"><i class="fa-solid fa-clock"></i></a>
+                            @* Si NO está cancelado: Mostrar botón de Cancelar *@
+                            <a asp-action="Cancel" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-danger" title="Cancelar Evento">
+                                <i class="fa-solid fa-ban"></i>
+                            </a>
                         }
-                        <a asp-controller="Pago" asp-action="Create" asp-route-eventoId="@e.EventoId" class="btn btn-sm btn-outline-success" title="Agregar Pago">
-                            <i class="fa-solid fa-dollar-sign"></i>
-                        </a>
+
+                        @* Botón de Pago o Alternativas según condiciones *@
+                        @if (e.PermiteAgregarPago)
+                        {
+                            @* Permite agregar pago: Mostrar botón normal *@
+                            <a asp-controller="Pago" asp-action="Create" asp-route-eventoId="@e.EventoId" 
+                               class="btn btn-sm btn-outline-success" 
+                               title="Agregar Pago">
+                                <i class="fa-solid fa-dollar-sign"></i>
+                            </a>
+                        }
+                        else
+                        {
+                            @* NO permite agregar pago: Mostrar alternativas según el motivo *@
+                            @if (e.Estado == EventoEstado.Cancelado)
+                            {
+                                @* Evento cancelado: Ver detalles (ya mostrado arriba, podríamos mostrar algo específico) *@
+                                <a asp-action="Details" asp-route-id="@e.EventoId" 
+                                   class="btn btn-sm btn-outline-secondary" 
+                                   title="Ver Detalles del Evento Cancelado">
+                                    <i class="fa-solid fa-file-alt"></i>
+                                </a>
+                            }
+                            else if (e.Estado == EventoEstado.Reprogramado)
+                            {
+                                @* Evento reprogramado sin fecha: Asignar nueva fecha *@
+                                <a asp-action="Reprogramar" asp-route-id="@e.EventoId" 
+                                   class="btn btn-sm btn-outline-warning" 
+                                   title="Asignar Nueva Fecha">
+                                    <i class="fa-solid fa-calendar-plus"></i>
+                                </a>
+                            }
+                            else if (e.SaldoRestante <= 0)
+                            {
+                                @* Evento totalmente pagado: Ver historial de pagos *@
+                                <a asp-controller="Pago" asp-action="Index" asp-route-eventoId="@e.EventoId" 
+                                   class="btn btn-sm btn-outline-primary" 
+                                   title="Ver Historial de Pagos">
+                                    <i class="fa-solid fa-list"></i>
+                                </a>
+                            }
+                        }
                     </td>
                 </tr>
             }
