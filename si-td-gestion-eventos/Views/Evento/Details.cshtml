@@ -110,8 +110,10 @@
 </div>
 
 <div class="row g-4">
+    <!-- COLUMNA IZQUIERDA -->
     <div class="col-lg-8">
 
+        <!-- SECCIÓN: INFORMACIÓN FINANCIERA -->
         <div class="card shadow-sm mb-4 border-start border-4 border-success">
             <div class="card-body">
                 <h5 class="card-title text-success mb-3">
@@ -156,6 +158,7 @@
             </div>
         </div>
 
+        <!-- SECCIÓN: OBSERVACIONES -->
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 text-primary">
@@ -177,6 +180,7 @@
             </div>
         </div>
 
+        <!-- SECCIÓN: INFORMACIÓN DEL CLIENTE -->
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-white">
                 <h6 class="mb-0 text-muted">
@@ -225,8 +229,10 @@
         </div>
     </div>
 
+    <!-- COLUMNA DERECHA -->
     <div class="col-lg-4">
 
+        <!-- SECCIÓN: AGENDA -->
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-warning text-dark">
                 <h6 class="mb-0">
@@ -234,30 +240,48 @@
                 </h6>
             </div>
             <div class="card-body">
-                <div class="mb-2">
-                    <small class="text-muted d-block">Tipo de Evento</small>
-                    <strong>@Model.Tipo</strong>
-                </div>
-                <div class="mb-0">
-                    <small class="text-muted d-block">Cantidad de Personas</small>
-                    <strong>@Model.CantidadPersonas personas</strong>
-                </div>
+
+                @if (Model.Estado == EventoEstado.Reprogramado)
+                {
+                    <div class="text-center py-2">
+                        <i class="fa-solid fa-calendar-circle-question fa-2x text-warning mb-2"></i>
+                        <h6 class="fw-bold">Fecha por Definir</h6>
+                        <p class="small text-muted mb-3">
+                            El cupo está libre. Defina una nueva fecha cuando el cliente confirme.
+                        </p>
+
+                        <button type="button" class="btn btn-warning fw-bold w-100 btn-sm" data-bs-toggle="modal" data-bs-target="#modalReprogramar">
+                            <i class="fa-solid fa-calendar-check me-2"></i>Definir Fecha y Hora
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <div class="mb-3 border-bottom pb-2">
+                        <small class="text-muted d-block">Fecha del Evento</small>
+                        <strong class="fs-5">@Model.Inicio.ToString("dd/MM/yyyy")</strong>
+                    </div>
+                    <div class="mb-3 border-bottom pb-2">
+                        <small class="text-muted d-block">Horario</small>
+                        <strong>@Model.HoraInicio.ToString("hh\\:mm") - @Model.HoraFin.ToString("hh\\:mm")</strong>
+                    </div>
+                    <div class="mb-0">
+                        <small class="text-muted d-block">Fecha Contrato</small>
+                        <span>@Model.FechaContrato.ToString("dd/MM/yyyy")</span>
+                    </div>
+                }
+
             </div>
         </div>
-    </div>
-</div>
 
-<div class="row mt-4">
-    <div class="col-12">
-        <!-- SECCIÓN: SERVICIOS ESENCIALES (mover aquí) -->
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fa-solid fa-list-check me-2"></i>
-                    Servicios Esenciales
-                </h5>
+        <!-- SECCIÓN: SERVICIOS ESENCIALES -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h6 class="mb-0 text-primary">
+                    <i class="fa-solid fa-list-check me-2"></i>Servicios Esenciales
+                </h6>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 @{
                     var listaServicios = await _servicioEsencialService.GetByEventoIdAsync(Model.EventoId);
                 }
@@ -265,22 +289,30 @@
             </div>
         </div>
 
+        <!-- SECCIÓN: FIANZA -->
         @if (Model.FianzaId != null)
         {
-            <div class="card shadow-sm border-warning">
+            <div class="card shadow-sm border-warning mb-4">
                 <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
                     <h6 class="mb-0"><i class="fa-solid fa-shield-alt me-2"></i>Fianza</h6>
                     <span class="badge bg-light text-dark">@Model.DetalleFianza.Estado</span>
                 </div>
                 <div class="card-body">
                     <h4 class="text-center mb-3">@Model.DetalleFianza.Monto.ToString("C0")</h4>
+                    @if (!string.IsNullOrEmpty(Model.DetalleFianza.Observaciones))
+                    {
+                        <div class="mb-3">
+                            <small class="text-muted d-block">Observaciones</small>
+                            <p class="small mb-0">@Model.DetalleFianza.Observaciones</p>
+                        </div>
+                    }
                     <div class="d-grid">
                         <a asp-controller="Fianza"
                            asp-action="Details"
                            asp-route-id="@Model.FianzaId"
                            asp-route-returnUrl="@Url.Action("Details", "Evento", new { id = Model.EventoId })"
                            class="btn btn-outline-dark btn-sm">
-                            Gestionar Fianza
+                            <i class="fa-solid fa-eye me-2"></i>Gestionar Fianza
                         </a>
                     </div>
                 </div>
@@ -288,7 +320,7 @@
         }
         else
         {
-            <div class="card shadow-sm border-secondary border-opacity-25 bg-light">
+            <div class="card shadow-sm border-secondary border-opacity-25 bg-light mb-4">
                 <div class="card-body text-center">
                     <p class="text-muted mb-2"><i class="fa-solid fa-info-circle me-1"></i>Sin fianza registrada</p>
                     <a asp-controller="Fianza" asp-action="Create" asp-route-eventoId="@Model.EventoId" class="btn btn-warning btn-sm">
