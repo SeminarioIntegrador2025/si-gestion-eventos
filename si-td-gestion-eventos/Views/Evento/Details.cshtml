@@ -275,19 +275,10 @@
         </div>
 
         <!-- SECCIÓN: SERVICIOS ESENCIALES -->
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0 text-primary">
-                    <i class="fa-solid fa-list-check me-2"></i>Servicios Esenciales
-                </h6>
-            </div>
-            <div class="card-body p-0">
-                @{
-                    var listaServicios = await _servicioEsencialService.GetByEventoIdAsync(Model.EventoId);
-                }
-                <partial name="_GestorServicios" model="listaServicios" />
-            </div>
-        </div>
+        @{
+            var listaServicios = await _servicioEsencialService.GetByEventoIdAsync(Model.EventoId);
+        }
+        <partial name="_GestorServicios" model="listaServicios" />
 
         <!-- SECCIÓN: FIANZA -->
         @if (Model.FianzaId != null)
