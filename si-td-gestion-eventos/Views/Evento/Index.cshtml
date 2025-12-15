@@ -6,7 +6,6 @@
 
     // Obtenemos los filtros actuales para la paginación
     string q = ViewBag.Search as string ?? "";
-    // Usamos 'SelectedValue' de la SelectList, es más limpio
     int pageSize = (int)(ViewBag.PageSizeList.SelectedValue ?? 10);
     DateTime? fechaDesde = ViewBag.FechaDesde as DateTime?;
     DateTime? fechaHasta = ViewBag.FechaHasta as DateTime?;
@@ -34,41 +33,34 @@
 </div>
 
 <form method="get" class="row g-3 mb-4 align-items-end">
-
     <div class="col-md-3">
         <label for="q" class="form-label">Buscar por Cliente</label>
         <input type="text" name="q" id="q" class="form-control" value="@q" placeholder="Nombre cliente o CI" />
     </div>
-
     <div class="col-md-2">
         <label for="fechaDesde" class="form-label">Fecha Desde</label>
         <input type="date" name="fechaDesde" id="fechaDesde" class="form-control" value="@fechaDesde?.ToString("yyyy-MM-dd")" />
     </div>
-
     <div class="col-md-2">
         <label for="fechaHasta" class="form-label">Fecha Hasta</label>
         <input type="date" name="fechaHasta" id="fechaHasta" class="form-control" value="@fechaHasta?.ToString("yyyy-MM-dd")" />
     </div>
-
     <div class="col-md-3">
         <label for="estado" class="form-label">Estado</label>
         <select name="estado" id="estado" class="form-select" asp-items="ViewBag.EstadosList">
             <option value="">-- Mostrar Todos --</option>
         </select>
     </div>
-
     <div class="col-md-3">
         <label for="pageSize" class="form-label">Por Página</label>
         <select name="pageSize" id="pageSize" class="form-select" asp-items="ViewBag.PageSizeList" onchange="this.form.submit()">
         </select>
     </div>
-
     <div class="col-md-4">
         <label for="ordenPor" class="form-label">Ordenar por</label>
         <select name="ordenPor" id="ordenPor" class="form-select" asp-items="ViewBag.OrdenPorList" onchange="this.form.submit()">
         </select>
     </div>
-
     <div class="col-md-2">
         <button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-magnifying-glass"></i> Buscar</button>
     </div>
@@ -108,7 +100,6 @@
         {
             @foreach (var e in Model)
             {
-                // --- Lógica para el estado ---
                 string estadoClass = "bg-secondary";
                 string estadoIcon = "fa-question-circle";
                 string estadoTexto = e.Estado.ToString();
@@ -116,30 +107,15 @@
                 switch (e.Estado)
                 {
                     case EventoEstado.PendientePagado:
-                        estadoClass = "bg-success";
-                        estadoIcon = "fa-check-circle";
-                        estadoTexto = "Pendiente (Pagado)";
-                        break;
+                        estadoClass = "bg-success"; estadoIcon = "fa-check-circle"; estadoTexto = "Pendiente (Pagado)"; break;
                     case EventoEstado.PendienteAdeudado:
-                        estadoClass = "bg-warning text-dark";
-                        estadoIcon = "fa-exclamation-triangle";
-                        estadoTexto = "Pendiente (Adeudado)";
-                        break;
+                        estadoClass = "bg-warning text-dark"; estadoIcon = "fa-exclamation-triangle"; estadoTexto = "Pendiente (Adeudado)"; break;
                     case EventoEstado.Realizado:
-                        estadoClass = "bg-secondary";
-                        estadoIcon = "fa-check";
-                        estadoTexto = "Realizado";
-                        break;
+                        estadoClass = "bg-secondary"; estadoIcon = "fa-check"; estadoTexto = "Realizado"; break;
                     case EventoEstado.Cancelado:
-                        estadoClass = "bg-danger";
-                        estadoIcon = "fa-ban";
-                        estadoTexto = "Cancelado";
-                        break;
+                        estadoClass = "bg-danger"; estadoIcon = "fa-ban"; estadoTexto = "Cancelado"; break;
                     case EventoEstado.Reprogramado:
-                        estadoClass = "bg-info text-dark";
-                        estadoIcon = "fa-clock-rotate-left";
-                        estadoTexto = "Reprogramado";
-                        break;
+                        estadoClass = "bg-info text-dark"; estadoIcon = "fa-clock-rotate-left"; estadoTexto = "Reprogramado"; break;
                 }
                 <tr>
                     <td>@e.ClienteNombreCompleto</td>
@@ -165,66 +141,53 @@
                     <td class="text-center">
                         <a asp-action="Details" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-info" title="Ver Detalles"><i class="fa-solid fa-eye"></i></a>
                         <a asp-action="Edit" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="fa-solid fa-pen"></i></a>
-                        
-                        @* Lógica condicional para botones según estado *@
+
+                        @* --- LÓGICA DE BOTONES --- *@
+
                         @if (e.Estado == EventoEstado.Cancelado)
                         {
-                            @* Si está cancelado: Mostrar Reprogramar en lugar de Cancelar *@
-                            <a asp-action="Reprogramar" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-warning" title="Reprogramar Evento">
-                                <i class="fa-solid fa-clock"></i>
-                            </a>
+                            @* Evento Cancelado: Botón para Reactivar/Reprogramar con MODAL *@
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-warning"
+                                    title="Reprogramar / Reactivar"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modalReprogramarIndex"
+                                    onclick="setEventoId(@e.EventoId)">
+                                <i class="fa-solid fa-clock-rotate-left"></i>
+                            </button>
                         }
                         else
                         {
-                            @* Si NO está cancelado: Mostrar botón de Cancelar *@
+                            @* Evento Activo: Botón Cancelar *@
                             <a asp-action="Cancel" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-danger" title="Cancelar Evento">
                                 <i class="fa-solid fa-ban"></i>
                             </a>
                         }
 
-                        @* Botón de Pago o Alternativas según condiciones *@
                         @if (e.PermiteAgregarPago)
                         {
-                            @* Permite agregar pago: Mostrar botón normal *@
-                            <a asp-controller="Pago" asp-action="Create" asp-route-eventoId="@e.EventoId" 
-                               class="btn btn-sm btn-outline-success" 
-                               title="Agregar Pago">
+                            <a asp-controller="Pago" asp-action="Create" asp-route-eventoId="@e.EventoId" class="btn btn-sm btn-outline-success" title="Agregar Pago">
                                 <i class="fa-solid fa-dollar-sign"></i>
                             </a>
                         }
                         else
                         {
-                            @* NO permite agregar pago: Mostrar alternativas según el motivo *@
-                            @if (e.Estado == EventoEstado.Cancelado)
+                            if (e.Estado == EventoEstado.Reprogramado)
                             {
-                                <a asp-action="Details" asp-route-id="@e.EventoId" 
-                                   class="btn btn-sm btn-outline-secondary" 
-                                   title="Ver Detalles del Evento Cancelado">
-                                    <i class="fa-solid fa-file-alt"></i>
-                                </a>
-                            }
-                            else if (e.Estado == EventoEstado.Reprogramado)
-                            {
-                                <a asp-action="Reprogramar" asp-route-id="@e.EventoId" 
-                                   class="btn btn-sm btn-outline-warning" 
-                                   title="Asignar Nueva Fecha">
+                                @* === Evento Reprogramado: Botón MODAL === *@
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-warning"
+                                        title="Asignar Nueva Fecha"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#modalReprogramarIndex"
+                                        onclick="setEventoId(@e.EventoId)">
                                     <i class="fa-solid fa-calendar-plus"></i>
-                                </a>
+                                </button>
                             }
-                            else if (e.SaldoRestante <= 0)
+                            else if (e.SaldoRestante <= 0 || e.Estado == EventoEstado.Realizado)
                             {
-                                <a asp-controller="Pago" asp-action="Index" asp-route-eventoId="@e.EventoId" 
-                                   class="btn btn-sm btn-outline-primary" 
-                                   title="Ver Historial de Pagos">
+                                <a asp-controller="Pago" asp-action="Index" asp-route-eventoId="@e.EventoId" class="btn btn-sm btn-outline-primary" title="Ver Historial">
                                     <i class="fa-solid fa-list"></i>
-                                </a>
-                            }
-                            else if (e.Estado == EventoEstado.Realizado)
-                            {
-                                <a asp-controller="Pago" asp-action="Index" asp-route-eventoId="@e.EventoId" 
-                                   class="btn btn-sm btn-outline-secondary" 
-                                   title="Ver Historial de Pagos del Evento Realizado">
-                                    <i class="fa-solid fa-history"></i>
                                 </a>
                             }
                         }
@@ -262,3 +225,96 @@
         Mostrando @Model.Count de @Model.TotalCount eventos (página @Model.PageIndex de @Model.TotalPages).
     </p>
 </div>
+
+<div class="modal fade" id="modalReprogramarIndex" tabindex="-1" aria-labelledby="modalReprogramarLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title fw-bold" id="modalReprogramarLabel">
+                    <i class="fa-solid fa-calendar-days me-2"></i>Reprogramar Evento
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form asp-action="Reprogramar" method="post" id="formReprogramarIndex">
+                <div class="modal-body">
+                    <div class="alert alert-info small border-0 bg-light mb-3">
+                        <i class="fa-solid fa-circle-info me-1 text-primary"></i>
+                        La fecha original se guardará en observaciones. Si eliges "Fecha por definir", el cupo actual quedará libre.
+                    </div>
+
+                    <input type="hidden" id="Index_EventoId" name="EventoId" value="" />
+
+                    <div class="p-3 border rounded mb-3 d-flex align-items-center">
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input me-2" type="checkbox" id="chkIndexIndefinida" name="FechaIndefinida" value="true" style="cursor: pointer;">
+                            <label class="form-check-label text-dark" for="chkIndexIndefinida" style="cursor: pointer;">
+                                Dejar fecha por definir (Libera el cupo actual)
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="panelFechasIndex">
+                        <div class="mb-3">
+                            <label class="form-label text-dark">Nueva Fecha</label>
+                            <input type="date" class="form-control" name="NuevaFecha" />
+                        </div>
+
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label class="form-label text-dark">Hora Inicio</label>
+                                <input type="time" class="form-control" name="NuevaHoraInicio" />
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label class="form-label text-dark">Hora Fin</label>
+                                <input type="time" class="form-control" name="NuevaHoraFin" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning text-dark fw-bold">
+                        <i class="fa-solid fa-check me-2"></i>Confirmar Cambio
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. Pasar ID al Modal
+    function setEventoId(id) {
+        document.getElementById('Index_EventoId').value = id;
+    }
+
+    // 2. Lógica de bloqueo de inputs (igual que en Details)
+    document.addEventListener("DOMContentLoaded", function() {
+        var chk = document.getElementById('chkIndexIndefinida');
+        var panel = document.getElementById('panelFechasIndex');
+        var inputs = panel.querySelectorAll('input');
+
+        if (chk) {
+            chk.addEventListener('change', function() {
+                if (this.checked) {
+                    // Si marca indefinida: opacidad y bloqueo de inputs
+                    panel.style.opacity = '0.5';
+                    panel.style.pointerEvents = 'none';
+                    inputs.forEach(input => {
+                        input.readOnly = true;
+                        input.value = '';
+                    });
+                } else {
+                    // Si desmarca: reactiva inputs
+                    panel.style.opacity = '1';
+                    panel.style.pointerEvents = 'auto';
+                    inputs.forEach(input => {
+                        input.readOnly = false;
+                    });
+                }
+            });
+        }
+    });
+</script>
