@@ -89,5 +89,6 @@ namespace si_td_gestion_eventos.Models.ViewModels
         public decimal SaldoRestante { get; set; }
         public string? ClienteTelefono { get; set; }
         public string? ClienteDomicilio { get; set; }
+        public bool EsFechaIndefinida { get; set; }
     }
 }
