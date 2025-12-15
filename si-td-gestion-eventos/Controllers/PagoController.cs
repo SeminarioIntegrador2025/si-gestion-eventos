@@ -165,8 +165,30 @@ namespace si_td_gestion_eventos.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(PagoVM pagoVM)
         {
-            // Forzamos true al crear, por seguridad, aunque venga del VM
+            // Forzamos true al crear
             pagoVM.Valido = true;
+
+            // VALIDACIÓN ADICIONAL: Verificar que el evento permita agregar pago
+            var evento = await _eventoService.GetByIdAsync(pagoVM.EventoId);
+            if (evento == null)
+            {
+                ModelState.AddModelError(string.Empty, "El evento no existe.");
+                await PrepararDropdownEventosAsync(pagoVM.EventoId);
+                return View(pagoVM);
+            }
+
+            if (!evento.PermiteAgregarPago)
+            {
+                string razon = evento.Estado == EventoEstado.Cancelado ? "está cancelado" :
+                               evento.Estado == EventoEstado.Realizado ? "ya fue realizado" :
+                               evento.SaldoRestante <= 0 ? "está completamente pagado" :
+                               evento.EsFechaIndefinida ? "está reprogramado sin fecha definida" :
+                               "no permite agregar pagos";
+
+                ModelState.AddModelError(string.Empty, $"No se puede agregar un pago porque el evento {razon}.");
+                await PrepararDropdownEventosAsync(pagoVM.EventoId);
+                return View(pagoVM);
+            }
 
             if (!ModelState.IsValid)
             {

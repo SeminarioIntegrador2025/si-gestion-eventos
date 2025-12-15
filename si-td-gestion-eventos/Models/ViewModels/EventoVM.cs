@@ -81,6 +81,7 @@ namespace si_td_gestion_eventos.Models.ViewModels
         public string? OrdenPor { get; set; }
 
         public FianzaVM? DetalleFianza { get; set; }
+        
         // Propiedades de solo lectura para la vista
         public string? ClienteNombreCompleto { get; set; }
 
@@ -90,5 +91,8 @@ namespace si_td_gestion_eventos.Models.ViewModels
         public string? ClienteTelefono { get; set; }
         public string? ClienteDomicilio { get; set; }
         public bool EsFechaIndefinida { get; set; }
+
+        // Nueva propiedad para controlar si se puede agregar pago
+        public bool PermiteAgregarPago { get; set; }
     }
 }

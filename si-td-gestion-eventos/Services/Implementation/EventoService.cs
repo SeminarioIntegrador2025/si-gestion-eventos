@@ -61,9 +61,10 @@ namespace si_td_gestion_eventos.Services.Implementation
                     e.Tipo.ToString().Contains(searchQuery);
 
                 var eventosQuery = (await _eventoRepository.FindWithIncludesAsync(
-                                        textPredicate,
-                                        q => q.Cliente
-                                    )).AsQueryable();
+                                    textPredicate,
+                                    q => q.Cliente,
+                                    q => q.Pagos
+                                )).AsQueryable();
 
                 if (fechaDesde.HasValue)
                     eventosQuery = eventosQuery.Where(e => e.Inicio.Date >= fechaDesde.Value.Date);
@@ -88,6 +89,27 @@ namespace si_td_gestion_eventos.Services.Implementation
                 var totalCount = eventosOrdenados.Count();
                 var eventosPaginados = eventosOrdenados.Skip((page - 1) * pageSize).Take(pageSize).ToList();
                 var items = _mapper.Map<List<EventoVM>>(eventosPaginados);
+
+                // Calcular saldo y permisos para cada evento
+                foreach (var eventoVM in items)
+                {
+                    var eventoEntity = eventosPaginados.FirstOrDefault(e => e.EventoId == eventoVM.EventoId);
+                    if (eventoEntity != null)
+                    {
+                        // Calcular totales pagados (solo válidos)
+                        decimal totalPagadoReal = eventoEntity.Pagos?
+                                                        .Where(p => p.Valido)
+                                                        .Sum(p => (decimal)p.Monto) ?? 0;
+
+                        eventoVM.TotalPagado = totalPagadoReal;
+
+                        decimal costoTotal = (decimal)eventoEntity.CostoAlquiler + (decimal)(eventoEntity.MontoAireAcondicionado ?? 0);
+                        eventoVM.SaldoRestante = costoTotal - totalPagadoReal;
+
+                        // Determinar si permite agregar pago
+                        eventoVM.PermiteAgregarPago = DeterminarSiPermiteAgregarPago(eventoVM);
+                    }
+                }
 
                 return new PaginatedList<EventoVM>(items, totalCount, page, pageSize);
             }
@@ -114,13 +136,18 @@ namespace si_td_gestion_eventos.Services.Implementation
                                             .Sum(p => (decimal)p.Monto);
 
                 eventoVM.TotalPagado = (decimal)totalPagadoReal;
-                eventoVM.SaldoRestante = costoTotal - eventoVM.TotalPagado;
+
+                costoTotal = (decimal)(evento.CostoAlquiler) + (decimal)(evento.MontoAireAcondicionado ?? 0);
+                eventoVM.SaldoRestante = (decimal)costoTotal - eventoVM.TotalPagado;
             }
             else
             {
                 eventoVM.TotalPagado = 0;
                 eventoVM.SaldoRestante = costoTotal;
             }
+
+            // Determinar si se permite agregar pago
+            eventoVM.PermiteAgregarPago = DeterminarSiPermiteAgregarPago(eventoVM);
 
             // LÓGICA FECHA INDEFINIDA (Detectamos si está "estacionado" en el pasado lejano)
             if (evento.Estado == EventoEstado.Reprogramado)
@@ -136,17 +163,39 @@ namespace si_td_gestion_eventos.Services.Implementation
             return eventoVM;
         }
 
-        public async Task<List<EventoVM>> GetLatestAsync(int count)
+        /// <summary>
+        /// Determina si se permite agregar un pago a un evento según su estado y saldo.
+        /// </summary>
+        /// <param name="eventoVM">ViewModel del evento a evaluar</param>
+        /// <returns>True si se permite agregar pago, False en caso contrario</returns>
+        private bool DeterminarSiPermiteAgregarPago(EventoVM eventoVM)
         {
-            var eventos = await _eventoRepository.FindWithIncludesAsync(null, e => e.Cliente);
-            var eventosOrdenados = eventos.OrderByDescending(e => e.EventoId).Take(count);
-            return _mapper.Map<List<EventoVM>>(eventosOrdenados);
+            // 1. NO SE PERMITE si el evento está CANCELADO
+            if (eventoVM.Estado == EventoEstado.Cancelado)
+                return false;
+
+            // 2. NO SE PERMITE si el evento está REALIZADO (ya pasó)
+            if (eventoVM.Estado == EventoEstado.Realizado)
+                return false;
+
+            // 3. NO SE PERMITE si está TOTALMENTE PAGADO (saldo <= 0)
+            //    Esto aplica para CUALQUIER estado (Pendiente, Reprogramado, etc.)
+            if (eventoVM.SaldoRestante <= 0)
+                return false;
+
+            // 4. NO SE PERMITE si está REPROGRAMADO y tiene fecha indefinida (año < 2000)
+            //    Esto evita que se agreguen pagos a eventos que están "estacionados" esperando nueva fecha
+            if (eventoVM.Estado == EventoEstado.Reprogramado && eventoVM.EsFechaIndefinida)
+                return false;
+
+            // 5. SÍ SE PERMITE en todos los demás casos:
+            //    - PendientePagado (pero con saldo > 0, ej: pago parcial)
+            //    - PendienteAdeudado
+            //    - Reprogramado (con fecha definida y saldo > 0)
+            return true;
         }
 
-        #endregion
-
-        #region 2. CRUD Básico (Create / Update)
-
+        // --- CreateAsync ---
         public async Task<ServiceResult<EventoVM>> CreateAsync(EventoVM eventoVM)
         {
             var validationResult = await _validator.ValidateAsync(eventoVM, options => options.IncludeRuleSets("Create"));
@@ -569,6 +618,22 @@ namespace si_td_gestion_eventos.Services.Implementation
                 ".jpg" => TipoArchivo.JPG,
                 _ => throw new InvalidOperationException($"Tipo no permitido: {ext}")
             };
+        }
+
+        public async Task<List<EventoVM>> GetLatestAsync(int count)
+        {
+            var eventos = await _eventoRepository.FindWithIncludesAsync(
+                e => e.Estado != EventoEstado.Cancelado,
+                e => e.Cliente,
+                e => e.Pagos
+            );
+
+            var eventosOrdenados = eventos
+                .OrderByDescending(e => e.FechaContrato)
+                .Take(count)
+                .ToList();
+
+            return _mapper.Map<List<EventoVM>>(eventosOrdenados);
         }
 
         #endregion

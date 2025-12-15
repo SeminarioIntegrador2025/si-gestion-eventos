@@ -5,41 +5,26 @@
 
 @{
     ViewData["Title"] = $"{Model.Tipo} de {Model.ClienteNombreCompleto}";
-
-    // Cálculos de visualización rápida
-    float costoTotal = (float)(Model.CostoAlquiler + (Model.MontoAireAcondicionado ?? 0));
-    float saldo = costoTotal - (float)Model.TotalPagado;
-
-    // Color del estado
-    string badgeClass = Model.Estado switch
-    {
-        EventoEstado.PendienteAdeudado => "bg-warning text-dark",
-        EventoEstado.PendientePagado => "bg-success",
-        EventoEstado.Realizado => "bg-info",
-        EventoEstado.Cancelado => "bg-danger",
-        EventoEstado.Reprogramado => "bg-primary",
-        _ => "bg-secondary"
-    };
 }
 
 @if (TempData["Ok"] != null)
 {
     <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="fa-solid fa-check-circle me-2"></i>@TempData["Ok"]
+        @TempData["Ok"]
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 }
 @if (TempData["Error"] != null)
 {
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <i class="fa-solid fa-circle-exclamation me-2"></i>@TempData["Error"]
+        @TempData["Error"]
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 }
 
-<div class="page-header d-flex justify-content-between align-items-center mb-4">
+<div class="page-header">
     <div>
-        <h1 class="page-title mb-0">
+        <h1 class="page-title">
             <i class="fa-solid fa-champagne-glasses me-2 text-primary"></i>
             @Model.Tipo de @Model.ClienteNombreCompleto
         </h1>
@@ -48,7 +33,6 @@
             @Model.Inicio.ToString("dddd, dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("es-ES"))
         </p>
     </div>
-
     <div class="d-flex gap-2">
         <a asp-controller="Reporte" asp-action="DescargarPdfIndividual" asp-route-id="@Model.EventoId" class="btn btn-danger">
             <i class="fa-solid fa-file-pdf me-2"></i> Descargar Reporte del Evento
@@ -62,306 +46,292 @@
             <i class="fa-solid fa-pen me-2"></i>Editar
         </a>
 
-        <a asp-controller="Pago" asp-action="Create" asp-route-eventoId="@Model.EventoId" class="btn btn-success">
-            <i class="fa-solid fa-plus me-2"></i>Pago
-        </a>
+        @* LÓGICA CONDICIONAL PARA BOTÓN DE PAGO *@
+        @if (Model.PermiteAgregarPago)
+        {
+            @* Permite agregar pago: Mostrar botón normal *@
+            <a asp-controller="Pago" asp-action="Create" asp-route-eventoId="@Model.EventoId" class="btn btn-success">
+                <i class="fa-solid fa-plus me-2"></i>Agregar Pago
+            </a>
+        }
+        else
+        {
+            @* NO permite agregar pago: Mostrar alternativas según el motivo *@
+            @if (Model.Estado == EventoEstado.Cancelado)
+            {
+                @* Evento cancelado: Mostrar botón deshabilitado con tooltip *@
+                <button type="button" class="btn btn-secondary" disabled title="No se pueden agregar pagos a eventos cancelados">
+                    <i class="fa-solid fa-ban me-2"></i>Evento Cancelado
+                </button>
+            }
+            else if (Model.Estado == EventoEstado.Realizado)
+            {
+                @* Evento realizado: Ver historial de pagos *@
+                <a asp-controller="Pago" asp-action="Index" asp-route-eventoId="@Model.EventoId" class="btn btn-outline-primary">
+                    <i class="fa-solid fa-history me-2"></i>Ver Historial de Pagos
+                </a>
+            }
+            else if (Model.Estado == EventoEstado.Reprogramado && Model.EsFechaIndefinida)
+            {
+                @* Evento reprogramado sin fecha: Asignar nueva fecha *@
+                <a asp-action="Reprogramar" asp-route-id="@Model.EventoId" class="btn btn-warning">
+                    <i class="fa-solid fa-calendar-plus me-2"></i>Asignar Nueva Fecha
+                </a>
+            }
+            else if (Model.SaldoRestante <= 0)
+            {
+                @* Evento totalmente pagado: Ver historial de pagos *@
+                <a asp-controller="Pago" asp-action="Index" asp-route-eventoId="@Model.EventoId" class="btn btn-success">
+                    <i class="fa-solid fa-check-circle me-2"></i>Pagado - Ver Historial
+                </a>
+            }
+        }
 
-        <a asp-action="Index" class="btn btn-secondary">
-            <i class="fa-solid fa-arrow-left"></i>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fa-solid fa-arrow-left me-2"></i>Volver
         </a>
     </div>
 </div>
 
 <div class="row g-4">
+    <!-- COLUMNA IZQUIERDA -->
     <div class="col-lg-8">
 
-        <div class="card shadow-sm mb-4 border-start border-4 border-success">
-            <div class="card-body">
-                <h5 class="card-title text-success mb-3">
-                    <i class="fa-solid fa-dollar-sign me-2"></i>Información Financiera
-                </h5>
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <small class="text-muted d-block">Costo del Alquiler</small>
-                        <strong class="fs-5">@Model.CostoAlquiler.ToString("C")</strong>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <small class="text-muted d-block">Monto de Reserva</small>
-                        <strong class="fs-5">@Model.MontoReserva.ToString("C")</strong>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <small class="text-muted d-block">Costo Aire Acondicionado</small>
-                        <strong class="fs-5">@(Model.MontoAireAcondicionado?.ToString("C") ?? "No incluido")</strong>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <small class="text-muted d-block">Estado Actual</small>
-                        <span class="badge @badgeClass fs-6">@Model.Estado</span>
-                    </div>
+        <!-- SECCIÓN: INFORMACIÓN FINANCIERA -->
+        <div class="detail-section section-financial">
+            <div class="detail-section-title">
+                <i class="fa-solid fa-dollar-sign text-success"></i>
+                Información Financiera
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <small class="text-muted d-block">Costo del Alquiler</small>
+                    <strong class="fs-5">@Model.CostoAlquiler.ToString("C")</strong>
                 </div>
-                <hr />
-                <div class="row align-items-center">
-                    <div class="col-md-4">
-                        <small class="text-muted d-block">Total Pagado (Real)</small>
-                        <strong class="fs-4 text-success">@Model.TotalPagado.ToString("C")</strong>
-                    </div>
-                    <div class="col-md-4">
-                        <small class="text-muted d-block">Saldo Restante</small>
-                        <strong class="fs-4 @(saldo > 0.01f ? "text-danger" : "text-success")">
-                            @saldo.ToString("C")
-                        </strong>
-                    </div>
-                    <div class="col-md-4 text-end">
-                        <a asp-controller="Pago" asp-action="Index" asp-route-eventoId="@Model.EventoId" class="btn btn-outline-primary btn-sm">
-                            <i class="fa-solid fa-list me-2"></i>Ver Historial Detallado
-                        </a>
-                    </div>
+                <div class="col-md-6 mb-3">
+                    <small class="text-muted d-block">Monto de Reserva</small>
+                    <strong class="fs-5">@Model.MontoReserva.ToString("C")</strong>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <small class="text-muted d-block">Costo Aire Acondicionado</small>
+                    <strong class="fs-5">@(Model.MontoAireAcondicionado?.ToString("C") ?? "No incluido")</strong>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <small class="text-muted d-block">Estado</small>
+                    <span class="badge bg-info fs-6">@Model.Estado</span>
+                </div>
+            </div>
+            <hr />
+            <div class="row">
+                <div class="col-md-6">
+                    <small class="text-muted d-block">Total Pagado</small>
+                    <strong class="fs-4 text-success">@Model.TotalPagado.ToString("C")</strong>
+                </div>
+                <div class="col-md-6">
+                    <small class="text-muted d-block">Saldo Restante</small>
+                    <strong class="fs-4 @(Model.SaldoRestante <= 0 ? "text-success" : "text-danger")">
+                        @Model.SaldoRestante.ToString("C")
+                    </strong>
+                    @if (Model.SaldoRestante <= 0)
+                    {
+                        <span class="badge bg-success ms-2">PAGADO</span>
+                    }
                 </div>
             </div>
         </div>
 
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 text-primary">
-                    <i class="fa-solid fa-file-lines me-2"></i>Observaciones
-                </h6>
-                <a asp-action="Edit" asp-route-id="@Model.EventoId" class="btn btn-sm btn-link text-decoration-none">Editar</a>
+        <!-- SECCIÓN: OBSERVACIONES -->
+        <div class="detail-section section-observaciones">
+            <div class="detail-section-title">
+                <i class="fa-solid fa-file-lines text-primary"></i>
+                Observaciones del Evento
+                <a asp-action="Edit" asp-route-id="@Model.EventoId" class="btn btn-sm btn-outline-primary ms-auto">
+                    <i class="fa-solid fa-pen me-1"></i>Editar
+                </a>
             </div>
-            <div class="card-body bg-transparent">
-                <p class="mb-0" style="white-space: pre-line;">
-                    @if (!string.IsNullOrEmpty(Model.Observaciones))
-                    {
-                        @Model.Observaciones
-                    }
-                    else
-                    {
-                        <span class="text-muted fst-italic">Sin observaciones registradas.</span>
-                    }
-                </p>
-            </div>
+            <p class="mb-0">
+                @if (!string.IsNullOrEmpty(Model.Observaciones))
+                {
+                    @Model.Observaciones
+                }
+                else
+                {
+                    <span class="text-muted fst-italic">Sin observaciones</span>
+                }
+            </p>
         </div>
 
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0 text-muted">
-                    <i class="fa-solid fa-users me-2"></i>Contactos
-                </h6>
+        <!-- SECCIÓN: INFORMACIÓN DEL CLIENTE -->
+        <div class="detail-section section-client">
+            <div class="detail-section-title">
+                <i class="fa-solid fa-user text-muted"></i>
+                Información del Cliente Contratante
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6 border-end">
-                        <h6 class="text-primary mb-3">Cliente Contratante</h6>
-                        <div class="mb-2">
-                            <small class="text-muted d-block">Nombre / Razón Social</small>
-                            <strong>@Model.ClienteNombreCompleto</strong>
-                        </div>
-                        <div class="mb-2">
-                            <small class="text-muted d-block">Tipo</small>
-                            <span>@(Model.TipoCli == TipoCliente.PersonaFisica ? "Persona Física" : "Persona Jurídica")</span>
-                        </div>
-                        <div class="mb-2">
-                            <small class="text-muted d-block">Teléfono</small>
-                            <span>@Model.ClienteTelefono</span>
-                        </div>
-                        <div class="mb-2">
-                            <small class="text-muted d-block">Domicilio</small>
-                            <span>@Model.ClienteDomicilio</span>
-                        </div>
-                    </div>
+            <div class="row">
+                <div class="col-md-6 mb-2">
+                    <small class="text-dark fw-semibold d-block">Cliente</small>
+                    <strong>@Model.ClienteNombreCompleto</strong>
+                </div>
+                <div class="col-md-6 mb-2">
+                    <small class="text-dark fw-semibold d-block">Tipo de Cliente</small>
+                    <strong>@(Model.TipoCli == TipoCliente.PersonaFisica ? "Persona Física" : "Persona Jurídica")</strong>
+                </div>
+                <div class="col-md-6 mb-2">
+                    <small class="text-dark fw-semibold d-block">Teléfono</small>
+                    <strong>@Model.ClienteTelefono</strong>
+                </div>
+                <div class="col-md-6 mb-2">
+                    <small class="text-dark fw-semibold d-block">Domicilio</small>
+                    <strong>@Model.ClienteDomicilio</strong>
+                </div>
+            </div>
 
-                    <div class="col-md-6 ps-md-4">
-                        <h6 class="text-primary mb-3">Responsable del Salón</h6>
-                        <div class="mb-2">
-                            <small class="text-muted d-block">Nombre</small>
-                            <strong>@Model.ResponsableNombre</strong>
-                        </div>
-                        <div class="mb-2">
-                            <small class="text-muted d-block">Cédula</small>
-                            <span>@Model.ResponsableCedula</span>
-                        </div>
-                        <div class="mb-2">
-                            <small class="text-muted d-block">Teléfono</small>
-                            <span>@Model.ResponsableTelefono</span>
-                        </div>
-                    </div>
+            <hr class="my-3" />
+
+            <div class="detail-section-title mb-3">
+                <i class="fa-solid fa-user-tie text-muted"></i>
+                Responsable del Salón
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-2">
+                    <small class="text-dark fw-semibold d-block">Nombre</small>
+                    <strong>@Model.ResponsableNombre</strong>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <small class="text-dark fw-semibold d-block">Teléfono</small>
+                    <strong>@Model.ResponsableTelefono</strong>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <small class="text-dark fw-semibold d-block">Cédula</small>
+                    <strong>@Model.ResponsableCedula</strong>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- COLUMNA DERECHA -->
     <div class="col-lg-4">
 
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-warning text-dark">
-                <h6 class="mb-0">
-                    <i class="fa-solid fa-clock me-2"></i>Agenda
-                </h6>
+        <!-- SECCIÓN: FECHAS Y HORARIOS -->
+        <div class="detail-section section-dates">
+            <div class="detail-section-title">
+                <i class="fa-solid fa-clock text-warning"></i>
+                Fechas y Horarios
             </div>
-            <div class="card-body">
-
-                @if (Model.Estado == EventoEstado.Reprogramado)
-                {
-                    <div class="text-center py-2">
-                        <i class="fa-solid fa-calendar-circle-question fa-2x text-warning mb-2"></i>
-                        <h6 class="fw-bold">Fecha por Definir</h6>
-                        <p class="small text-muted mb-3">
-                            El cupo está libre. Defina una nueva fecha cuando el cliente confirme.
-                        </p>
-
-                        <button type="button" class="btn btn-warning fw-bold w-100 btn-sm" data-bs-toggle="modal" data-bs-target="#modalReprogramar">
-                            <i class="fa-solid fa-calendar-check me-2"></i>Definir Fecha y Hora
-                        </button>
-                    </div>
-
-                    
-                }
-                else
-                {
-                    <div class="mb-3 border-bottom pb-2">
-                        <small class="text-muted d-block">Fecha del Evento</small>
-                        <strong class="fs-5">@Model.Inicio.ToString("dd/MM/yyyy")</strong>
-                    </div>
-                    <div class="mb-3 border-bottom pb-2">
-                        <small class="text-muted d-block">Horario</small>
-                        <strong>@Model.HoraInicio.ToString("hh\\:mm") - @Model.HoraFin.ToString("hh\\:mm")</strong>
-                    </div>
-                    <div class="mb-0">
-                        <small class="text-muted d-block">Fecha Contrato</small>
-                        <span>@Model.FechaContrato.ToString("dd/MM/yyyy")</span>
-                    </div>
-                }
-
+            <div class="mb-3">
+                <small class="text-muted d-block">Fecha del Contrato</small>
+                <strong>@Model.FechaContrato.ToLongDateString()</strong>
+            </div>
+            <div class="mb-3">
+                <small class="text-muted d-block">Fecha de Inicio</small>
+                <strong>@Model.Inicio.ToLongDateString()</strong>
+            </div>
+            <div class="mb-3">
+                <small class="text-muted d-block">Fecha de Fin</small>
+                <strong>@Model.Fin.ToLongDateString()</strong>
+            </div>
+            <div class="mb-0">
+                <small class="text-muted d-block">Horario del Evento</small>
+                <strong>De @Model.HoraInicio.ToString("hh\\:mm") a @Model.HoraFin.ToString("hh\\:mm")</strong>
             </div>
         </div>
 
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0 text-primary">
-                    <i class="fa-solid fa-list-check me-2"></i>Servicios
+        <!-- SECCIÓN: OTROS DATOS -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fa-solid fa-info-circle me-2"></i>
+                    Otros Datos
                 </h6>
             </div>
-            <div class="card-body p-0">
+            <div class="card-body">
+                <div class="mb-2">
+                    <small class="text-muted d-block">Tipo de Evento</small>
+                    <strong>@Model.Tipo</strong>
+                </div>
+                <div class="mb-0">
+                    <small class="text-muted d-block">Cantidad de Personas</small>
+                    <strong>@Model.CantidadPersonas personas</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <!-- SECCIÓN: SERVICIOS ESENCIALES (mover aquí) -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fa-solid fa-list-check me-2"></i>
+                    Servicios Esenciales
+                </h5>
+            </div>
+            <div class="card-body">
                 @{
                     var listaServicios = await _servicioEsencialService.GetByEventoIdAsync(Model.EventoId);
                 }
                 <partial name="_GestorServicios" model="listaServicios" />
             </div>
         </div>
+    </div>
+</div>
 
+<!-- SECCIÓN FIANZA (ancho completo también) -->
+<div class="row mt-4">
+    <div class="col-12">
         @if (Model.FianzaId != null)
         {
-            <div class="card shadow-sm border-warning">
-                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="fa-solid fa-shield-alt me-2"></i>Fianza</h6>
-                    <span class="badge bg-light text-dark">@Model.DetalleFianza.Estado</span>
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fa-solid fa-shield-alt me-2"></i>
+                        Fianza Registrada
+                    </h5>
                 </div>
                 <div class="card-body">
-                    <h4 class="text-center mb-3">@Model.DetalleFianza.Monto.ToString("C0")</h4>
-                    <div class="d-grid">
-                        <a asp-controller="Fianza"
-                           asp-action="Details"
-                           asp-route-id="@Model.FianzaId"
-                           asp-route-returnUrl="@Url.Action("Details", "Evento", new { id = Model.EventoId })"
-                           class="btn btn-outline-dark btn-sm">
-                            Gestionar Fianza
-                        </a>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <small class="text-dark fw-semibold d-block">Fecha de Registro</small>
+                            <strong>@Model.DetalleFianza.FechaRegistro.ToShortDateString()</strong>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-dark fw-semibold d-block">Monto de la Fianza</small>
+                            <strong class="text-success">@Model.DetalleFianza.Monto.ToString("C2")</strong>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-dark fw-semibold d-block">Estado de la Fianza</small>
+                            <span class="badge bg-info">@Model.DetalleFianza.Estado</span>
+                        </div>
+                        <div class="col-md-3 text-end">
+                            <a asp-controller="Fianza"
+                               asp-action="Details"
+                               asp-route-id="@Model.FianzaId"
+                               asp-route-returnUrl="@Url.Action("Details", "Evento", new { id = Model.EventoId })"
+                               class="btn btn-outline-warning">
+                                <i class="fa-solid fa-eye me-2"></i>Ver Detalles
+                            </a>
+                        </div>
                     </div>
+                    @if (!string.IsNullOrEmpty(Model.DetalleFianza.Observaciones))
+                    {
+                        <hr />
+                        <small class="text-dark fw-semibold d-block">Observaciones</small>
+                        <p class="mb-0">@Model.DetalleFianza.Observaciones</p>
+                    }
                 </div>
             </div>
         }
         else
         {
-            <div class="card shadow-sm border-secondary border-opacity-25 bg-light">
-                <div class="card-body text-center">
-                    <p class="text-muted mb-2"><i class="fa-solid fa-info-circle me-1"></i>Sin fianza registrada</p>
-                    <a asp-controller="Fianza" asp-action="Create" asp-route-eventoId="@Model.EventoId" class="btn btn-warning btn-sm">
-                        <i class="fa-solid fa-plus me-1"></i>Registrar
-                    </a>
-                </div>
+            <div class="alert alert-warning border-0">
+                <i class="fa-solid fa-info-circle me-2"></i>
+                <strong>No hay fianza registrada para este evento.</strong>
+                <a asp-controller="Fianza" asp-action="Create" asp-route-eventoId="@Model.EventoId" class="btn btn-warning btn-sm ms-3">
+                    <i class="fa-solid fa-plus me-1"></i>Registrar Fianza
+                </a>
             </div>
         }
     </div>
 </div>
-
-<div class="modal fade" id="modalReprogramar" tabindex="-1" aria-labelledby="modalReprogramarLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-warning text-dark">
-                <h5 class="modal-title fw-bold" id="modalReprogramarLabel">
-                    <i class="fa-solid fa-calendar-days me-2"></i>Reprogramar Evento
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-
-            <form asp-action="Reprogramar" method="post" id="formReprogramar">
-                <div class="modal-body">
-                    <div class="alert alert-info small border-0 bg-light  mb-3">
-                        <i class="fa-solid fa-circle-info me-1 text-primary"></i>
-                        La fecha original se guardará en observaciones. Si eliges "Fecha por definir", el cupo actual quedará libre.
-                    </div>
-
-                    <input type="hidden" name="EventoId" value="@Model.EventoId" />
-
-                    <div class="p-3 border rounded mb-3 d-flex align-items-center">
-                        <div class="form-check form-switch mb-0">
-                            <input class="form-check-input me-2" type="checkbox" id="chkFechaIndefinida" name="FechaIndefinida" value="true" style="cursor: pointer;">
-                            <label class="form-check-label text-dark" for="chkFechaIndefinida" style="cursor: pointer;">
-                                Dejar fecha por definir (Libera el cupo actual)
-                            </label>
-                        </div>
-                    </div>
-
-                    <div id="panelFechas">
-                        <div class="mb-3">
-                            <label class="form-label  text-dark">Nueva Fecha</label>
-                            <input type="date" class="form-control" id="NuevaFecha" name="NuevaFecha" />
-                        </div>
-
-                        <div class="row">
-                            <div class="col-6 mb-3">
-                                <label class="form-label text-dark">Hora Inicio</label>
-                                <input type="time" class="form-control" id="NuevaHoraInicio" name="NuevaHoraInicio" value="@Model.HoraInicio.ToString("hh\\:mm")" />
-                            </div>
-                            <div class="col-6 mb-3">
-                                <label class="form-label text-dark">Hora Fin</label>
-                                <input type="time" class="form-control" id="NuevaHoraFin" name="NuevaHoraFin" value="@Model.HoraFin.ToString("hh\\:mm")" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-warning text-dark fw-bold">
-                        <i class="fa-solid fa-check me-2"></i>Confirmar Cambio
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        var chk = document.getElementById('chkFechaIndefinida');
-        var panel = document.getElementById('panelFechas');
-        var inputs = panel.querySelectorAll('input');
-
-        if (chk) {
-            chk.addEventListener('change', function() {
-                if (this.checked) {
-                    panel.style.opacity = '0.5';
-                    panel.style.pointerEvents = 'none';
-                    inputs.forEach(function(input) {
-                        input.readOnly = true;
-                        input.value = '';
-                    });
-                } else {
-                    panel.style.opacity = '1';
-                    panel.style.pointerEvents = 'auto';
-                    inputs.forEach(function(input) {
-                        input.readOnly = false;
-                    });
-                }
-            });
-        }
-    });
-</script>

@@ -29,19 +29,6 @@
                 <form asp-action="Create" method="post" novalidate id="formCrearEvento">
                     <div class="card-body">
                         <partial name="_EventoCreateForm" model="Model" />
-
-                        <div class="row mt-3">
-                            <div class="col-md-6">
-                                <label asp-for="HoraInicio" class="form-label fw-semibold">Hora de Inicio</label>
-                                <input asp-for="HoraInicio" class="form-control" type="time" />
-                                <span asp-validation-for="HoraInicio" class="text-danger"></span>
-                            </div>
-                            <div class="col-md-6">
-                                <label asp-for="HoraFin" class="form-label fw-semibold">Hora de Fin</label>
-                                <input asp-for="HoraFin" class="form-control" type="time" />
-                                <span asp-validation-for="HoraFin" class="text-danger"></span>
-                            </div>
-                        </div>
                     </div>
 
                     <div class="card-footer bg-transparet d-flex justify-content-between align-items-center">
@@ -57,14 +44,13 @@
         </div>
     </div>
 </div>
-
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 
     <script>
         $(document).ready(function () {
 
-            // --- BLOQUE 1: Formato Visual de Cédula ---
+            // Formato CI
             $('#ResponsableCedula').on('input', function() {
                 let value = this.value.replace(/[^\d]/g, '');
                 if (value.length > 8) {
@@ -76,76 +62,35 @@
                 this.value = value;
             });
 
-            // --- BLOQUE 2: Autocompletado por CI (NUEVO) ---
-            const $inputCI = $("#ResponsableCedula");
-            const $inputNombre = $("#ResponsableNombre");
-            const $inputTel = $("#ResponsableTelefono");
-
-            $inputCI.on("blur", function () {
-                let cedula = $(this).val();
-
-                // Si está vacío, no hacemos nada
-                if (!cedula) return;
-
-                // Feedback visual (opacidad mientras busca)
-                $inputCI.addClass("opacity-50");
-
-                $.ajax({
-                    url: '@Url.Action("BuscarPorCI", "Cliente")', // Llama al método que creamos en ClienteController
-                    type: 'GET',
-                    data: { ci: cedula },
-                    success: function (response) {
-                        if (response.success) {
-                            // Encontrado: Rellenamos campos
-                            $inputNombre.val(response.nombre);
-                            $inputTel.val(response.telefono);
-
-                            // Efecto visual verde (Feedback de éxito)
-                            $inputNombre.addClass("is-valid");
-                            $inputTel.addClass("is-valid");
-
-                            // Quitamos el verde después de 1.5 seg
-                            setTimeout(() => {
-                                $inputNombre.removeClass("is-valid");
-                                $inputTel.removeClass("is-valid");
-                            }, 1500);
-                        }
-                    },
-                    error: function () {
-                        // Si no encuentra, simplemente dejamos que el usuario escriba
-                        console.log("Cliente no encontrado, ingreso manual requerido.");
-                    },
-                    complete: function () {
-                        // Quitamos el feedback visual de carga
-                        $inputCI.removeClass("opacity-50");
-                    }
-                });
-            });
-
-            // --- BLOQUE 3: Validación de Negocio (48hs) ---
+            // Advertencia de 48 hs
             $("#formCrearEvento").on("submit", function(e) {
-
+            
                 const fechaInicio = new Date($("#FechaInicio").val() + "T" + $("#HoraInicio").val());
                 const costoAlquiler = parseFloat($("#CostoAlquiler").val()) || 0;
                 const montoAire = parseFloat($("#MontoAire").val()) || 0;
                 const montoReserva = parseFloat($("#MontoReserva").val()) || 0;
                 const costoTotal = costoAlquiler + montoAire;
-
+                
+                
                 const ahora = new Date();
                 const deadline48hs = new Date(ahora.getTime() + 48 * 60 * 60 * 1000);
 
                 const esDentroDe48Hs = (fechaInicio > ahora && fechaInicio < deadline48hs);
                 const esPagoParcial = montoReserva < costoTotal;
 
+
                 if (esDentroDe48Hs && esPagoParcial) {
+
                     const mensaje = "ADVERTENCIA:\n\n" +
-                                    "Este evento es en menos de 48 horas y solo se está pagando la reserva.\n\n" +
-                                    "¿Desea crearlo igualmente?";
+                                  "Este evento es en menos de 48 horas y solo se está pagando la reserva.\n\n" +
+                                  "¿Desea crearlo igualmente?";
 
                     if (confirm(mensaje)) {
-                        return; // Envía el formulario
+                        // SI (El usuario confirma): Deja que el formulario se envíe
+                        return;
                     } else {
-                        e.preventDefault(); // Cancela
+                        // NO (El usuario cancela): Detiene el envío del formulario
+                        e.preventDefault();
                     }
                 }
             });
