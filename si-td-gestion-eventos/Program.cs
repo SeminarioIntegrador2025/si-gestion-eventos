@@ -8,6 +8,8 @@ using si_td_gestion_eventos.Services.Contracts;
 using si_td_gestion_eventos.Services.Implementation;
 using si_td_gestion_eventos.Validators;
 using QuestPDF.Infrastructure;
+using System.Globalization;
+using Microsoft.AspNetCore.Localization;
 
 QuestPDF.Settings.License = LicenseType.Community;
 
@@ -69,6 +71,27 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+
+var defaultCulture = new CultureInfo("es-UY");
+
+// Asegura formato de moneda en UYU
+defaultCulture.NumberFormat.CurrencySymbol = "$U";
+
+var supportedCultures = new[] { defaultCulture };
+
+var localizationOptions = new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture(defaultCulture),
+    SupportedCultures = supportedCultures,
+    SupportedUICultures = supportedCultures
+};
+
+// Para que también afecte threads/background tasks (HostedServices)
+CultureInfo.DefaultThreadCurrentCulture = defaultCulture;
+CultureInfo.DefaultThreadCurrentUICulture = defaultCulture;
+
+app.UseRequestLocalization(localizationOptions);
+
 
 app.UseAuthorization();
 
