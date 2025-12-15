@@ -178,6 +178,36 @@ namespace si_td_gestion_eventos.Controllers
             return View(eventoVM);
         }
 
+        // POST: Evento/Reprogramar
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Reprogramar(ReprogramarEventoVM model)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = "Datos inválidos para reprogramar.";
+                return RedirectToAction("Details", new { id = model.EventoId });
+            }
+
+            var result = await _eventoService.ReprogramarAsync(model);
+
+            if (result.Success)
+            {
+                TempData["Ok"] = result.Message;
+                // Opcional: Redirigir a EDIT para que ajuste los costos si es necesario, 
+                // ya que el requerimiento dice "habilitar edición de campos".
+                // return RedirectToAction("Edit", new { id = model.EventoId });
+
+                // O simplemente volver al detalle:
+                return RedirectToAction("Details", new { id = model.EventoId });
+            }
+            else
+            {
+                TempData["Error"] = string.Join(", ", result.Errors);
+                return RedirectToAction("Details", new { id = model.EventoId });
+            }
+        }
+
         // POST: Evento/Edit/{id} 
         [HttpPost]
         [ValidateAntiForgeryToken]

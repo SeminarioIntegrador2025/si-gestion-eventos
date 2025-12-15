@@ -197,7 +197,6 @@
                             @* NO permite agregar pago: Mostrar alternativas según el motivo *@
                             @if (e.Estado == EventoEstado.Cancelado)
                             {
-                                @* Evento cancelado: Ver detalles (ya mostrado arriba, podríamos mostrar algo específico) *@
                                 <a asp-action="Details" asp-route-id="@e.EventoId" 
                                    class="btn btn-sm btn-outline-secondary" 
                                    title="Ver Detalles del Evento Cancelado">
@@ -206,7 +205,6 @@
                             }
                             else if (e.Estado == EventoEstado.Reprogramado)
                             {
-                                @* Evento reprogramado sin fecha: Asignar nueva fecha *@
                                 <a asp-action="Reprogramar" asp-route-id="@e.EventoId" 
                                    class="btn btn-sm btn-outline-warning" 
                                    title="Asignar Nueva Fecha">
@@ -215,11 +213,18 @@
                             }
                             else if (e.SaldoRestante <= 0)
                             {
-                                @* Evento totalmente pagado: Ver historial de pagos *@
                                 <a asp-controller="Pago" asp-action="Index" asp-route-eventoId="@e.EventoId" 
                                    class="btn btn-sm btn-outline-primary" 
                                    title="Ver Historial de Pagos">
                                     <i class="fa-solid fa-list"></i>
+                                </a>
+                            }
+                            else if (e.Estado == EventoEstado.Realizado)
+                            {
+                                <a asp-controller="Pago" asp-action="Index" asp-route-eventoId="@e.EventoId" 
+                                   class="btn btn-sm btn-outline-secondary" 
+                                   title="Ver Historial de Pagos del Evento Realizado">
+                                    <i class="fa-solid fa-history"></i>
                                 </a>
                             }
                         }
