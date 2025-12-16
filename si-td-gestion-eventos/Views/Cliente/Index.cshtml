@@ -273,7 +273,7 @@
                 <nav aria-label="Paginación">
                     <ul class="pagination mb-0">
                         <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
-                            <a class="page-link"
+                            <a class="page-link bg-transparent"
                                asp-action="Index"
                                asp-route-q="@q"
                                asp-route-estado="@estado"
@@ -294,7 +294,7 @@
                         }
 
                         <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
-                            <a class="page-link"
+                            <a class="page-link bg-transparent"
                                asp-action="Index"
                                asp-route-q="@q"
                                asp-route-estado="@estado"

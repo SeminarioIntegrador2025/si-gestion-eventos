@@ -125,7 +125,7 @@
     <nav>
         <ul class="pagination mb-0">
             <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
-                <a class="page-link" asp-action="Index" asp-route-page="@(Model.PageIndex - 1)" asp-route-q="@q" asp-route-estado="@estado" asp-route-pageSize="@pageSize">Anterior</a>
+                <a class="page-link bg-transparent" asp-action="Index" asp-route-page="@(Model.PageIndex - 1)" asp-route-q="@q" asp-route-estado="@estado" asp-route-pageSize="@pageSize">Anterior</a>
             </li>
             @for (int i = 1; i <= Model.TotalPages; i++)
             {
@@ -134,7 +134,7 @@
                 </li>
             }
             <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
-                <a class="page-link" asp-action="Index" asp-route-page="@(Model.PageIndex + 1)" asp-route-q="@q" asp-route-estado="@estado" asp-route-pageSize="@pageSize">Siguiente</a>
+                <a class="page-link bg-transparent" asp-action="Index" asp-route-page="@(Model.PageIndex + 1)" asp-route-q="@q" asp-route-estado="@estado" asp-route-pageSize="@pageSize">Siguiente</a>
             </li>
         </ul>
     </nav>

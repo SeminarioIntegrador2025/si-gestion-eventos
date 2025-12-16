@@ -15,7 +15,7 @@
     var eventoDesc = ViewData["EventoDescripcion"];
     var clienteNombre = ViewData["ClienteNombre"];
 
-    // Query params para persistir en paginación
+    // Query params para persistir en paginación / filtros
     string q = Context.Request.Query["q"];
     string eventoIdQuery = Context.Request.Query["eventoId"];
     int pageSize = int.TryParse(Context.Request.Query["pageSize"], out var ps) ? ps : 10;
@@ -28,7 +28,9 @@
         </h1>
         @if (isFilteredByEvent)
         {
-            <h5 class="text-muted fw-normal mb-0">Mostrando pagos para: <strong>@eventoDesc</strong> (@clienteNombre)</h5>
+            <h5 class="text-muted fw-normal mb-0">
+                Mostrando pagos para: <strong>@eventoDesc</strong> (@clienteNombre)
+            </h5>
         }
     </div>
 
@@ -69,6 +71,7 @@
                     </div>
                 </div>
             </div>
+
             <div class="col-md-3">
                 <div class="card card-kpi text-center">
                     <div class="card-body">
@@ -77,6 +80,7 @@
                     </div>
                 </div>
             </div>
+
             <div class="col-md-3">
                 <div class="card card-kpi text-center">
                     <div class="card-body">
@@ -85,6 +89,7 @@
                     </div>
                 </div>
             </div>
+
             <div class="col-md-3">
                 <div class="card card-kpi text-center">
                     <div class="card-body">
@@ -95,83 +100,62 @@
             </div>
         </div>
 
-        <!-- Filtros -->
+        <!-- Filtros (SIEMPRE visibles) -->
         <div class="card mb-4">
             <div class="card-body">
+                <form method="get" class="row g-3 align-items-end">
+                    <input type="hidden" name="page" value="1" />
 
-                @if (!isFilteredByEvent)
-                {
-                    <form method="get" class="row g-3 align-items-end">
-                        <input type="hidden" name="page" value="1" />
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">
+                            <i class="fa-solid fa-magnifying-glass me-1"></i>Buscar Pago
+                        </label>
+                        <input name="q" class="form-control"
+                               placeholder="Cliente, evento, referencia..."
+                               value="@q" />
+                    </div>
 
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">
-                                <i class="fa-solid fa-magnifying-glass me-1"></i>Buscar Pago
-                            </label>
-                            <input name="q" class="form-control"
-                                   placeholder="Cliente, evento, referencia..."
-                                   value="@ViewData["CurrentFilterQ"]" />
-                        </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">
+                            <i class="fa-solid fa-filter me-1"></i>Filtrar por Evento
+                        </label>
+                        <select name="eventoId" class="form-select" asp-items="@ViewBag.EventosFilter">
+                            <option value="">Todos los eventos</option>
+                        </select>
+                    </div>
 
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">
-                                <i class="fa-solid fa-filter me-1"></i>Filtrar por Evento
-                            </label>
-                            <select name="eventoId" class="form-select" onchange="this.form.submit()" asp-items="@ViewBag.EventosFilter">
-                                <option value="">Todos los eventos</option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-2">
-                            <label class="form-label fw-semibold">Mostrar</label>
-                            <select name="pageSize" class="form-select" onchange="this.form.submit()">
-                                @foreach (var s in new[] { 10, 25, 50 })
+                    <div class="col-md-2">
+                        <label class="form-label fw-semibold">Mostrar</label>
+                        <select name="pageSize" class="form-select" onchange="this.form.submit()">
+                            @foreach (var s in new[] { 10, 25, 50 })
+                            {
+                                if (s == pageSize)
                                 {
-                                    if (s == pageSize)
-                                    {
-                                        <option value="@s" selected>@s</option>
-                                    }
-                                    else
-                                    {
-                                        <option value="@s">@s</option>
-                                    }
+                                    <option value="@s" selected>@s</option>
                                 }
-                            </select>
-                        </div>
-
-                        <div class="col-md-2">
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="fa-solid fa-search me-1"></i>Buscar
-                            </button>
-                        </div>
-                    </form>
-                }
-                else
-                {
-                    <!-- cuando está filtrado por evento, igual damos pageSize -->
-                    <form method="get" class="row g-3 align-items-end">
-                        <input type="hidden" name="page" value="1" />
-                        <input type="hidden" name="eventoId" value="@eventoId" />
-
-                        <div class="col-md-3">
-                            <label class="form-label fw-semibold">Mostrar</label>
-                            <select name="pageSize" class="form-select" onchange="this.form.submit()">
-                                @foreach (var s in new[] { 10, 25, 50 })
+                                else
                                 {
-                                    if (s == pageSize)
-                                    {
-                                        <option value="@s" selected>@s</option>
-                                    }
-                                    else
-                                    {
-                                        <option value="@s">@s</option>
-                                    }
+                                    <option value="@s">@s</option>
                                 }
-                            </select>
-                        </div>
-                    </form>
-                }
+                            }
+                        </select>
+                    </div>
 
+                    <div class="col-md-2 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fa-solid fa-search me-1"></i>Buscar
+                        </button>
+
+                        <!-- Limpia filtro de evento (mantiene q y pageSize) -->
+                        <a class="btn btn-outline-secondary"
+                           asp-action="Index"
+                           asp-route-q="@q"
+                           asp-route-page="1"
+                           asp-route-pageSize="@pageSize">
+                            <i class="fa-solid fa-rotate-left"></i>
+                        </a>
+                    </div>
+                </form>
             </div>
         </div>
 
@@ -199,6 +183,7 @@
                             <th class="text-center">Acciones</th>
                         </tr>
                     </thead>
+
                     <tbody>
                         @if (Model.Any())
                         {
@@ -307,7 +292,7 @@
                         @for (int i = Model.StartPage; i <= Model.EndPage; i++)
                         {
                             <li class="page-item @(i == Model.PageIndex ? "active" : "")">
-                                <a class="page-link"
+                                <a class="page-link bg-transparent"
                                    asp-action="Index"
                                    asp-route-eventoId="@(isFilteredByEvent ? eventoId : eventoIdQuery)"
                                    asp-route-q="@q"
@@ -316,8 +301,8 @@
                             </li>
                         }
 
-                        <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
-                            <a class="page-link"
+                        <li class="page-item @(Model.HasNextPage ? "" : "disabled") ">
+                            <a class="page-link bg-transparent"
                                asp-action="Index"
                                asp-route-eventoId="@(isFilteredByEvent? eventoId : eventoIdQuery)"
                                asp-route-q="@q"

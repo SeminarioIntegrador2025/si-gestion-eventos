@@ -61,7 +61,15 @@
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label asp-for="Monto" class="form-label"></label>
-                                    <input asp-for="Monto" class="form-control" type="number" step="0.01" min="0" />
+
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-transparent text-light fw-bold border-secondary">UYU</span>
+                                        <input asp-for="Monto"
+                                               class="form-control"
+                                               type="number"
+                                               step="0.01" />
+                                    </div>
+
                                     <span asp-validation-for="Monto" class="text-danger"></span>
                                 </div>
                             </div>
