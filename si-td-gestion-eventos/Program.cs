@@ -57,6 +57,7 @@ builder.Services.AddScoped<IValidator<EventoVM>, EventoValidator>();
 builder.Services.AddScoped<IValidator<PagoVM>, PagoValidator>();
 builder.Services.AddScoped<IValidator<ReprogramarEventoVM>, ReprogramarEventoValidator>();
 builder.Services.AddHostedService<si_td_gestion_eventos.BackgroundServices.PaymentDeadlineService>();
+builder.Services.AddScoped<IValidator<FianzaVM>, FianzaValidator>();
 
 var app = builder.Build();
 

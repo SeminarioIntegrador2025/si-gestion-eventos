@@ -32,7 +32,6 @@
                         <input type="hidden" asp-for="FianzaId" />
                         <input type="hidden" asp-for="EventoId" />
 
-                        <!-- Info de la Fianza Original -->
                         <div class="alert alert-info border-0 mb-4">
                             <div class="row">
                                 <div class="col-md-4">
@@ -50,18 +49,22 @@
                             </div>
                         </div>
 
-                        <!-- Monto a Devolver -->
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label asp-for="MontoDevuelto" class="form-label fw-semibold">Monto a Devolver</label>
-                                    <input asp-for="MontoDevuelto" 
-                                           class="form-control" 
-                                           type="number" 
-                                           step="0.01" 
-                                           min="0"
-                                           max="@Model.Monto"
-                                           placeholder="0.00" />
+
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-transparent text-light fw-bold border-secondary">UYU</span>
+                                        <input asp-for="MontoDevuelto"
+                                               class="form-control"
+                                               type="number"
+                                               step="0.01"
+                                               min="0"
+                                               max="@Model.Monto"
+                                               placeholder="0.00" />
+                                    </div>
+
                                     <span asp-validation-for="MontoDevuelto" class="text-danger"></span>
                                     <small class="form-text text-muted">Monto máximo: @Model.Monto.ToString("C2")</small>
                                 </div>
@@ -69,9 +72,9 @@
                             <div class="col-md-6">
                                 <div class="form-group mb-3">
                                     <label asp-for="FechaDevolucion" class="form-label fw-semibold">Fecha de Devolución</label>
-                                    <input asp-for="FechaDevolucion" 
-                                           class="form-control" 
-                                           type="date" 
+                                    <input asp-for="FechaDevolucion"
+                                           class="form-control"
+                                           type="date"
                                            id="fechaDevolucion" />
                                     <span asp-validation-for="FechaDevolucion" class="text-danger"></span>
                                 </div>
@@ -103,11 +106,11 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const fechaInput = document.getElementById('fechaDevolucion');
-            
+
             // Establecer fecha de hoy por defecto
             if (fechaInput && !fechaInput.value) {
                 const hoy = new Date();
