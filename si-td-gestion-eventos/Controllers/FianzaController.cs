@@ -74,7 +74,7 @@ namespace si_td_gestion_eventos.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(FianzaVM fianzaVM)
         {
-            // 1. Validación del Modelo (FluentValidation se ejecuta aquí automáticamente)
+            // 1. Validación del Modelo
             if (!ModelState.IsValid)
             {
                 await CargarDatosVistaCreate(fianzaVM); // Recarga datos necesarios para la vista
@@ -94,7 +94,7 @@ namespace si_td_gestion_eventos.Controllers
             // 3. Si falla la lógica de negocio, mostramos el error
             ModelState.AddModelError(string.Empty, result.Errors.FirstOrDefault());
 
-            await CargarDatosVistaCreate(fianzaVM); // Recarga datos necesarios para la vista
+            await CargarDatosVistaCreate(fianzaVM); // Recarga datos necesarios
             return View(fianzaVM);
         }
 
@@ -117,16 +117,31 @@ namespace si_td_gestion_eventos.Controllers
             if (id != fianzaVM.FianzaId)
                 return BadRequest();
 
+            // 1. OBTENER DATOS ORIGINALES (Necesario para comparar montos y restaurar vista)
+            var fianzaOriginal = await _fianzaService.GetByIdAsync(id);
+            if (fianzaOriginal == null) return NotFound();
+
+            // 2. VALIDACIÓN MANUAL DE MONTO
+            // Verificamos explícitamente si el usuario quiere devolver más de lo que pagó
+            if (fianzaVM.MontoDevuelto.HasValue && fianzaVM.MontoDevuelto.Value > fianzaOriginal.Monto)
+            {
+                // Asignamos el error a la clave "MontoDevuelto" para que aparezca bajo el input
+                ModelState.AddModelError("MontoDevuelto", $"El monto a devolver no puede ser mayor al monto original ({fianzaOriginal.Monto:C2}).");
+            }
+
+            // 3. VERIFICAR MODELSTATE
             if (!ModelState.IsValid)
             {
-                // Recargar datos visuales (Descripción del evento) para que no se pierdan
-                var fianzaOriginal = await _fianzaService.GetByIdAsync(id);
-                if (fianzaOriginal != null)
-                    fianzaVM.EventoDescripcion = fianzaOriginal.EventoDescripcion;
+                // Restauramos la descripción del evento para que no se pierda en la vista
+                fianzaVM.EventoDescripcion = fianzaOriginal.EventoDescripcion;
+
+                // IMPORTANTE: Restauramos el monto original en el VM para que el validador de la vista (si existe) tenga referencia
+                fianzaVM.Monto = fianzaOriginal.Monto;
 
                 return View(fianzaVM);
             }
 
+            // 4. ACTUALIZAR
             var result = await _fianzaService.UpdateAsync(fianzaVM);
 
             if (result.Success)
@@ -135,17 +150,16 @@ namespace si_td_gestion_eventos.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Mostrar errores de negocio
+            // 5. MANEJO DE ERRORES DEL SERVICIO
             if (!string.IsNullOrEmpty(result.Message))
                 ModelState.AddModelError(string.Empty, result.Message);
 
             foreach (var error in result.Errors ?? new List<string>())
                 ModelState.AddModelError(string.Empty, error);
 
-            // Recargar datos visuales
-            var fianza = await _fianzaService.GetByIdAsync(id);
-            if (fianza != null)
-                fianzaVM.EventoDescripcion = fianza.EventoDescripcion;
+            // Recargar datos visuales si falló el servicio
+            fianzaVM.EventoDescripcion = fianzaOriginal.EventoDescripcion;
+            fianzaVM.Monto = fianzaOriginal.Monto;
 
             return View(fianzaVM);
         }
@@ -188,14 +202,12 @@ namespace si_td_gestion_eventos.Controllers
         // --- MÉTODOS PRIVADOS DE AYUDA (HELPERS) ---
 
         /// <summary>
-        /// Carga los datos necesarios para la vista Create (Dropdowns o Descripción del Evento)
-        /// dependiendo de si ya se seleccionó un evento o no.
+        /// Carga los datos necesarios para la vista Create
         /// </summary>
         private async Task CargarDatosVistaCreate(FianzaVM fianzaVM)
         {
             if (fianzaVM.EventoId > 0)
             {
-                // Si ya hay un evento seleccionado (ya sea por GET o POST), cargamos su descripción
                 var evento = await _eventoService.GetByIdAsync(fianzaVM.EventoId);
                 if (evento != null)
                 {
@@ -205,7 +217,6 @@ namespace si_td_gestion_eventos.Controllers
             }
             else
             {
-                // Si no hay evento, cargamos la lista desplegable de eventos disponibles (sin fianza)
                 ViewBag.EventosDisponibles = await _eventoService.GetEventosSinFianzaParaDropdownAsync();
                 ViewBag.EventoPreseleccionado = false;
             }

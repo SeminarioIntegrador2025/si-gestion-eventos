@@ -292,7 +292,7 @@
                         @for (int i = Model.StartPage; i <= Model.EndPage; i++)
                         {
                             <li class="page-item @(i == Model.PageIndex ? "active" : "")">
-                                <a class="page-link"
+                                <a class="page-link bg-transparent"
                                    asp-action="Index"
                                    asp-route-eventoId="@(isFilteredByEvent ? eventoId : eventoIdQuery)"
                                    asp-route-q="@q"
@@ -301,8 +301,8 @@
                             </li>
                         }
 
-                        <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
-                            <a class="page-link"
+                        <li class="page-item @(Model.HasNextPage ? "" : "disabled") ">
+                            <a class="page-link bg-transparent"
                                asp-action="Index"
                                asp-route-eventoId="@(isFilteredByEvent? eventoId : eventoIdQuery)"
                                asp-route-q="@q"
