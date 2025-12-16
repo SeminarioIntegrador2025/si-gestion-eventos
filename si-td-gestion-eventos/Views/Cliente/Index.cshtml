@@ -1,9 +1,14 @@
 ﻿@using si_td_gestion_eventos.Models.ViewModels
-@model List<ClienteVM>
+@model si_td_gestion_eventos.Infrastructure.PaginatedList<ClienteVM>
 
 @{
     ViewData["Title"] = "Clientes - Gestión";
+
+    string q = Context.Request.Query["q"];
+    string estado = Context.Request.Query["estado"];
+    int pageSize = int.TryParse(Context.Request.Query["pageSize"], out var ps) ? ps : 10;
 }
+
 @if (TempData["Ok"] != null)
 {
     <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -32,15 +37,16 @@
         <a class="btn btn-success" asp-action="Create">
             <i class="fa-solid fa-user-plus me-2"></i>Nuevo Cliente
         </a>
+
         <div class="dropdown">
             <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                 <i class="fa-solid fa-download me-2"></i>Exportar
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
+                <!-- OJO: si no implementaste estas acciones, comentá estos links -->
                 <li><a class="dropdown-item" asp-action="ExportExcel"><i class="fa-solid fa-file-excel me-2"></i>Excel</a></li>
                 <li><a class="dropdown-item" asp-action="ExportCsv"><i class="fa-solid fa-file-csv me-2"></i>CSV</a></li>
-            </ul> 
-            <!-- Ajustar Formatos -->
+            </ul>
         </div>
     </div>
 </div>
@@ -49,28 +55,32 @@
 <div class="row g-4">
     <!-- Área principal (≈ 3/4) -->
     <div class="col-xl-9 col-lg-8">
-        <!-- KPIs -->
+
+        <!-- KPIs (con lo que hay en la página, y total con TotalCount) -->
         <div class="row g-3 mb-4">
             <div class="col-md-4">
                 <div class="card card-kpi text-center">
                     <div class="card-body">
                         <div class="card-title mb-1">Total Clientes</div>
-                        <div class="display-6 text-primary fw-bold">@Model.Count</div>
+                        <div class="display-6 text-primary fw-bold">@Model.TotalCount</div>
+                        <small class="text-muted">Mostrando @Model.Count de @Model.TotalCount</small>
                     </div>
                 </div>
             </div>
+
             <div class="col-md-4">
                 <div class="card card-kpi text-center">
                     <div class="card-body">
-                        <div class="card-title mb-1">Activos</div>
+                        <div class="card-title mb-1">Activos (página)</div>
                         <div class="display-6 text-success fw-bold">@Model.Count(c => c.Activo)</div>
                     </div>
                 </div>
             </div>
+
             <div class="col-md-4">
                 <div class="card card-kpi text-center">
                     <div class="card-body">
-                        <div class="card-title mb-1">Inactivos</div>
+                        <div class="card-title mb-1">Inactivos (página)</div>
                         <div class="display-6 text-warning fw-bold">@Model.Count(c => !c.Activo)</div>
                     </div>
                 </div>
@@ -81,34 +91,46 @@
         <div class="card mb-4">
             <div class="card-body">
                 <form method="get" class="row g-3 align-items-end">
+                    <!-- Siempre que filtre, vuelvo a la página 1 -->
+                    <input type="hidden" name="page" value="1" />
+
                     <div class="col-md-5">
                         <label class="form-label fw-semibold">
                             <i class="fa-solid fa-magnifying-glass me-1"></i>Buscar Cliente
                         </label>
-                        <input name="q" class="form-control" placeholder="Nombre, apellido, cédula o teléfono..." />
+                        <input name="q" class="form-control"
+                               value="@q"
+                               placeholder="Nombre, apellido, cédula o teléfono..." />
                     </div>
+
                     <div class="col-md-3">
                         <label class="form-label fw-semibold">
                             <i class="fa-solid fa-filter me-1"></i>Estado
                         </label>
                         <select name="estado" class="form-select">
-                            <option value="">Todos</option>
-                            <option value="activo">Solo activos</option>
-                            <option value="inactivo">Solo inactivos</option>
+                            <option value="" selected="@(string.IsNullOrEmpty(estado))">Todos</option>
+                            <option value="activo" selected="@(estado == "activo")">Solo activos</option>
+                            <option value="inactivo" selected="@(estado == "inactivo")">Solo inactivos</option>
                         </select>
                     </div>
+
                     <div class="col-md-2">
                         <label class="form-label fw-semibold">Mostrar</label>
                         <select name="pageSize" class="form-select" onchange="this.form.submit()">
-                            @{
-                                int[] sizes = new[] { 10, 25, 50, 100 };
-                                foreach (var s in sizes)
+                            @foreach (var s in new[] { 10, 25, 50 })
+                            {
+                                if (s == pageSize)
+                                {
+                                    <option value="@s" selected>@s por página</option>
+                                }
+                                else
                                 {
                                     <option value="@s">@s por página</option>
                                 }
                             }
                         </select>
                     </div>
+
                     <div class="col-md-2">
                         <button type="submit" class="btn btn-primary w-100">
                             <i class="fa-solid fa-search me-1"></i>Buscar
@@ -122,7 +144,7 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span><i class="fa-solid fa-table me-2"></i>Lista de Clientes</span>
-                <span class="badge bg-primary">@Model.Count clientes</span>
+                <span class="badge bg-primary">@Model.TotalCount clientes</span>
             </div>
 
             <div class="table-responsive">
@@ -130,9 +152,7 @@
                     <thead>
                         <tr>
                             <th><i class="fa-solid fa-user me-1"></i>Cliente</th>
-                            <th>
-                                <i class="fa-solid fa-id-card me-1"></i>Documento (CI/RUT)
-                            </th>
+                            <th><i class="fa-solid fa-id-card me-1"></i>Documento (CI/RUT)</th>
                             <th><i class="fa-solid fa-phone me-1"></i>Teléfono</th>
                             <th><i class="fa-solid fa-building-user me-1"></i>Tipo</th>
                             <th><i class="fa-solid fa-toggle-on me-1"></i>Estado</th>
@@ -197,21 +217,13 @@
                                             <a asp-action="Edit" asp-route-id="@cliente.ClienteId" class="btn btn-sm btn-outline-secondary" title="Editar">
                                                 <i class="fa-solid fa-pen"></i>
                                             </a>
-                                         @* No aplica las validaciones para crear un evento (Cliente Activo) y en todo caso deberia crear el evento con el cliente ya seleccionado
-                                             <a asp-controller="Evento" asp-action="Create" asp-route-clienteId="@cliente.ClienteId" class="btn btn-sm btn-outline-success" title="Crear evento">
-                                                <i class="fa-solid fa-calendar-plus"></i>
-                                            </a> 
-                                            *@
+
                                             @if (cliente.Activo)
                                             {
                                                 <form asp-action="ToggleUnactive" method="post" class="d-inline"
                                                       onsubmit="return confirm('¿Está seguro que desea dar de baja este cliente?');">
-
                                                     @Html.AntiForgeryToken()
-
-                                                    @* --- AGREGA ESTE CAMPO OCULTO --- *@
                                                     <input type="hidden" name="id" value="@cliente.ClienteId" />
-
                                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Dar de Baja">
                                                         <i class="fa-solid fa-ban"></i>
                                                     </button>
@@ -221,12 +233,8 @@
                                             {
                                                 <form asp-action="ToggleActive" method="post" class="d-inline"
                                                       onsubmit="return confirm('¿Desea dar de alta este cliente?');">
-
                                                     @Html.AntiForgeryToken()
-
-                                                    @* --- AGREGA ESTE CAMPO OCULTO --- *@
                                                     <input type="hidden" name="id" value="@cliente.ClienteId" />
-
                                                     <button type="submit" class="btn btn-sm btn-outline-success" title="Dar de Alta">
                                                         <i class="fa-solid fa-check"></i>
                                                     </button>
@@ -255,12 +263,53 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Paginación -->
+            <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <small class="text-muted">
+                    Página @Model.PageIndex de @Model.TotalPages
+                </small>
+
+                <nav aria-label="Paginación">
+                    <ul class="pagination mb-0">
+                        <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                            <a class="page-link"
+                               asp-action="Index"
+                               asp-route-q="@q"
+                               asp-route-estado="@estado"
+                               asp-route-page="@(Model.PageIndex - 1)"
+                               asp-route-pageSize="@pageSize">Anterior</a>
+                        </li>
+
+                        @for (int i = Model.StartPage; i <= Model.EndPage; i++)
+                        {
+                            <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                                <a class="page-link"
+                                   asp-action="Index"
+                                   asp-route-q="@q"
+                                   asp-route-estado="@estado"
+                                   asp-route-page="@i"
+                                   asp-route-pageSize="@pageSize">@i</a>
+                            </li>
+                        }
+
+                        <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                            <a class="page-link"
+                               asp-action="Index"
+                               asp-route-q="@q"
+                               asp-route-estado="@estado"
+                               asp-route-page="@(Model.PageIndex + 1)"
+                               asp-route-pageSize="@pageSize">Siguiente</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
         </div>
     </div>
 
     <!-- Sidebar derecho (≈ 1/4) -->
     <div class="col-xl-3 col-lg-4">
-        <!-- Últimos 5 clientes agregados (datos reales) -->
+        <!-- Últimos 5 clientes agregados (en la página actual; si querés “últimos reales”, se debe consultar aparte) -->
         <div class="card mb-4">
             <div class="card-header d-flex align-items-center justify-content-between">
                 <span><i class="fa-solid fa-clock-rotate-left me-2"></i>Últimos clientes</span>
@@ -286,7 +335,7 @@
             </div>
         </div>
 
-        <!-- Estadísticas rápidas -->
+        <!-- Estadísticas rápidas (sobre la página) -->
         <div class="card">
             <div class="card-header">
                 <i class="fa-solid fa-chart-pie me-2"></i>Estadísticas
@@ -296,19 +345,19 @@
                     <div class="col-6">
                         <div class="text-center">
                             <div class="h4 text-primary mb-0">@(Model.Any() ? Math.Round((double)Model.Count(c => c.Activo) / Model.Count * 100, 1) : 0)%</div>
-                            <small class="text-muted">Activos</small>
+                            <small class="text-muted">Activos (página)</small>
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="text-center">
                             <div class="h4 text-primary mb-0">@(Model.Any() ? Math.Round((double)Model.Count(c => c.Tipo == si_td_gestion_eventos.Models.Enums.TipoCliente.PersonaFisica) / Model.Count * 100, 1) : 0)%</div>
-                            <small class="text-muted">Física</small>
+                            <small class="text-muted">Física (página)</small>
                         </div>
                     </div>
                     <div class="col-12">
                         <div class="text-center">
                             <div class="h4 text-primary mb-0">@(Model.Any() ? Math.Round((double)Model.Count(c => c.Tipo == si_td_gestion_eventos.Models.Enums.TipoCliente.PersonaJuridica) / Model.Count * 100, 1) : 0)%</div>
-                            <small class="text-muted">Juridica</small>
+                            <small class="text-muted">Jurídica (página)</small>
                         </div>
                     </div>
                 </div>

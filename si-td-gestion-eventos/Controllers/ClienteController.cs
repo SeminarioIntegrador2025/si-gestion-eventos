@@ -15,11 +15,16 @@ namespace si_td_gestion_eventos.Controllers
         }
 
         // GET: Cliente
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? q, string? estado, int page = 1, int pageSize = 10)
         {
-            var clientes = await _clienteService.GetAllAsync();
-            return View(clientes.ToList());
+            var allowed = new[] { 10, 25, 50 };
+            if (!allowed.Contains(pageSize)) pageSize = 10;
+            if (page < 1) page = 1;
+
+            var model = await _clienteService.GetAllPaginatedAsync(q, estado, page, pageSize);
+            return View(model);
         }
+
 
         // GET: Cliente/Details/{idCliente}
         public async Task<IActionResult> Details(int id)

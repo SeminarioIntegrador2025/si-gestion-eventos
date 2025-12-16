@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc.Rendering;
 using si_td_gestion_eventos.Models.ViewModels;
 using si_td_gestion_eventos.Services.Common;
+using si_td_gestion_eventos.Infrastructure;
 
 namespace si_td_gestion_eventos.Services.Contracts
 {
@@ -14,5 +15,7 @@ namespace si_td_gestion_eventos.Services.Contracts
         Task<ServiceResult<bool>> DeactivateAsync(int id);
         Task<ServiceResult<bool>> ActivateAsync(int id);
         Task<IEnumerable<SelectListItem>> GetClientesActivosParaDropdownAsync();
-    }
+        Task<PaginatedList<ClienteVM>> GetAllPaginatedAsync(string? q, string? estado, int page, int pageSize);
+
+}
 }

@@ -2,7 +2,7 @@
 @{
     ViewData["Title"] = "Confirmar Reserva de Evento";
 
-    // 1. OBTENEMOS LOS DATOS DEL VIEWDATA (QUE PASA EL PAGOCONTROLLER)
+    // 1. OBTENEMOS LOS DATOS DEL VIEWDATA
     var costoTotal = (float)(ViewData["CostoTotalEvento"] ?? 0f);
     var obsReserva = ViewData["ObsReserva"]?.ToString() ?? "Por Reserva";
     var obsCompleto = ViewData["ObsCompleto"]?.ToString() ?? "Pago completo";
@@ -14,7 +14,6 @@
      data-obs-completo="@obsCompleto"
      style="display: none;">
 </div>
-
 
 <h2>Paso 2: Confirmar Pago de Reserva</h2>
 <p>Complete los datos del pago para confirmar la creación del evento.</p>
@@ -36,12 +35,16 @@
 
             <fieldset class="mb-3">
                 <legend style="font-size: 1.1em;">Datos de la Reserva (Sugeridos)</legend>
+
                 <div class="form-group mb-2">
                     <label asp-for="Monto" class="control-label"></label>
-
-                    <input asp-for="Monto" class="form-control" id="montoSugerido" />
-
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent text-light fw-bold border-secondary">UYU</span>
+                        <input asp-for="Monto" class="form-control" id="montoSugerido" type="number" step="0.01" />
+                    </div>
+                    <span asp-validation-for="Monto" class="text-danger"></span>
                 </div>
+
                 <div class="form-group mb-2">
                     <label asp-for="Fecha" class="control-label"></label>
                     <input asp-for="Fecha" class="form-control" readonly />

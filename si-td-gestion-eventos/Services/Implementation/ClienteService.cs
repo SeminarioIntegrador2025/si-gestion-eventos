@@ -2,11 +2,13 @@ using AutoMapper;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using si_td_gestion_eventos.Entities;
+using si_td_gestion_eventos.Infrastructure;
 using si_td_gestion_eventos.Models.ViewModels;
 using si_td_gestion_eventos.Repositories;
 using si_td_gestion_eventos.Services.Common;
 using si_td_gestion_eventos.Services.Contracts;
 using si_td_gestion_eventos.Services.Implementation;
+
 
 namespace si_td_gestion_eventos.Services.Implementation
 {
@@ -196,5 +198,38 @@ namespace si_td_gestion_eventos.Services.Implementation
                            : $"Empresa: {c.Nombre}"
                 });
         }
+
+        public async Task<PaginatedList<ClienteVM>> GetAllPaginatedAsync(string? q, string? estado, int page, int pageSize)
+        {
+            var clientes = await _clienteRepository.GetAllAsync(); // trae todos
+            var query = clientes.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                q = q.Trim().ToLower();
+                query = query.Where(c =>
+                    (!string.IsNullOrEmpty(c.Nombre) && c.Nombre.ToLower().Contains(q)) ||
+                    (!string.IsNullOrEmpty(c.Apellido) && c.Apellido.ToLower().Contains(q)) ||
+                    (!string.IsNullOrEmpty(c.CedulaIdentidad) && c.CedulaIdentidad.ToLower().Contains(q)) ||
+                    (!string.IsNullOrEmpty(c.RUT) && c.RUT.ToLower().Contains(q))
+                );
+            }
+
+            if (!string.IsNullOrWhiteSpace(estado))
+            {
+                if (estado == "activo") query = query.Where(c => c.Activo);
+                if (estado == "inactivo") query = query.Where(c => !c.Activo);
+            }
+
+            query = query.OrderBy(c => c.Nombre).ThenBy(c => c.Apellido);
+
+            var total = query.Count();
+            var pageItems = query.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+            var vms = _mapper.Map<List<ClienteVM>>(pageItems);
+            return new PaginatedList<ClienteVM>(vms, total, page, pageSize);
+        }
+
+
     }
 }

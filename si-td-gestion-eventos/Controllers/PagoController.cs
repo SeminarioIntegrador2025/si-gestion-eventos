@@ -1,12 +1,15 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Newtonsoft.Json;
+using si_td_gestion_eventos.Infrastructure;
 using si_td_gestion_eventos.Models.Enums;
 using si_td_gestion_eventos.Models.ViewModels;
 using si_td_gestion_eventos.Services.Contracts;
+using si_td_gestion_eventos.Services.Implementation;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+
 
 namespace si_td_gestion_eventos.Controllers
 {
@@ -22,8 +25,13 @@ namespace si_td_gestion_eventos.Controllers
         }
 
         // MÉTODO INDEX
-        public async Task<IActionResult> Index(int? eventoId, string q)
+
+        public async Task<IActionResult> Index(int? eventoId, string q, int page = 1, int pageSize = 10)
         {
+            var allowed = new[] { 10, 25, 50 };
+            if (!allowed.Contains(pageSize)) pageSize = 10;
+            if (page < 1) page = 1;
+
             List<PagoVM> pagos;
             bool isFilteredByEvent = eventoId.HasValue;
             ViewData["IsFilteredByEvent"] = isFilteredByEvent;
@@ -31,8 +39,6 @@ namespace si_td_gestion_eventos.Controllers
             if (isFilteredByEvent)
             {
                 pagos = await _pagoService.GetPagosByEventoIdAsync(eventoId.Value);
-                // Nota: Traemos TODOS (incluidos anulados) para mostrarlos tachados en la lista (Opción B)
-
                 ViewData["EventoId"] = eventoId.Value;
                 ViewData["EventoDescripcion"] = pagos.FirstOrDefault()?.EventoDescripcion ?? "Evento no encontrado";
                 ViewData["ClienteNombre"] = pagos.FirstOrDefault()?.ClienteNombre ?? "N/A";
@@ -41,7 +47,7 @@ namespace si_td_gestion_eventos.Controllers
             {
                 pagos = await _pagoService.GetAllAsync();
 
-                if (!string.IsNullOrEmpty(q))
+                if (!string.IsNullOrWhiteSpace(q))
                 {
                     string lowerQ = q.ToLower().Trim();
                     pagos = pagos.Where(p =>
@@ -51,32 +57,37 @@ namespace si_td_gestion_eventos.Controllers
                     ).ToList();
                 }
 
-                ViewBag.EventosFilter = await _eventoService.GetEventosAdeudadosParaDropdownAsync();
                 ViewData["CurrentFilterQ"] = q;
             }
 
-            // --- KPIs (ACTUALIZADO) ---
-            // IMPORTANTE: Aquí debemos filtrar p.Valido para que los números sean reales.
-            // Si no, estaríamos sumando dinero de pagos anulados.
+            // ✅ Dropdown SIEMPRE (estés filtrado o no)
+            var eventosFilter = (await _eventoService.GetEventosParaFiltroPagosAsync()).ToList();
+            var selectedValue = eventoId?.ToString();
+            foreach (var item in eventosFilter)
+                item.Selected = item.Value == selectedValue;
 
-            var today = DateTime.Today;
-            var firstDayOfMonth = new DateTime(today.Year, today.Month, 1);
+            ViewBag.EventosFilter = eventosFilter;
 
-            // Filtramos solo los del mes actual
-            var pagosDelMes = pagos.Where(p => p.Fecha.Date >= firstDayOfMonth).ToList();
+            // KPIs (sobre la lista completa filtrada, NO paginada)
+            var pagosValidos = pagos.Where(p => p.Valido).ToList();
+            ViewBag.TotalPagosPMes = pagosValidos.Count(p => p.Fecha.Month == DateTime.Now.Month && p.Fecha.Year == DateTime.Now.Year);
+            ViewBag.TotalMontoPMes = pagosValidos.Where(p => p.Fecha.Month == DateTime.Now.Month && p.Fecha.Year == DateTime.Now.Year).Sum(p => p.Monto);
+            ViewBag.CountTransferenciasPMes = pagosValidos.Count(p => p.Metodo == MetodoPago.Transferencia && p.Fecha.Month == DateTime.Now.Month && p.Fecha.Year == DateTime.Now.Year);
+            ViewBag.CountEfectivoPMes = pagosValidos.Count(p => p.Metodo == MetodoPago.Efectivo && p.Fecha.Month == DateTime.Now.Month && p.Fecha.Year == DateTime.Now.Year);
 
-            // KPI 1: Total transacciones válidas
-            ViewBag.TotalPagosPMes = pagosDelMes.Count(p => p.Valido);
+            // Orden + paginación
+            pagos = pagos.OrderByDescending(p => p.Fecha).ToList();
+            var total = pagos.Count;
+            var pageItems = pagos.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
-            // KPI 2: Dinero real recaudado (solo válidos)
-            ViewBag.TotalMontoPMes = pagosDelMes.Where(p => p.Valido).Sum(p => p.Monto);
+            var model = new PaginatedList<PagoVM>(pageItems, total, page, pageSize);
+            ViewData["PageSize"] = pageSize;
+            ViewData["Page"] = page;
 
-            // KPI 3 & 4: Desglose por método (solo válidos)
-            ViewBag.CountTransferenciasPMes = pagosDelMes.Count(p => p.Metodo == MetodoPago.Transferencia && p.Valido);
-            ViewBag.CountEfectivoPMes = pagosDelMes.Count(p => p.Metodo == MetodoPago.Efectivo && p.Valido);
-
-            return View(pagos);
+            return View(model);
         }
+
+
 
         // --- NUEVO MÉTODO: ANULAR PAGO ---
         [HttpPost]
