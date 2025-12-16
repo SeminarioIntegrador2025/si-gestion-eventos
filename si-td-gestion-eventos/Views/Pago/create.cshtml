@@ -58,36 +58,28 @@
                             <input type="hidden" asp-for="EventoId" />
                         }
 
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label asp-for="Monto" class="control-label fw-semibold">Monto del Pago</label>
-                                    <div class="input-group">
-                                        <input asp-for="Monto" 
-                                               class="form-control" 
-                                               type="number" 
-                                               step="0.01" 
-                                               id="montoPago"
-                                               placeholder="0.00" />
-                                        @if (!showEventDropdown && saldoAnterior > 0)
-                                        {
-                                            <button type="button" 
-                                                    class="btn btn-primary" 
-                                                    id="btnPagarTotal"
-                                                    title="Pagar el saldo restante completo">
-                                                <i class="fa-solid fa-check-double me-1"></i>Pagar Total
-                                            </button>
-                                        }
-                                    </div>
-                                    <span asp-validation-for="Monto" class="text-danger"></span>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label asp-for="Monto" class="control-label fw-semibold">Monto del Pago</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-transparent text-light fw-bold border-secondary">UYU</span>
+                                    <input asp-for="Monto"
+                                           class="form-control"
+                                           type="number"
+                                           step="0.01"
+                                           id="montoPago"
+                                           placeholder="0.00" />
+                                    @if (!showEventDropdown && saldoAnterior > 0)
+                                    {
+                                        <button type="button"
+                                                class="btn btn-primary"
+                                                id="btnPagarTotal"
+                                                title="Pagar el saldo restante completo">
+                                            <i class="fa-solid fa-check-double me-1"></i>Pagar Total
+                                        </button>
+                                    }
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group mb-3">
-                                    <label asp-for="Fecha" class="control-label fw-semibold">Fecha de Pago</label>
-                                    <input asp-for="Fecha" class="form-control" type="date" />
-                                    <span asp-validation-for="Fecha" class="text-danger"></span>
-                                </div>
+                                <span asp-validation-for="Monto" class="text-danger"></span>
                             </div>
                         </div>
 

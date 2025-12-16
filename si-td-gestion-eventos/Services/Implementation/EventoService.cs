@@ -456,18 +456,60 @@ namespace si_td_gestion_eventos.Services.Implementation
             var deadline = DateTime.Now.AddHours(48);
             var now = DateTime.Now;
 
-            var eventosEnPeligro = await _eventoRepository.FindWithIncludesAsync(
+            //Buscamos TODOS los eventos activos en la ventana de tiempo (48hs)
+            
+            var eventosProximos = await _eventoRepository.FindWithIncludesAsync(
                 e => e.Estado != EventoEstado.Cancelado &&
                      e.Estado != EventoEstado.Realizado &&
-                     e.Estado != EventoEstado.Reprogramado && // FIX: Ignorar los reprogramados
+                     e.Estado != EventoEstado.Reprogramado && // Ignorar reprogramados (año 1900)
                      e.Inicio > now &&
-                     e.Inicio < deadline &&
-                    !e.ServiciosEsenciales.OfType<CertificadoAGADU>().Any(c => c.Verificado),
+                     e.Inicio < deadline,
                 e => e.Cliente,
-                e => e.ServiciosEsenciales
-            );
+                e => e.ServiciosEsenciales,
+                e => e.Pagos);
 
-            return _mapper.Map<List<EventoVM>>(eventosEnPeligro);
+            var listaAlertas = new List<EventoVM>();
+
+            foreach (var evento in eventosProximos)
+            {
+                var motivosAlerta = new List<string>();
+
+                //Verificar AGADU
+                bool faltaAgadu = !evento.ServiciosEsenciales.OfType<CertificadoAGADU>().Any(c => c.Verificado);
+                if (faltaAgadu)
+                {
+                    motivosAlerta.Add("Falta certificado AGADU");
+                }
+
+                //Verificar Deuda (RF-16: Verificar alquiler saldado)
+                decimal costoTotal = (decimal)(evento.CostoAlquiler + (evento.MontoAireAcondicionado ?? 0));
+
+                // Sumar solo pagos válidos
+                decimal totalPagado = evento.Pagos?
+                                      .Where(p => p.Valido)
+                                      .Sum(p => (decimal)p.Monto) ?? 0;
+
+                decimal deuda = costoTotal - totalPagado;
+
+                // Si debe algo (con pequeña tolerancia por decimales)
+                if (deuda > 0.5m)
+                {
+                    motivosAlerta.Add($"Falta saldar ${deuda:N0}");
+                }
+
+                // C. Si falló alguna de las verificaciones, lo agregamos a la lista de alertas
+                if (motivosAlerta.Any())
+                {
+                    var vm = _mapper.Map<EventoVM>(evento);
+
+                    // Usamos el campo Observaciones del VM para mostrar la alerta en el Dashboard
+                    vm.Observaciones = "ALERTA: " + string.Join(" + ", motivosAlerta);
+
+                    listaAlertas.Add(vm);
+                }
+            }
+
+            return listaAlertas;
         }
 
         public async Task<ServiceResult<int>> MarkCompletedEventsAsync()
@@ -505,53 +547,17 @@ namespace si_td_gestion_eventos.Services.Implementation
             }
         }
 
+        
+
         public async Task<ServiceResult<int>> CheckAndCancelUnpaidEventsAsync()
         {
-            var deadline = DateTime.Now.AddHours(48);
-            var now = DateTime.Now;
-            int cancelledCount = 0;
-            try
-            {
-                var eventsToCancelQuery = await _eventoRepository.FindWithIncludesAsync(
-                    e => e.Estado != EventoEstado.Cancelado &&
-                         e.Estado != EventoEstado.Reprogramado && // Seguridad extra
-                         e.Estado != EventoEstado.Realizado &&
-                         e.Inicio < deadline &&
-                         e.Inicio > now,
-                    e => e.Pagos
-                );
+            // MÉTODO NEUTRALIZADO POR REGLA DE NEGOCIO (RF-16)
+            // La documentación dice "Verificar y Alertar", NO cancelar automáticamente.
+            // La lógica de alerta se ha movido a 'GetAlertasServiciosAsync'.
+            // Mantenemos este método devolviendo 0 para no romper la interfaz ni los Background Workers.
 
-                var eventsToCancel = eventsToCancelQuery.ToList();
-                if (!eventsToCancel.Any()) return ServiceResult<int>.SuccessResult(0, "No hay eventos por vencer.");
-
-                foreach (var evento in eventsToCancel)
-                {
-                    // FIX: Sumar solo pagos VÁLIDOS.
-                    float totalPagado = evento.Pagos?
-                                        .Where(p => p.Valido) // <--- CRÍTICO
-                                        .Sum(p => p.Monto) ?? 0;
-
-                    if (totalPagado == 0)
-                    {
-                        evento.Estado = EventoEstado.Cancelado;
-                        evento.Observaciones = (evento.Observaciones ?? "") + " [Cancelado automáticamente por falta de pago 48hs antes.]";
-                        _eventoRepository.Update(evento);
-                        cancelledCount++;
-                    }
-                }
-
-                if (cancelledCount > 0)
-                {
-                    await _eventoRepository.SaveChangesAsync();
-                    return ServiceResult<int>.SuccessResult(cancelledCount, $"Se cancelaron {cancelledCount} eventos.");
-                }
-
-                return ServiceResult<int>.SuccessResult(0, "Eventos por vencer están todos pagos.");
-            }
-            catch (Exception ex)
-            {
-                return ServiceResult<int>.FailureResult($"Error cancelación auto: {ex.Message}");
-            }
+            await Task.CompletedTask;
+            return ServiceResult<int>.SuccessResult(0, "Cancelación automática desactivada.");
         }
 
         #endregion
@@ -629,7 +635,7 @@ namespace si_td_gestion_eventos.Services.Implementation
             );
 
             var eventosOrdenados = eventos
-                .OrderByDescending(e => e.FechaContrato)
+                .OrderByDescending(e => e.Inicio)
                 .Take(count)
                 .ToList();
 
