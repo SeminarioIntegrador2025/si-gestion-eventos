@@ -6,7 +6,9 @@ using si_td_gestion_eventos.Infrastructure;
 using si_td_gestion_eventos.Models.Enums;
 using si_td_gestion_eventos.Models.ViewModels;
 using si_td_gestion_eventos.Services.Contracts;
-using System; 
+using si_td_gestion_eventos.Models.Enums;
+using System;
+using ClosedXML.Excel;
 using System.Collections.Generic; 
 using System.Linq; 
 using System.Threading.Tasks; 
@@ -258,6 +260,88 @@ namespace si_td_gestion_eventos.Controllers
             await PopulateClientesDropdown();
             return View(eventoVM);
         }
+
+
+        [HttpGet]
+        public async Task<IActionResult> ExportarExcel(string? q, DateTime? fechaDesde, DateTime? fechaHasta, EventoEstado? estado)
+        {
+            // 1. OBTENER DATOS
+            // Reutiliza tu lógica de filtros pero trae TODO (sin paginación)
+            // Si no tienes un método específico, usa el de paginación con un PageSize alto
+            var eventos = await _eventoService.ObtenerTodosFiltradosAsync(q, fechaDesde, fechaHasta, estado);
+
+            // 2. GENERAR EXCEL
+            using (var workbook = new XLWorkbook())
+            {
+                var worksheet = workbook.Worksheets.Add("Listado de Eventos");
+
+                // --- ESTILOS ---
+                var headerStyle = workbook.Style;
+                headerStyle.Font.Bold = true;
+                headerStyle.Fill.BackgroundColor = XLColor.LightGray;
+                headerStyle.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+                // --- TÍTULO ---
+                worksheet.Cell(1, 1).Value = "Reporte General de Eventos";
+                worksheet.Range("A1:G1").Merge().Style.Font.FontSize = 14;
+                worksheet.Range("A1:G1").Style.Font.Bold = true;
+
+                worksheet.Cell(2, 1).Value = $"Generado el: {DateTime.Now:dd/MM/yyyy HH:mm}";
+
+                // --- ENCABEZADOS (Fila 4) ---
+                int headerRow = 4;
+                worksheet.Cell(headerRow, 1).Value = "ID";
+                worksheet.Cell(headerRow, 2).Value = "Cliente";
+                worksheet.Cell(headerRow, 3).Value = "Tipo Evento";
+                worksheet.Cell(headerRow, 4).Value = "Fecha Inicio";
+                worksheet.Cell(headerRow, 5).Value = "Estado";
+                worksheet.Cell(headerRow, 6).Value = "Costo Total";
+                worksheet.Cell(headerRow, 7).Value = "Saldo Pendiente";
+
+                worksheet.Range(headerRow, 1, headerRow, 7).Style = headerStyle;
+
+                // --- DATOS ---
+                int row = 5;
+                foreach (var item in eventos)
+                {
+                    worksheet.Cell(row, 1).Value = item.EventoId;
+                    worksheet.Cell(row, 2).Value = item.ClienteNombreCompleto;
+                    worksheet.Cell(row, 3).Value = item.Tipo.ToString();
+                    worksheet.Cell(row, 4).Value = item.Inicio;
+                    worksheet.Cell(row, 5).Value = item.Estado.ToString();
+
+                    // CORRECCIÓN 1: Usamos la propiedad calculada que agregaremos en el Paso 2
+                    worksheet.Cell(row, 6).Value = item.CostoTotal;
+                    worksheet.Cell(row, 6).Style.NumberFormat.Format = "$ #,##0.00";
+
+                    // CORRECCIÓN 2: Cambiamos 'SaldoPendiente' por 'SaldoRestante'
+                    worksheet.Cell(row, 7).Value = item.SaldoRestante;
+                    worksheet.Cell(row, 7).Style.NumberFormat.Format = "$ #,##0.00";
+
+                    // Usamos 'SaldoRestante' para la condición también
+                    if (item.SaldoRestante > 0)
+                    {
+                        worksheet.Cell(row, 7).Style.Font.FontColor = XLColor.Red;
+                    }
+
+                    row++;
+                }
+
+                // Autoajustar columnas
+                worksheet.Columns().AdjustToContents();
+
+                // 3. RETORNAR
+                using (var stream = new MemoryStream())
+                {
+                    workbook.SaveAs(stream);
+                    var content = stream.ToArray();
+                    return File(content,
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        $"Reporte_Eventos_{DateTime.Now:yyyyMMdd}.xlsx");
+                }
+            }
+        }
+
 
         // GET: Evento/Cancel/{id} 
         public async Task<IActionResult> Cancel(int id)

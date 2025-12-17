@@ -49,7 +49,10 @@ namespace si_td_gestion_eventos.Models.ViewModels
         [Range(0, double.MaxValue, ErrorMessage = "El monto del aire acondicionado no puede ser negativo.")]
         [Display(Name = "Monto Aire Acondicionado")]
         public decimal? MontoAireAcondicionado { get; set; }
-        
+
+        [Display(Name = "Costo Total")]
+        public decimal CostoTotal => CostoAlquiler + (MontoAireAcondicionado ?? 0);
+
         [Display(Name = "Estado")]
         public EventoEstado Estado { get; set; }
 

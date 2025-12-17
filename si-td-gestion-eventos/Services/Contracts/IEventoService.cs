@@ -13,7 +13,7 @@ namespace si_td_gestion_eventos.Services.Contracts
         Task<PaginatedList<EventoVM>> GetAllPaginatedAsync(string? searchQuery, DateTime? fechaDesde, DateTime? fechaHasta, EventoEstado? estado, string ordenarPor, int page, int pageSize);
         Task<EventoVM?> GetByIdAsync(int id);
         Task<List<EventoVM>> GetLatestAsync(int count);
-
+        Task<List<EventoVM>> ObtenerTodosFiltradosAsync(string? q, DateTime? fechaDesde, DateTime? fechaHasta, EventoEstado? estado);
         // CRUD y Acciones
         Task<ServiceResult<EventoVM>> CreateAsync(EventoVM eventoVM);
         Task<ServiceResult<EventoVM>> CreateEventWithPaymentAsync(EventoVM eventoVM, PagoReservaVM pagoVM);
