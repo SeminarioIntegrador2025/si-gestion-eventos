@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using DocumentFormat.OpenXml.InkML;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -348,7 +349,28 @@ namespace si_td_gestion_eventos.Services.Implementation
                 return ServiceResult<EventoVM>.FailureResult($"Error al actualizar: {ex.Message}");
             }
         }
+        public async Task<List<EventoVM>> ObtenerTodosFiltradosAsync(string? q, DateTime? fechaDesde, DateTime? fechaHasta, EventoEstado? estado)
+        {
+            // Construimos el filtro (Predicado) en una sola expresión, igual que en PagoService
+            Expression<Func<Evento, bool>> predicate = e =>
+                (string.IsNullOrEmpty(q) ||
+                 e.Cliente.Nombre.Contains(q) ||
+                 e.Cliente.Apellido.Contains(q) ||
+                 e.Cliente.CedulaIdentidad.Contains(q)) &&
+                (!fechaDesde.HasValue || e.Inicio.Date >= fechaDesde.Value.Date) &&
+                (!fechaHasta.HasValue || e.Inicio.Date <= fechaHasta.Value.Date) &&
+                (!estado.HasValue || e.Estado == estado.Value);
 
+            // Usamos el repositorio en lugar de _context
+            // FindWithIncludesAsync trae los datos y las relaciones (Cliente)
+            var listaEntidades = await _eventoRepository.FindWithIncludesAsync(predicate, e => e.Cliente);
+
+            // Ordenamos en memoria (o el repositorio podría hacerlo si soporta OrderBy)
+            listaEntidades = listaEntidades.OrderByDescending(e => e.Inicio).ToList();
+
+            // Mapeamos a ViewModel
+            return _mapper.Map<List<EventoVM>>(listaEntidades);
+        }
         #endregion
 
         #region 3. Acciones de Negocio (Estado y Fechas)
