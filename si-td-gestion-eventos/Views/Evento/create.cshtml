@@ -44,56 +44,96 @@
         </div>
     </div>
 </div>
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 
     <script>
         $(document).ready(function () {
 
-            // Formato CI
+            // 1. Formato visual de la Cédula (mientras escribes)
             $('#ResponsableCedula').on('input', function() {
                 let value = this.value.replace(/[^\d]/g, '');
                 if (value.length > 8) {
                     value = value.substring(0, 8);
                 }
                 if (value.length >= 2) {
+                    // Formato simple 1.234.567-8
                     value = value.substring(0, value.length - 1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') + '-' + value.substring(value.length - 1);
                 }
                 this.value = value;
             });
 
-            // Advertencia de 48 hs
+            // 2. Autocompletado al cambiar la Cédula (Lógica nueva)
+            $('#ResponsableCedula').on('change', function () {
+                var ciIngresada = $(this).val();
+
+                // Limpiamos formato para enviar solo números si tu backend lo prefiere (opcional)
+                // var ciLimpia = ciIngresada.replace(/[^\d]/g, '');
+
+                if (ciIngresada && ciIngresada.length > 0) {
+
+                    // Feedback visual
+                    $('#ResponsableNombre, #ResponsableTelefono').attr('placeholder', 'Buscando...');
+
+                    $.ajax({
+                        url: '/Cliente/BuscarPorCI',
+                        type: 'GET',
+                        data: { ci: ciIngresada }, // Enviamos lo que está escrito
+                        success: function (data) {
+                            if (data.success) {
+                                // Rellenar campos
+                                $('#ResponsableNombre').val(data.nombre);
+                                $('#ResponsableTelefono').val(data.telefono);
+
+                                // Efecto verde
+                                $('#ResponsableNombre, #ResponsableTelefono').addClass('is-valid');
+                                setTimeout(function() {
+                                    $('#ResponsableNombre, #ResponsableTelefono').removeClass('is-valid');
+                                }, 2000);
+                            }
+                        },
+                        error: function () {
+                            console.log("Cédula no encontrada en clientes registrados.");
+                        },
+                        complete: function() {
+                             $('#ResponsableNombre, #ResponsableTelefono').attr('placeholder', '');
+                        }
+                    });
+                }
+            });
+
+            // 3. Advertencia de 48 hs antes de enviar
             $("#formCrearEvento").on("submit", function(e) {
-            
+
+                // Asegurarse de que fecha y hora tengan valor
+                if(!$("#FechaInicio").val() || !$("#HoraInicio").val()) return;
+
                 const fechaInicio = new Date($("#FechaInicio").val() + "T" + $("#HoraInicio").val());
                 const costoAlquiler = parseFloat($("#CostoAlquiler").val()) || 0;
                 const montoAire = parseFloat($("#MontoAire").val()) || 0;
+                // Ajuste ID selector monto aire (tu parcial dice id="MontoAire")
+
                 const montoReserva = parseFloat($("#MontoReserva").val()) || 0;
                 const costoTotal = costoAlquiler + montoAire;
-                
-                
+
                 const ahora = new Date();
                 const deadline48hs = new Date(ahora.getTime() + 48 * 60 * 60 * 1000);
 
                 const esDentroDe48Hs = (fechaInicio > ahora && fechaInicio < deadline48hs);
                 const esPagoParcial = montoReserva < costoTotal;
 
-
                 if (esDentroDe48Hs && esPagoParcial) {
-
                     const mensaje = "ADVERTENCIA:\n\n" +
-                                  "Este evento es en menos de 48 horas y solo se está pagando la reserva.\n\n" +
-                                  "¿Desea crearlo igualmente?";
+                                    "Este evento es en menos de 48 horas y solo se está pagando la reserva.\n\n" +
+                                    "¿Desea crearlo igualmente?";
 
-                    if (confirm(mensaje)) {
-                        // SI (El usuario confirma): Deja que el formulario se envíe
-                        return;
-                    } else {
-                        // NO (El usuario cancela): Detiene el envío del formulario
-                        e.preventDefault();
+                    if (!confirm(mensaje)) {
+                        e.preventDefault(); // Cancelar envío
                     }
                 }
             });
-        });
+
+        }); // FIN del $(document).ready
     </script>
 }
