@@ -61,6 +61,7 @@
         <select name="ordenPor" id="ordenPor" class="form-select" asp-items="ViewBag.OrdenPorList" onchange="this.form.submit()">
         </select>
     </div>
+
     <div class="col-md-2">
         <button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-magnifying-glass"></i> Buscar</button>
     </div>
@@ -149,7 +150,7 @@
                             @* Evento Cancelado: Botón para Reactivar/Reprogramar con MODAL *@
                             <button type="button"
                                     class="btn btn-sm btn-outline-warning"
-                                    title="Reprogramar / Reactivar"
+                                    title="Reprogramar"
                                     data-bs-toggle="modal"
                                     data-bs-target="#modalReprogramarIndex"
                                     onclick="setEventoId(@e.EventoId)">
@@ -164,7 +165,8 @@
                             </a>
                         }
 
-                        @if (e.PermiteAgregarPago)
+                        @* MODIFICADO: Validación explícita de saldo *@
+                        @if (e.SaldoRestante > 0 && e.Estado != EventoEstado.Cancelado)
                         {
                             <a asp-controller="Pago" asp-action="Create" asp-route-eventoId="@e.EventoId" class="btn btn-sm btn-outline-success" title="Agregar Pago">
                                 <i class="fa-solid fa-dollar-sign"></i>
@@ -177,14 +179,14 @@
                                 @* === Evento Reprogramado: Botón MODAL === *@
                                 <button type="button"
                                         class="btn btn-sm btn-outline-warning"
-                                        title="Asignar Nueva Fecha"
+                                        title="Reprogramar"
                                         data-bs-toggle="modal"
                                         data-bs-target="#modalReprogramarIndex"
                                         onclick="setEventoId(@e.EventoId)">
                                     <i class="fa-solid fa-calendar-plus"></i>
                                 </button>
                             }
-                            else if (e.SaldoRestante <= 0 || e.Estado == EventoEstado.Realizado)
+                            else
                             {
                                 <a asp-controller="Pago" asp-action="Index" asp-route-eventoId="@e.EventoId" class="btn btn-sm btn-outline-primary" title="Ver Historial">
                                     <i class="fa-solid fa-list"></i>
