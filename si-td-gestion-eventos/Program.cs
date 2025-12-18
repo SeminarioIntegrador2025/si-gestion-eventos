@@ -1,4 +1,5 @@
 using FluentValidation;
+using FluentValidation.AspNetCore; 
 using Microsoft.EntityFrameworkCore;
 using si_td_gestion_eventos.Context;
 using si_td_gestion_eventos.Mapping;
@@ -6,7 +7,7 @@ using si_td_gestion_eventos.Models.ViewModels;
 using si_td_gestion_eventos.Repositories;
 using si_td_gestion_eventos.Services.Contracts;
 using si_td_gestion_eventos.Services.Implementation;
-using si_td_gestion_eventos.Validators;
+using si_td_gestion_eventos.Validators; 
 using QuestPDF.Infrastructure;
 using System.Globalization;
 using Microsoft.AspNetCore.Localization;
@@ -18,6 +19,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+
+// Registra TODOS los validadores que encuentre en el proyecto (Assembly) de una sola vez
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
 // DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("SqlString"))
@@ -26,7 +31,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // AutoMapper
 builder.Services.AddAutoMapper(cfg =>
 {
-    // Se registran los perfiles para el mapeo de objetos
     cfg.AddProfile<ClienteProfile>();
     cfg.AddProfile<EventoProfile>();
     cfg.AddProfile<PagoProfile>();
@@ -45,19 +49,12 @@ builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 builder.Services.AddScoped<IFianzaService, FianzaService>();
 builder.Services.AddScoped<IServicioEsencialService, ServicioEsencialService>();
 
-
 // Reglas de Negocio (Validaciones complejas)
 builder.Services.AddScoped<IClienteBusinessRules, ClienteBusinessRules>();
 builder.Services.AddScoped<IEventoBusinessRules, EventoBusinessRules>();
-builder.Services.AddScoped<IValidator<ReprogramarEventoVM>, ReprogramarEventoValidator>();
 
-// Validadores con FluentValidation
-builder.Services.AddScoped<IValidator<ClienteVM>, ClienteValidator>();
-builder.Services.AddScoped<IValidator<EventoVM>, EventoValidator>();
-builder.Services.AddScoped<IValidator<PagoVM>, PagoValidator>();
-builder.Services.AddScoped<IValidator<ReprogramarEventoVM>, ReprogramarEventoValidator>();
+// TAREAS EN SEGUNDO PLANO (Hosted Services)
 builder.Services.AddHostedService<si_td_gestion_eventos.BackgroundServices.PaymentDeadlineService>();
-builder.Services.AddScoped<IValidator<FianzaVM>, FianzaValidator>();
 
 var app = builder.Build();
 
@@ -73,8 +70,8 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+// CONFIGURACIÓN REGIONAL (CULTURA)
 var defaultCulture = new CultureInfo("es-UY");
-
 // Asegura formato de moneda en UYU
 defaultCulture.NumberFormat.CurrencySymbol = "$U";
 
@@ -92,7 +89,6 @@ CultureInfo.DefaultThreadCurrentCulture = defaultCulture;
 CultureInfo.DefaultThreadCurrentUICulture = defaultCulture;
 
 app.UseRequestLocalization(localizationOptions);
-
 
 app.UseAuthorization();
 

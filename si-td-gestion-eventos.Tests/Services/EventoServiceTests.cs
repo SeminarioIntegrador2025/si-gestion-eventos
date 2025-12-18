@@ -198,8 +198,8 @@ namespace si_td_gestion_eventos.Tests.Services
             var model = new ReprogramarEventoVM
             {
                 EventoId = eventoId,
-                FechaIndefinida = false,
-                NuevaFecha = nuevaFecha,
+                NuevaFechaInicio = nuevaFecha,
+                NuevaFechaFin = nuevaFecha,
                 NuevaHoraInicio = horaInicio,
                 NuevaHoraFin = horaFin
             };

@@ -1,23 +1,19 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace si_td_gestion_eventos.Models.ViewModels
+public class ReprogramarEventoVM
 {
-    public class ReprogramarEventoVM
-    {
-        public int EventoId { get; set; }
+    public int EventoId { get; set; }
+    public bool FechaIndefinida { get; set; }
 
-        // Nuevo campo para indicar que no hay fecha aún
-        public bool FechaIndefinida { get; set; }
+    [DataType(DataType.Date)]
+    public DateTime? NuevaFechaInicio { get; set; } 
 
-        // Ahora son anulables (DateTime?)
-        [DataType(DataType.Date)]
-        public DateTime? NuevaFecha { get; set; }
+    [DataType(DataType.Time)]
+    public TimeSpan? NuevaHoraInicio { get; set; }
 
-        [DataType(DataType.Time)]
-        public TimeSpan? NuevaHoraInicio { get; set; }
+    [DataType(DataType.Date)]
+    public DateTime? NuevaFechaFin { get; set; } 
 
-        [DataType(DataType.Time)]
-        public TimeSpan? NuevaHoraFin { get; set; }
-    }
+    [DataType(DataType.Time)]
+    public TimeSpan? NuevaHoraFin { get; set; }
 }

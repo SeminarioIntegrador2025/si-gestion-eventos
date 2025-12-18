@@ -1,54 +1,63 @@
 ﻿using FluentValidation;
-using si_td_gestion_eventos.Models.ViewModels;
 using si_td_gestion_eventos.Services.Contracts;
-using System;
 
-namespace si_td_gestion_eventos.Validators
+public class ReprogramarEventoValidator : AbstractValidator<ReprogramarEventoVM>
 {
-    public class ReprogramarEventoValidator : AbstractValidator<ReprogramarEventoVM>
+    private readonly IEventoBusinessRules _businessRules;
+
+    public ReprogramarEventoValidator(IEventoBusinessRules businessRules)
     {
-        private readonly IEventoBusinessRules _businessRules;
+        _businessRules = businessRules;
 
-        public ReprogramarEventoValidator(IEventoBusinessRules businessRules)
+        When(x => !x.FechaIndefinida, () =>
         {
-            _businessRules = businessRules;
+            // 1. Obligatoriedad
+            RuleFor(x => x.NuevaFechaInicio).NotNull().WithMessage("Fecha inicio obligatoria.");
+            RuleFor(x => x.NuevaHoraInicio).NotNull().WithMessage("Hora inicio obligatoria.");
+            RuleFor(x => x.NuevaFechaFin).NotNull().WithMessage("Fecha fin obligatoria.");
+            RuleFor(x => x.NuevaHoraFin).NotNull().WithMessage("Hora fin obligatoria.");
 
-            // REGLA 1: Si NO es indefinida, la fecha es obligatoria y debe ser futura
-            RuleFor(x => x.NuevaFecha)
-                .NotEmpty().When(x => !x.FechaIndefinida).WithMessage("La nueva fecha es obligatoria si no se marca como indefinida.")
-                .GreaterThanOrEqualTo(DateTime.Today).When(x => !x.FechaIndefinida && x.NuevaFecha.HasValue)
-                .WithMessage("No puedes reprogramar un evento a una fecha pasada.");
-
-            // REGLA 2: Horarios obligatorios si hay fecha
-            RuleFor(x => x.NuevaHoraInicio)
-                .NotEmpty().When(x => !x.FechaIndefinida).WithMessage("La hora de inicio es obligatoria.");
-
-            RuleFor(x => x.NuevaHoraFin)
-                .NotEmpty().When(x => !x.FechaIndefinida).WithMessage("La hora de fin es obligatoria.")
-                .GreaterThan(x => x.NuevaHoraInicio.Value).When(x => !x.FechaIndefinida && x.NuevaHoraInicio.HasValue && x.NuevaHoraFin.HasValue)
-                .WithMessage("La hora de fin debe ser posterior a la hora de inicio.");
-
-            // REGLA 3: Disponibilidad (Solo validamos si hay una fecha nueva concreta)
+            // 2. Coherencia Temporal (Fin > Inicio)
             RuleFor(x => x)
-                .Cascade(CascadeMode.Stop)
-                .MustAsync(async (model, ct) =>
+                .Must(m =>
                 {
-                    if (model.FechaIndefinida || !model.NuevaFecha.HasValue || !model.NuevaHoraInicio.HasValue || !model.NuevaHoraFin.HasValue)
-                        return true; // Si es indefinida, no choca con nadie (se asume cupo liberado)
+                    if (!m.NuevaFechaInicio.HasValue || !m.NuevaFechaFin.HasValue ||
+                        !m.NuevaHoraInicio.HasValue || !m.NuevaHoraFin.HasValue) return true;
 
-                    DateTime fechaInicio = model.NuevaFecha.Value.Date;
-                    DateTime fechaFin = model.NuevaFecha.Value.Date; // Asume mismo día
+                    var inicio = m.NuevaFechaInicio.Value.Date + m.NuevaHoraInicio.Value;
+                    var fin = m.NuevaFechaFin.Value.Date + m.NuevaHoraFin.Value;
 
+                    return fin > inicio;
+                })
+                .WithMessage("La fecha/hora de fin debe ser posterior al inicio.");
+
+            // 3. No al Pasado
+            RuleFor(x => x)
+                .Must(m =>
+                {
+                    if (!m.NuevaFechaInicio.HasValue || !m.NuevaHoraInicio.HasValue) return true;
+                    var inicio = m.NuevaFechaInicio.Value.Date + m.NuevaHoraInicio.Value;
+                    return inicio >= DateTime.Now.AddMinutes(-1);
+                })
+                .WithMessage("No puedes programar en el pasado.");
+
+            // 4. Disponibilidad (Lógica Simple y Directa)
+            RuleFor(x => x)
+                .MustAsync(async (m, ct) =>
+                {
+                    if (!m.NuevaFechaInicio.HasValue || !m.NuevaFechaFin.HasValue ||
+                        !m.NuevaHoraInicio.HasValue || !m.NuevaHoraFin.HasValue) return true;
+
+                    // Pasamos las fechas tal cual las eligió el usuario. Cero magia.
                     return await _businessRules.IsDateRangeAvailableAsync(
-                        fechaInicio,
-                        fechaFin,
-                        model.NuevaHoraInicio.Value,
-                        model.NuevaHoraFin.Value,
-                        model.EventoId
+                        m.NuevaFechaInicio.Value,
+                        m.NuevaFechaFin.Value,
+                        m.NuevaHoraInicio.Value,
+                        m.NuevaHoraFin.Value,
+                        m.EventoId
                     );
                 })
-                .When(x => !x.FechaIndefinida) // Solo ejecuta esto si se eligió fecha
-                .WithMessage("El nuevo horario seleccionado entra en conflicto con otro evento.");
-        }
+                .WithMessage("El salón ya está ocupado en ese rango.");
+        });
     }
 }
