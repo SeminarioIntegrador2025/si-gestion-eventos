@@ -4,7 +4,7 @@
 @{
     ViewData["Title"] = "Gestión de Eventos";
 
-    // Obtenemos los filtros actuales para la paginación
+    // Filtros actuales
     string q = ViewBag.Search as string ?? "";
     int pageSize = (int)(ViewBag.PageSizeList.SelectedValue ?? 10);
     DateTime? fechaDesde = ViewBag.FechaDesde as DateTime?;
@@ -143,29 +143,21 @@
                         <a asp-action="Details" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-info" title="Ver Detalles"><i class="fa-solid fa-eye"></i></a>
                         <a asp-action="Edit" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="fa-solid fa-pen"></i></a>
 
-                        @* --- LÓGICA DE BOTONES --- *@
-
                         @if (e.Estado == EventoEstado.Cancelado)
                         {
-                            @* Evento Cancelado: Botón para Reactivar/Reprogramar con MODAL *@
-                            <button type="button"
-                                    class="btn btn-sm btn-outline-warning"
-                                    title="Reprogramar"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#modalReprogramarIndex"
+                            <button type="button" class="btn btn-sm btn-outline-warning" title="Reprogramar"
+                                    data-bs-toggle="modal" data-bs-target="#modalReprogramarIndex"
                                     onclick="setEventoId(@e.EventoId)">
                                 <i class="fa-solid fa-clock-rotate-left"></i>
                             </button>
                         }
                         else
                         {
-                            @* Evento Activo: Botón Cancelar *@
                             <a asp-action="Cancel" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-danger" title="Cancelar Evento">
                                 <i class="fa-solid fa-ban"></i>
                             </a>
                         }
 
-                        @* MODIFICADO: Validación explícita de saldo *@
                         @if (e.SaldoRestante > 0 && e.Estado != EventoEstado.Cancelado)
                         {
                             <a asp-controller="Pago" asp-action="Create" asp-route-eventoId="@e.EventoId" class="btn btn-sm btn-outline-success" title="Agregar Pago">
@@ -176,12 +168,8 @@
                         {
                             if (e.Estado == EventoEstado.Reprogramado)
                             {
-                                @* === Evento Reprogramado: Botón MODAL === *@
-                                <button type="button"
-                                        class="btn btn-sm btn-outline-warning"
-                                        title="Reprogramar"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#modalReprogramarIndex"
+                                <button type="button" class="btn btn-sm btn-outline-warning" title="Reprogramar"
+                                        data-bs-toggle="modal" data-bs-target="#modalReprogramarIndex"
                                         onclick="setEventoId(@e.EventoId)">
                                     <i class="fa-solid fa-calendar-plus"></i>
                                 </button>
@@ -249,7 +237,8 @@
 
                     <div class="p-3 border rounded mb-3 d-flex align-items-center">
                         <div class="form-check form-switch mb-0">
-                            <input class="form-check-input me-2" type="checkbox" id="chkIndexIndefinida" name="FechaIndefinida" value="true" style="cursor: pointer;">
+                            <input class="form-check-input me-2" type="checkbox" id="chkIndexIndefinida"
+                                   name="FechaIndefinida" value="true" style="cursor: pointer;">
                             <label class="form-check-label text-dark" for="chkIndexIndefinida" style="cursor: pointer;">
                                 Dejar fecha por definir (Libera el cupo actual)
                             </label>
@@ -257,19 +246,29 @@
                     </div>
 
                     <div id="panelFechasIndex">
-                        <div class="mb-3">
-                            <label class="form-label text-dark">Nueva Fecha</label>
-                            <input type="date" class="form-control" name="NuevaFecha" />
-                        </div>
-
                         <div class="row">
                             <div class="col-6 mb-3">
-                                <label class="form-label text-dark">Hora Inicio</label>
-                                <input type="time" class="form-control" name="NuevaHoraInicio" />
+                                <label class="form-label text-dark fw-bold">Nuevo Inicio</label>
+                                <div class="mb-2">
+                                    <label class="small text-muted">Fecha</label>
+                                    <input type="date" class="form-control" id="NuevaFechaInicio" name="NuevaFechaInicio" required />
+                                </div>
+                                <div>
+                                    <label class="small text-muted">Hora</label>
+                                    <input type="time" class="form-control" name="NuevaHoraInicio" required />
+                                </div>
                             </div>
+
                             <div class="col-6 mb-3">
-                                <label class="form-label text-dark">Hora Fin</label>
-                                <input type="time" class="form-control" name="NuevaHoraFin" />
+                                <label class="form-label text-dark fw-bold">Nuevo Fin</label>
+                                <div class="mb-2">
+                                    <label class="small text-muted">Fecha</label>
+                                    <input type="date" class="form-control" id="NuevaFechaFin" name="NuevaFechaFin" required />
+                                </div>
+                                <div>
+                                    <label class="small text-muted">Hora</label>
+                                    <input type="time" class="form-control" name="NuevaHoraFin" required />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -286,37 +285,50 @@
     </div>
 </div>
 
-<script>
-    // 1. Pasar ID al Modal
-    function setEventoId(id) {
-        document.getElementById('Index_EventoId').value = id;
-    }
-
-    // 2. Lógica de bloqueo de inputs (igual que en Details)
-    document.addEventListener("DOMContentLoaded", function() {
-        var chk = document.getElementById('chkIndexIndefinida');
-        var panel = document.getElementById('panelFechasIndex');
-        var inputs = panel.querySelectorAll('input');
-
-        if (chk) {
-            chk.addEventListener('change', function() {
-                if (this.checked) {
-                    // Si marca indefinida: opacidad y bloqueo de inputs
-                    panel.style.opacity = '0.5';
-                    panel.style.pointerEvents = 'none';
-                    inputs.forEach(input => {
-                        input.readOnly = true;
-                        input.value = '';
-                    });
-                } else {
-                    // Si desmarca: reactiva inputs
-                    panel.style.opacity = '1';
-                    panel.style.pointerEvents = 'auto';
-                    inputs.forEach(input => {
-                        input.readOnly = false;
-                    });
-                }
-            });
+@section Scripts {
+    <script>
+        // 1. Pasar ID al Modal cuando se hace clic en el botón de la tabla
+        function setEventoId(id) {
+            document.getElementById('Index_EventoId').value = id;
         }
-    });
-</script>
+
+        document.addEventListener("DOMContentLoaded", function() {
+            var chk = document.getElementById('chkIndexIndefinida');
+            var panel = document.getElementById('panelFechasIndex');
+            var inputs = panel.querySelectorAll('input');
+
+            // 2. Lógica para bloquear inputs si es "Fecha Indefinida"
+            if (chk) {
+                chk.addEventListener('change', function() {
+                    if (this.checked) {
+                        panel.style.opacity = '0.5';
+                        panel.style.pointerEvents = 'none';
+                        inputs.forEach(input => {
+                            input.readOnly = true;
+                            input.value = ''; // Limpiar campos
+                        });
+                    } else {
+                        panel.style.opacity = '1';
+                        panel.style.pointerEvents = 'auto';
+                        inputs.forEach(input => {
+                            input.readOnly = false;
+                        });
+                    }
+                });
+            }
+
+            // 3. Lógica UX: Copiar Fecha Inicio a Fecha Fin automáticamente
+            var inputInicio = document.getElementById('NuevaFechaInicio');
+            var inputFin = document.getElementById('NuevaFechaFin');
+
+            if(inputInicio && inputFin){
+                inputInicio.addEventListener('change', function() {
+                    // Solo copiamos si el campo Fin está vacío
+                    if (!inputFin.value) {
+                        inputFin.value = this.value;
+                    }
+                });
+            }
+        });
+    </script>
+}

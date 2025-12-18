@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using FluentValidation.Results;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Newtonsoft.Json;
@@ -6,12 +7,12 @@ using si_td_gestion_eventos.Infrastructure;
 using si_td_gestion_eventos.Models.Enums;
 using si_td_gestion_eventos.Models.ViewModels;
 using si_td_gestion_eventos.Services.Contracts;
-using si_td_gestion_eventos.Models.Enums;
 using System;
+using System.Collections.Generic;
+using System.IO; // Required for MemoryStream
+using System.Linq;
+using System.Threading.Tasks;
 using ClosedXML.Excel;
-using System.Collections.Generic; 
-using System.Linq; 
-using System.Threading.Tasks; 
 
 namespace si_td_gestion_eventos.Controllers
 {
@@ -20,15 +21,18 @@ namespace si_td_gestion_eventos.Controllers
         private readonly IEventoService _eventoService;
         private readonly IClienteService _clienteService;
         private readonly IValidator<EventoVM> _validator;
+        private readonly IValidator<ReprogramarEventoVM> _validatorReprogramar; // Validator for rescheduling
 
         public EventoController(
             IEventoService eventoService,
             IClienteService clienteService,
-            IValidator<EventoVM> validator)
+            IValidator<EventoVM> validator,
+            IValidator<ReprogramarEventoVM> validatorReprogramar)
         {
             _eventoService = eventoService;
             _clienteService = clienteService;
             _validator = validator;
+            _validatorReprogramar = validatorReprogramar;
         }
 
         // GET: Evento/Index
@@ -66,9 +70,9 @@ namespace si_td_gestion_eventos.Controllers
             ViewBag.Search = q;
             ViewBag.FechaDesde = fechaDesde;
             ViewBag.FechaHasta = fechaHasta;
-            ViewBag.Estado = estado; 
+            ViewBag.Estado = estado;
 
-            // --- Listas para los Dropdowns ---
+            // --- Dropdown Lists ---
             ViewBag.EstadosList = new SelectList(Enum.GetValues(typeof(EventoEstado)), estado);
             ViewBag.PageSizeList = new SelectList(new[] { 10, 25, 50 }, pageSize);
             ViewBag.OrdenPorList = new SelectList(GetOrdenPorOpciones(), "Value", "Text", ordenPor);
@@ -105,11 +109,12 @@ namespace si_td_gestion_eventos.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(EventoVM eventoVM)
         {
-            // 1. Validar con FluentValidation (reglas de formato, fechas lógicas, etc.)
+            // 1. Manual Validation with FluentValidation
             var validationResult = await _validator.ValidateAsync(eventoVM, options =>
             {
                 options.IncludeRuleSets("default", "Create");
             });
+
             if (!validationResult.IsValid)
             {
                 foreach (var error in validationResult.Errors)
@@ -118,53 +123,49 @@ namespace si_td_gestion_eventos.Controllers
                 }
             }
 
-            // 2. Calcular la lógica de 48hs (para las sugerencias)
+            // 2. 48hs Logic Calculation
             var deadline = DateTime.Now.AddHours(48);
             var now = DateTime.Now;
             DateTime fechaInicioReal = eventoVM.Inicio.Date.Add(eventoVM.HoraInicio);
             bool esDentroDe48Hs = (fechaInicioReal < deadline && fechaInicioReal > now);
 
-            // 3. Preparar las "Sugerencias" para el Paso 2
+            // 3. Prepare "Suggestions" for Step 2
             string observacionSugerida;
             float montoSugerido;
 
             if (esDentroDe48Hs)
             {
-                // Si es < 48hs, SIEMPRE sugerimos el pago total
                 observacionSugerida = "Pago completo del salón (Evento < 48hs)";
                 float costoTotal = (float)(eventoVM.CostoAlquiler + (eventoVM.MontoAireAcondicionado ?? 0));
                 montoSugerido = costoTotal;
             }
             else
             {
-                // Si es lejano, sugerimos la reserva normal
                 observacionSugerida = "Por Reserva";
                 montoSugerido = (float)eventoVM.MontoReserva;
             }
 
-            // 4. Comprobar el ModelState (SOLO de FluentValidation)
+            // 4. Check ModelState
             if (ModelState.IsValid)
             {
-                // 5. Redirigir al Paso 2, pasando las SUGERENCIAS
+                // 5. Redirect to Step 2
                 TempData["PendingEvent"] = JsonConvert.SerializeObject(eventoVM);
 
                 var pagoVm = new PagoReservaVM
                 {
-                    Monto = montoSugerido, // <-- Pasa el monto sugerido
+                    Monto = montoSugerido,
                     Fecha = eventoVM.FechaContrato,
-                    Observaciones = observacionSugerida // <-- Pasa la observación sugerida
+                    Observaciones = observacionSugerida
                 };
                 TempData["PendingPaymentDetails"] = JsonConvert.SerializeObject(pagoVm);
 
                 return RedirectToAction("CreateReserva", "Pago");
             }
 
-            // Si FluentValidation falló (ej. faltó un cliente)
+            // Validation failed
             await PopulateClientesDropdown();
             return View(eventoVM);
         }
-
-
 
         // GET: Evento/Edit/{id} 
         public async Task<IActionResult> Edit(int id)
@@ -178,36 +179,6 @@ namespace si_td_gestion_eventos.Controllers
             ViewBag.CanModify = canModify;
             await PopulateClientesDropdown();
             return View(eventoVM);
-        }
-
-        // POST: Evento/Reprogramar
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Reprogramar(ReprogramarEventoVM model)
-        {
-            if (!ModelState.IsValid)
-            {
-                TempData["Error"] = "Datos inválidos para reprogramar.";
-                return RedirectToAction("Details", new { id = model.EventoId });
-            }
-
-            var result = await _eventoService.ReprogramarAsync(model);
-
-            if (result.Success)
-            {
-                TempData["Ok"] = result.Message;
-                // Opcional: Redirigir a EDIT para que ajuste los costos si es necesario, 
-                // ya que el requerimiento dice "habilitar edición de campos".
-                // return RedirectToAction("Edit", new { id = model.EventoId });
-
-                // O simplemente volver al detalle:
-                return RedirectToAction("Details", new { id = model.EventoId });
-            }
-            else
-            {
-                TempData["Error"] = string.Join(", ", result.Errors);
-                return RedirectToAction("Details", new { id = model.EventoId });
-            }
         }
 
         // POST: Evento/Edit/{id} 
@@ -261,34 +232,63 @@ namespace si_td_gestion_eventos.Controllers
             return View(eventoVM);
         }
 
+        // POST: Evento/Reprogramar
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Reprogramar(ReprogramarEventoVM model)
+        {
+            // --- FIX FOR ASYNC ERROR: MANUAL VALIDATION ---
+            // We call ValidateAsync explicitly here instead of relying on AutoValidation
+            ValidationResult validationResult = await _validatorReprogramar.ValidateAsync(model);
+
+            if (!validationResult.IsValid)
+            {
+                // Join errors into a string to display in TempData
+                var errores = string.Join(" ", validationResult.Errors.Select(e => e.ErrorMessage));
+                TempData["Error"] = "No se pudo reprogramar: " + errores;
+
+                // Redirect to Details so user sees the error
+                return RedirectToAction("Details", new { id = model.EventoId });
+            }
+
+            // If valid, call service (which has double-check logic)
+            var result = await _eventoService.ReprogramarAsync(model);
+
+            if (result.Success)
+            {
+                TempData["Ok"] = result.Message;
+                return RedirectToAction("Details", new { id = model.EventoId });
+            }
+            else
+            {
+                TempData["Error"] = string.Join(", ", result.Errors);
+                return RedirectToAction("Details", new { id = model.EventoId });
+            }
+        }
 
         [HttpGet]
         public async Task<IActionResult> ExportarExcel(string? q, DateTime? fechaDesde, DateTime? fechaHasta, EventoEstado? estado)
         {
-            // 1. OBTENER DATOS
-            // Reutiliza tu lógica de filtros pero trae TODO (sin paginación)
-            // Si no tienes un método específico, usa el de paginación con un PageSize alto
             var eventos = await _eventoService.ObtenerTodosFiltradosAsync(q, fechaDesde, fechaHasta, estado);
 
-            // 2. GENERAR EXCEL
             using (var workbook = new XLWorkbook())
             {
                 var worksheet = workbook.Worksheets.Add("Listado de Eventos");
 
-                // --- ESTILOS ---
+                // --- STYLES ---
                 var headerStyle = workbook.Style;
                 headerStyle.Font.Bold = true;
                 headerStyle.Fill.BackgroundColor = XLColor.LightGray;
                 headerStyle.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-                // --- TÍTULO ---
+                // --- TITLE ---
                 worksheet.Cell(1, 1).Value = "Reporte General de Eventos";
                 worksheet.Range("A1:G1").Merge().Style.Font.FontSize = 14;
                 worksheet.Range("A1:G1").Style.Font.Bold = true;
 
                 worksheet.Cell(2, 1).Value = $"Generado el: {DateTime.Now:dd/MM/yyyy HH:mm}";
 
-                // --- ENCABEZADOS (Fila 4) ---
+                // --- HEADERS (Row 4) ---
                 int headerRow = 4;
                 worksheet.Cell(headerRow, 1).Value = "ID";
                 worksheet.Cell(headerRow, 2).Value = "Cliente";
@@ -300,7 +300,7 @@ namespace si_td_gestion_eventos.Controllers
 
                 worksheet.Range(headerRow, 1, headerRow, 7).Style = headerStyle;
 
-                // --- DATOS ---
+                // --- DATA ---
                 int row = 5;
                 foreach (var item in eventos)
                 {
@@ -310,15 +310,12 @@ namespace si_td_gestion_eventos.Controllers
                     worksheet.Cell(row, 4).Value = item.Inicio;
                     worksheet.Cell(row, 5).Value = item.Estado.ToString();
 
-                    // CORRECCIÓN 1: Usamos la propiedad calculada que agregaremos en el Paso 2
                     worksheet.Cell(row, 6).Value = item.CostoTotal;
                     worksheet.Cell(row, 6).Style.NumberFormat.Format = "$ #,##0.00";
 
-                    // CORRECCIÓN 2: Cambiamos 'SaldoPendiente' por 'SaldoRestante'
                     worksheet.Cell(row, 7).Value = item.SaldoRestante;
                     worksheet.Cell(row, 7).Style.NumberFormat.Format = "$ #,##0.00";
 
-                    // Usamos 'SaldoRestante' para la condición también
                     if (item.SaldoRestante > 0)
                     {
                         worksheet.Cell(row, 7).Style.Font.FontColor = XLColor.Red;
@@ -327,10 +324,8 @@ namespace si_td_gestion_eventos.Controllers
                     row++;
                 }
 
-                // Autoajustar columnas
                 worksheet.Columns().AdjustToContents();
 
-                // 3. RETORNAR
                 using (var stream = new MemoryStream())
                 {
                     workbook.SaveAs(stream);
@@ -341,7 +336,6 @@ namespace si_td_gestion_eventos.Controllers
                 }
             }
         }
-
 
         // GET: Evento/Cancel/{id} 
         public async Task<IActionResult> Cancel(int id)
@@ -371,7 +365,7 @@ namespace si_td_gestion_eventos.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        // --- Métodos Helper ---
+        // --- Helper Methods ---
 
         private async Task PopulateClientesDropdown()
         {

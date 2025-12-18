@@ -419,34 +419,57 @@ namespace si_td_gestion_eventos.Services.Implementation
             try
             {
                 var evento = await _eventoRepository.GetByIdAsync(model.EventoId);
-                if (evento == null) return ServiceResult<bool>.FailureResult("Evento no encontrado.");
+                if (evento == null) return ServiceResult<bool>.FailureResult("No existe el evento.");
 
-                string fechaOriginal = evento.Inicio.ToString("dd/MM/yyyy HH:mm");
-                string historial = $"[REPROGRAMADO]: Fecha original era {fechaOriginal}. Cambio el {DateTime.Now:dd/MM/yyyy}.";
+                // Construcción del historial (Esto está bien)
+                string historial = $"[REPROGRAMADO], Fecha original era: {evento.Inicio:dd/MM/yyyy} a la hora {evento.HoraInicio}, finalizando el {evento.Fin:dd/MM/yyyy} a las {evento.HoraFin}. El {DateTime.Now:dd/MM/yyyy HH:mm} se reprogramó.";
 
-                if (model.FechaIndefinida) historial += " (Pasado a fecha por definir).";
+                if (model.FechaIndefinida)
+                {
+                    // Lógica de "Estacionamiento" (Año 1900)
+                    evento.Inicio = new DateTime(1900, 1, 1) + evento.Inicio.TimeOfDay;
+                    evento.Fin = new DateTime(1900, 1, 1) + evento.Fin.TimeOfDay;
+                    historial += " (Pasado a fecha por definir).";
+                }
+                else
+                {
+                    // Validar que lleguen datos
+                    if (model.NuevaFechaInicio.HasValue && model.NuevaFechaFin.HasValue &&
+                        model.NuevaHoraInicio.HasValue && model.NuevaHoraFin.HasValue)
+                    {
+                        // 1. VERIFICACIÓN DE SEGURIDAD (DOBLE CHEQUEO)
+                        bool estaLibre = await _businessRules.IsDateRangeAvailableAsync(
+                            model.NuevaFechaInicio.Value,
+                            model.NuevaFechaFin.Value,
+                            model.NuevaHoraInicio.Value,
+                            model.NuevaHoraFin.Value,
+                            model.EventoId
+                        );
 
+                        if (!estaLibre)
+                        {
+                            return ServiceResult<bool>.FailureResult("Error al Reporgramar: El salón ya está ocupado en el horario seleccionado.");
+                        }
+
+                        // 2. ASIGNACIÓN DE FECHAS (DateTime)
+                        evento.Inicio = model.NuevaFechaInicio.Value.Date + model.NuevaHoraInicio.Value;
+                        evento.Fin = model.NuevaFechaFin.Value.Date + model.NuevaHoraFin.Value;
+
+                        // 3. ASIGNACIÓN DE HORAS (TimeSpan)
+                        evento.HoraInicio = model.NuevaHoraInicio.Value;
+                        evento.HoraFin = model.NuevaHoraFin.Value;
+                    }
+                    else
+                    {
+                        return ServiceResult<bool>.FailureResult("Faltan datos de fecha u hora.");
+                    }
+                }
+
+                // Historial
                 if (!string.IsNullOrEmpty(evento.Observaciones))
                     evento.Observaciones += $"\n\n{historial}";
                 else
                     evento.Observaciones = historial;
-
-                if (model.FechaIndefinida)
-                {
-                    // ESTACIONAMIENTO INTELIGENTE (1900)
-                    // Movemos al pasado manteniendo día/hora para evitar colisiones Unique Key
-                    int aniosAtras = 1900 - evento.Inicio.Year;
-                    evento.Inicio = evento.Inicio.AddYears(aniosAtras);
-                    evento.Fin = evento.Fin.AddYears(aniosAtras);
-                }
-                else
-                {
-                    if (model.NuevaFecha.HasValue && model.NuevaHoraInicio.HasValue && model.NuevaHoraFin.HasValue)
-                    {
-                        evento.Inicio = model.NuevaFecha.Value.Date + model.NuevaHoraInicio.Value;
-                        evento.Fin = model.NuevaFecha.Value.Date + model.NuevaHoraFin.Value;
-                    }
-                }
 
                 evento.Estado = EventoEstado.Reprogramado;
 
@@ -461,13 +484,7 @@ namespace si_td_gestion_eventos.Services.Implementation
             }
         }
 
-        // [OBSOLETO] Este método es antiguo y no maneja la lógica de fechas indefinidas (1900).
-        // Se recomienda eliminarlo y usar siempre ReprogramarAsync.
-        /* public async Task<ServiceResult<bool>> RescheduleAsync(int id, DateTime nuevaFechaInicio, DateTime nuevaFechaFin, TimeSpan nuevaHoraInicio, TimeSpan nuevaHoraFin)
-        {
-             // Implementación antigua... mejor usar ReprogramarAsync
-        } 
-        */
+
 
         #endregion
 
