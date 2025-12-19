@@ -51,10 +51,12 @@
         <label for="fechaHasta" class="form-label">Fecha Hasta</label>
         <input type="date" name="fechaHasta" id="fechaHasta" class="form-control" value="@fechaHasta?.ToString("yyyy-MM-dd")" />
     </div>
-    <div class="col-md-2">
+    <div class="col-md-3">
         <label for="estado" class="form-label">Estado</label>
-        <select name="estado" id="estado" class="form-select" asp-items="ViewBag.EstadosList">
-            <option value="">-- Todos --</option>
+        @* Usamos GetEnumSelectList para traer los nombres con espacios automáticamente *@
+        <select name="estado" id="estado" class="form-select"
+                asp-items="Html.GetEnumSelectList<si_td_gestion_eventos.Models.Enums.EventoEstado>()">
+            <option value="">-- Mostrar Todos --</option>
         </select>
     </div>
     <div class="col-md-2">

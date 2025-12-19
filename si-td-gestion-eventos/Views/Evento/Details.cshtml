@@ -80,27 +80,31 @@
 </div>
 
 <div class="row g-3">
-    <div class="col-lg-8">
+    <div class="col-lg-7">
         @* INFORMACIÓN FINANCIERA *@
         <div class="card shadow-sm mb-3 border-start border-4">
             <div class="card-header bg-transparent">
-                <h6 class="mb-0"><i class="fa-solid fa-dollar-sign me-2"></i>Información Financiera</h6>
+                <h6 class="mb-0"><i class="fa-solid fa-dollar-sign me-2"></i>Información Financiera y Tecnica</h6>
             </div>
             <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-6 col-lg-3">
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-md-4 col-lg-2">
                         <small class="text-muted d-block mb-1">Costo del Alquiler</small>
                         <strong class="fs-6">@Model.CostoAlquiler.ToString("C")</strong>
                     </div>
-                    <div class="col-md-6 col-lg-3">
+                    <div class="col-6 col-md-4 col-lg-2">
                         <small class="text-muted d-block mb-1">Monto de Reserva</small>
                         <strong class="fs-6">@Model.MontoReserva.ToString("C")</strong>
                     </div>
-                    <div class="col-md-6 col-lg-3">
+                    <div class="col-6 col-md-4 col-lg-3">
                         <small class="text-muted d-block mb-1">Aire Acondicionado</small>
                         <strong class="fs-6">@(Model.MontoAireAcondicionado?.ToString("C") ?? "No incluido")</strong>
                     </div>
-                    <div class="col-md-6 col-lg-3">
+                    <div class="col-6 col-md-6 col-lg-2  ">
+                        <small class="text-muted d-block mb-1">Invitados</small>
+                        <strong class="fs-6"><i class="fa-solid fa-users me-1 text-muted"></i>@Model.CantidadPersonas</strong>
+                    </div>
+                    <div class="col-6 col-md-6 col-lg-3 ">
                         <small class="text-muted d-block mb-1">Estado Actual</small>
                         <span class="badge @badgeClass">@Html.DisplayFor(m => m.Estado)</span>
                     </div>
@@ -185,7 +189,7 @@
     </div>
 
     @* SIDEBAR *@
-    <div class="col-lg-4">
+    <div class="col-lg-5">
         @* AGENDA *@
         <div class="card shadow-sm mb-3">
             <div class="card-header bg-warning text-light">
