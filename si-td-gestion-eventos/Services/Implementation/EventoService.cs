@@ -45,21 +45,28 @@ namespace si_td_gestion_eventos.Services.Implementation
         #region 1. Consultas (Queries)
 
         public async Task<PaginatedList<EventoVM>> GetAllPaginatedAsync(
-            string? searchQuery,
-            DateTime? fechaDesde,
-            DateTime? fechaHasta,
-            EventoEstado? estado,
-            string ordenarPor,
-            int page,
-            int pageSize)
+             string? searchQuery,
+             DateTime? fechaDesde,
+             DateTime? fechaHasta,
+             EventoEstado? estado,
+             string ordenarPor,
+             int page,
+             int pageSize)
         {
             try
             {
+                string queryOriginal = searchQuery?.Trim().ToLower() ?? "";
+                string queryNumbers = searchQuery?.Replace(".", "").Replace("-", "").Trim() ?? "";
+
+                // RF-03 ESTRICTA: Buscamos únicamente por datos asociados al Cliente contratante
                 Expression<Func<Evento, bool>> textPredicate = e =>
-                    string.IsNullOrEmpty(searchQuery) ||
-                    (e.Cliente.Nombre + " " + e.Cliente.Apellido).Contains(searchQuery) ||
-                    e.Cliente.CedulaIdentidad.Contains(searchQuery) ||
-                    e.Tipo.ToString().Contains(searchQuery);
+                    string.IsNullOrEmpty(queryOriginal) ||
+                    e.Cliente.Nombre.ToLower().Contains(queryOriginal) ||
+                    (e.Cliente.Apellido != null && e.Cliente.Apellido.ToLower().Contains(queryOriginal)) ||
+                    (e.Cliente.Nombre + " " + (e.Cliente.Apellido ?? "")).ToLower().Contains(queryOriginal) ||
+                    // Se quitó la búsqueda por e.ResponsableCedula para evitar resultados cruzados
+                    e.Cliente.CedulaIdentidad.Replace(".", "").Replace("-", "").Contains(queryNumbers) ||
+                    e.Tipo.ToString().ToLower().Contains(queryOriginal);
 
                 var eventosQuery = (await _eventoRepository.FindWithIncludesAsync(
                                     textPredicate,
@@ -67,6 +74,7 @@ namespace si_td_gestion_eventos.Services.Implementation
                                     q => q.Pagos
                                 )).AsQueryable();
 
+                // Aplicamos filtros de fecha y estado
                 if (fechaDesde.HasValue)
                     eventosQuery = eventosQuery.Where(e => e.Inicio.Date >= fechaDesde.Value.Date);
 
@@ -76,6 +84,7 @@ namespace si_td_gestion_eventos.Services.Implementation
                 if (estado.HasValue)
                     eventosQuery = eventosQuery.Where(e => e.Estado == estado.Value);
 
+                // Lógica de ordenamiento
                 IOrderedQueryable<Evento> eventosOrdenados = ordenarPor switch
                 {
                     "fecha_inicio_desc" => eventosQuery.OrderByDescending(e => e.Inicio),
@@ -91,23 +100,20 @@ namespace si_td_gestion_eventos.Services.Implementation
                 var eventosPaginados = eventosOrdenados.Skip((page - 1) * pageSize).Take(pageSize).ToList();
                 var items = _mapper.Map<List<EventoVM>>(eventosPaginados);
 
-                // Calcular saldo y permisos para cada evento
+                // Sincronización de cálculos financieros
                 foreach (var eventoVM in items)
                 {
                     var eventoEntity = eventosPaginados.FirstOrDefault(e => e.EventoId == eventoVM.EventoId);
                     if (eventoEntity != null)
                     {
-                        // Calcular totales pagados (solo válidos)
                         decimal totalPagadoReal = eventoEntity.Pagos?
                                                         .Where(p => p.Valido)
                                                         .Sum(p => (decimal)p.Monto) ?? 0;
 
                         eventoVM.TotalPagado = totalPagadoReal;
-
                         decimal costoTotal = (decimal)eventoEntity.CostoAlquiler + (decimal)(eventoEntity.MontoAireAcondicionado ?? 0);
                         eventoVM.SaldoRestante = costoTotal - totalPagadoReal;
 
-                        // Determinar si permite agregar pago
                         eventoVM.PermiteAgregarPago = DeterminarSiPermiteAgregarPago(eventoVM);
                     }
                 }
@@ -351,24 +357,24 @@ namespace si_td_gestion_eventos.Services.Implementation
         }
         public async Task<List<EventoVM>> ObtenerTodosFiltradosAsync(string? q, DateTime? fechaDesde, DateTime? fechaHasta, EventoEstado? estado)
         {
-            // Construimos el filtro (Predicado) en una sola expresión, igual que en PagoService
+            // Limpiamos la búsqueda de puntos y guiones para comparar solo números
+            string searchRaw = q?.Replace(".", "").Replace("-", "").Trim().ToLower() ?? "";
+            string searchOriginal = q?.Trim().ToLower() ?? "";
+
             Expression<Func<Evento, bool>> predicate = e =>
-                (string.IsNullOrEmpty(q) ||
-                 e.Cliente.Nombre.Contains(q) ||
-                 e.Cliente.Apellido.Contains(q) ||
-                 e.Cliente.CedulaIdentidad.Contains(q)) &&
+                (string.IsNullOrEmpty(searchOriginal) ||
+                 e.Cliente.Nombre.ToLower().Contains(searchOriginal) ||
+                 (e.Cliente.Apellido != null && e.Cliente.Apellido.ToLower().Contains(searchOriginal)) ||
+                 (e.Cliente.Nombre + " " + (e.Cliente.Apellido ?? "")).ToLower().Contains(searchOriginal) ||
+                 // RF-03 ESTRICTA: Solo busca en CI/RUT del Cliente contratante
+                 e.Cliente.CedulaIdentidad.Replace(".", "").Replace("-", "").Contains(searchRaw)) &&
                 (!fechaDesde.HasValue || e.Inicio.Date >= fechaDesde.Value.Date) &&
                 (!fechaHasta.HasValue || e.Inicio.Date <= fechaHasta.Value.Date) &&
                 (!estado.HasValue || e.Estado == estado.Value);
 
-            // Usamos el repositorio en lugar de _context
-            // FindWithIncludesAsync trae los datos y las relaciones (Cliente)
             var listaEntidades = await _eventoRepository.FindWithIncludesAsync(predicate, e => e.Cliente);
-
-            // Ordenamos en memoria (o el repositorio podría hacerlo si soporta OrderBy)
             listaEntidades = listaEntidades.OrderByDescending(e => e.Inicio).ToList();
 
-            // Mapeamos a ViewModel
             return _mapper.Map<List<EventoVM>>(listaEntidades);
         }
         #endregion
