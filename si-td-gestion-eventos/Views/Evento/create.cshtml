@@ -19,7 +19,7 @@
 
     <div class="row justify-content-center">
         <div class="col-lg-10">
-            <div class="card shadow-sm">
+            <div class="card shadow-sm border-0">
                 <div class="card-header bg-success text-white">
                     <h5 class="mb-0">
                         <i class="fas fa-calendar-plus me-2"></i>Información del Evento
@@ -28,15 +28,18 @@
 
                 <form asp-action="Create" method="post" novalidate id="formCrearEvento">
                     <div class="card-body">
+                        @* IMPORTANTE: Dentro de este Parcial, asegúrate de que los inputs de hora 
+                           NO tengan un value predefinido si quieres ver el --:--
+                        *@
                         <partial name="_EventoCreateForm" model="Model" />
                     </div>
 
-                    <div class="card-footer bg-transparet d-flex justify-content-between align-items-center">
-                        <a asp-action="Index" class="btn btn-secondary">
-                            <i class="fas fa-arrow-left me-2"></i>Volver
+                    <div class="card-footer bg-transparent d-flex justify-content-between align-items-center py-3">
+                        <a asp-action="Index" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Volver al Listado
                         </a>
-                        <button type="submit" class="btn btn-success btn-lg">
-                            <i class="fas fa-check-circle me-2"></i>Crear Evento
+                        <button type="submit" class="btn btn-success btn-lg px-5 shadow-sm">
+                            <i class="fas fa-save me-2"></i>Crear Evento
                         </button>
                     </div>
                 </form>
@@ -51,50 +54,42 @@
     <script>
         $(document).ready(function () {
 
-            // 1. Formato visual de la Cédula (mientras escribes)
+            // 1. Formato visual de la Cédula Uruguaya (mientras escribes: 1.234.567-8)
             $('#ResponsableCedula').on('input', function() {
                 let value = this.value.replace(/[^\d]/g, '');
                 if (value.length > 8) {
                     value = value.substring(0, 8);
                 }
                 if (value.length >= 2) {
-                    // Formato simple 1.234.567-8
                     value = value.substring(0, value.length - 1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') + '-' + value.substring(value.length - 1);
                 }
                 this.value = value;
             });
 
-            // 2. Autocompletado al cambiar la Cédula (Lógica nueva)
+            // 2. Autocompletado de Responsable al cambiar la Cédula
             $('#ResponsableCedula').on('change', function () {
                 var ciIngresada = $(this).val();
 
-                // Limpiamos formato para enviar solo números si tu backend lo prefiere (opcional)
-                // var ciLimpia = ciIngresada.replace(/[^\d]/g, '');
-
                 if (ciIngresada && ciIngresada.length > 0) {
-
-                    // Feedback visual
-                    $('#ResponsableNombre, #ResponsableTelefono').attr('placeholder', 'Buscando...');
+                    // Feedback visual de carga
+                    $('#ResponsableNombre, #ResponsableTelefono').attr('placeholder', 'Buscando cliente...');
 
                     $.ajax({
                         url: '/Cliente/BuscarPorCI',
                         type: 'GET',
-                        data: { ci: ciIngresada }, // Enviamos lo que está escrito
+                        data: { ci: ciIngresada },
                         success: function (data) {
                             if (data.success) {
-                                // Rellenar campos
                                 $('#ResponsableNombre').val(data.nombre);
                                 $('#ResponsableTelefono').val(data.telefono);
 
-                                // Efecto verde
+                                // Feedback visual de éxito
                                 $('#ResponsableNombre, #ResponsableTelefono').addClass('is-valid');
-                                setTimeout(function() {
-                                    $('#ResponsableNombre, #ResponsableTelefono').removeClass('is-valid');
-                                }, 2000);
+                                setTimeout(() => $('.is-valid').removeClass('is-valid'), 2000);
                             }
                         },
                         error: function () {
-                            console.log("Cédula no encontrada en clientes registrados.");
+                            console.log("Cédula no encontrada. Ingrese los datos manualmente.");
                         },
                         complete: function() {
                              $('#ResponsableNombre, #ResponsableTelefono').attr('placeholder', '');
@@ -103,20 +98,19 @@
                 }
             });
 
-            // 3. Advertencia de 48 hs antes de enviar
+            // 3. Validación de Negocio: Advertencia de Eventos < 48hs
             $("#formCrearEvento").on("submit", function(e) {
+                const fechaVal = $("#FechaInicio").val();
+                const horaVal = $("#HoraInicio").val();
 
-                // Asegurarse de que fecha y hora tengan valor
-                if(!$("#FechaInicio").val() || !$("#HoraInicio").val()) return;
+                if(!fechaVal || !horaVal) return;
 
-                const fechaInicio = new Date($("#FechaInicio").val() + "T" + $("#HoraInicio").val());
+                const fechaInicio = new Date(fechaVal + "T" + horaVal);
                 const costoAlquiler = parseFloat($("#CostoAlquiler").val()) || 0;
-                const montoAire = parseFloat($("#MontoAire").val()) || 0;
-                // Ajuste ID selector monto aire (tu parcial dice id="MontoAire")
-
+                const montoAire = parseFloat($("#MontoAireAcondicionado").val()) || 0;
                 const montoReserva = parseFloat($("#MontoReserva").val()) || 0;
-                const costoTotal = costoAlquiler + montoAire;
 
+                const costoTotal = costoAlquiler + montoAire;
                 const ahora = new Date();
                 const deadline48hs = new Date(ahora.getTime() + 48 * 60 * 60 * 1000);
 
@@ -124,16 +118,17 @@
                 const esPagoParcial = montoReserva < costoTotal;
 
                 if (esDentroDe48Hs && esPagoParcial) {
-                    const mensaje = "ADVERTENCIA:\n\n" +
-                                    "Este evento es en menos de 48 horas y solo se está pagando la reserva.\n\n" +
-                                    "¿Desea crearlo igualmente?";
+                    const mensaje = "⚠️ ATENCIÓN: \n\n" +
+                                    "Este evento está programado para realizarse en menos de 48 horas.\n" +
+                                    "Sin embargo, el monto ingresado es inferior al costo total.\n\n" +
+                                    "¿Desea confirmar la creación del evento de todas formas?";
 
                     if (!confirm(mensaje)) {
-                        e.preventDefault(); // Cancelar envío
+                        e.preventDefault();
                     }
                 }
             });
 
-        }); // FIN del $(document).ready
+        });
     </script>
 }

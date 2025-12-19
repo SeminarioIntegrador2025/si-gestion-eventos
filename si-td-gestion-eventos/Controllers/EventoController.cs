@@ -126,7 +126,7 @@ namespace si_td_gestion_eventos.Controllers
             // 2. 48hs Logic Calculation
             var deadline = DateTime.Now.AddHours(48);
             var now = DateTime.Now;
-            DateTime fechaInicioReal = eventoVM.Inicio.Date.Add(eventoVM.HoraInicio);
+            DateTime fechaInicioReal = eventoVM.Inicio.Date.Add((TimeSpan)eventoVM.HoraInicio);
             bool esDentroDe48Hs = (fechaInicioReal < deadline && fechaInicioReal > now);
 
             // 3. Prepare "Suggestions" for Step 2

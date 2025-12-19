@@ -4,7 +4,7 @@ namespace si_td_gestion_eventos.Services.Contracts
 {
     public interface IEventoBusinessRules
     {
-        Task<bool> IsDateRangeAvailableAsync(DateTime inicio, DateTime fin, TimeSpan horaInicio, TimeSpan horaFin, int? excludeEventoId = null);
+        Task<bool> IsDateRangeAvailableAsync(DateTime inicio, DateTime fin, TimeSpan? horaInicio, TimeSpan? horaFin, int? excludeEventoId = null);
         Task<bool> CanCancelEventoAsync(int eventoId);
         Task<bool> CanModifyEventoAsync(int eventoId);
         Task<bool> HasPaymentsAsync(int eventoId);

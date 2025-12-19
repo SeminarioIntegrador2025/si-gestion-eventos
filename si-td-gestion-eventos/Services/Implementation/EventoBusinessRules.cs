@@ -15,7 +15,7 @@ namespace si_td_gestion_eventos.Services.Implementation
         }
 
 
-    public async Task<bool> IsDateRangeAvailableAsync(DateTime inicio, DateTime fin, TimeSpan horaInicio, TimeSpan horaFin, int? excludeEventoId = null)
+    public async Task<bool> IsDateRangeAvailableAsync(DateTime inicio, DateTime fin, TimeSpan? horaInicio, TimeSpan? horaFin, int? excludeEventoId = null)
     {
 
         var inicioNuevo = inicio.Date + horaInicio;
