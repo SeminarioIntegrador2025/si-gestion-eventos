@@ -3,10 +3,11 @@
 
 <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
+@* SECCIÓN 1: CLIENTE Y CONTRATO *@
 <div class="row">
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="ClienteId" class="form-label"></label>
+            <label asp-for="ClienteId" class="form-label fw-bold"></label>
             <select asp-for="ClienteId" asp-items="ViewBag.Clientes" class="form-select">
                 <option value="">-- Seleccionar Cliente --</option>
             </select>
@@ -15,25 +16,26 @@
     </div>
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="FechaContrato" class="form-label"></label>
+            <label asp-for="FechaContrato" class="form-label fw-bold"></label>
             <input asp-for="FechaContrato" class="form-control" type="date" />
             <span asp-validation-for="FechaContrato" class="text-danger"></span>
         </div>
     </div>
 </div>
 
+@* SECCIÓN 2: FECHAS Y HORAS *@
 <div class="row">
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="Inicio" class="form-label">Fecha de Inicio del Evento</label>
+            <label asp-for="Inicio" class="form-label fw-bold">Fecha de Inicio</label>
             <input asp-for="Inicio" class="form-control" type="date" id="FechaInicio" />
             <span asp-validation-for="Inicio" class="text-danger"></span>
         </div>
     </div>
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="Fin" class="form-label">Fecha de Fin del Evento</label>
-            <input asp-for="Fin" class="form-control" type="date" />
+            <label asp-for="Fin" class="form-label fw-bold">Fecha de Fin</label>
+            <input asp-for="Fin" class="form-control" type="date" id="FechaFin" />
             <span asp-validation-for="Fin" class="text-danger"></span>
         </div>
     </div>
@@ -42,24 +44,28 @@
 <div class="row">
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="HoraInicio" class="form-label">Hora de Inicio del Evento</label>
-            <input asp-for="HoraInicio" class="form-control" type="time" id="HoraInicio" />
+            <label asp-for="HoraInicio" class="form-label fw-bold">Hora de Inicio</label>
+            @* Se usa value vacio para forzar el placeholder --:-- del navegador *@
+            <input asp-for="HoraInicio" class="form-control" type="time" id="HoraInicio"
+                   value="@(Model.HoraInicio?.ToString(@"hh\:mm"))" />
             <span asp-validation-for="HoraInicio" class="text-danger"></span>
         </div>
     </div>
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="HoraFin" class="form-label">Hora de Fin del Evento</label>
-            <input asp-for="HoraFin" class="form-control" type="time" />
+            <label asp-for="HoraFin" class="form-label fw-bold">Hora de Fin</label>
+            <input asp-for="HoraFin" class="form-control" type="time" id="HoraFin"
+                   value="@(Model.HoraFin?.ToString(@"hh\:mm"))" />
             <span asp-validation-for="HoraFin" class="text-danger"></span>
         </div>
     </div>
 </div>
 
+@* SECCIÓN 3: TIPO Y CAPACIDAD *@
 <div class="row">
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="Tipo" class="form-label"></label>
+            <label asp-for="Tipo" class="form-label fw-bold"></label>
             <select asp-for="Tipo" class="form-select" asp-items="Html.GetEnumSelectList<si_td_gestion_eventos.Models.Enums.TipoEvento>()">
                 <option value="">-- Seleccionar Tipo --</option>
             </select>
@@ -68,35 +74,32 @@
     </div>
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="CantidadPersonas" class="form-label"></label>
-            <input asp-for="CantidadPersonas" class="form-control" type="number" />
+            <label asp-for="CantidadPersonas" class="form-label fw-bold"></label>
+            <input asp-for="CantidadPersonas" class="form-control" type="number" placeholder="Ej: 50" />
             <span asp-validation-for="CantidadPersonas" class="text-danger"></span>
         </div>
     </div>
 </div>
 
+@* SECCIÓN 4: COSTOS *@
 <div class="row">
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="CostoAlquiler" class="form-label"></label>
-
+            <label asp-for="CostoAlquiler" class="form-label fw-bold"></label>
             <div class="input-group">
-                <span class="input-group-text bg-transparent text-light fw-bold border-secondary">UYU</span>
+                <span class="input-group-text bg-light fw-bold">UYU</span>
                 <input asp-for="CostoAlquiler" class="form-control" type="number" step="0.01" min="0" id="CostoAlquiler" />
             </div>
-
             <span asp-validation-for="CostoAlquiler" class="text-danger"></span>
         </div>
     </div>
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="MontoReserva" class="form-label" id="MontoReservaLabel"></label>
-
+            <label asp-for="MontoReserva" class="form-label fw-bold"></label>
             <div class="input-group">
-                <span class="input-group-text bg-transparent text-light fw-bold border-secondary">UYU</span>
-                <input asp-for="MontoReserva" id="MontoReserva" class="form-control" type="number" step="0.01" min="0" />
+                <span class="input-group-text bg-light fw-bold">UYU</span>
+                <input asp-for="MontoReserva" class="form-control" type="number" step="0.01" min="0" id="MontoReserva" />
             </div>
-
             <span asp-validation-for="MontoReserva" class="text-danger"></span>
         </div>
     </div>
@@ -105,54 +108,56 @@
 <div class="row">
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="MontoAireAcondicionado" class="form-label"></label>
-
+            <label asp-for="MontoAireAcondicionado" class="form-label fw-bold"></label>
             <div class="input-group">
-                <span class="input-group-text bg-transparent text-light fw-bold border-secondary">UYU</span>
-                <input asp-for="MontoAireAcondicionado" class="form-control" type="number" step="0.01" min="0" id="MontoAire" />
+                <span class="input-group-text bg-light fw-bold">UYU</span>
+                <input asp-for="MontoAireAcondicionado" class="form-control" type="number" step="0.01" min="0" id="MontoAireAcondicionado" />
             </div>
-
             <span asp-validation-for="MontoAireAcondicionado" class="text-danger"></span>
         </div>
     </div>
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="Observaciones" class="form-label"></label>
-            <input asp-for="Observaciones" class="form-control" />
+            <label asp-for="Observaciones" class="form-label fw-bold"></label>
+            <input asp-for="Observaciones" class="form-control" placeholder="Opcional..." />
             <span asp-validation-for="Observaciones" class="text-danger"></span>
         </div>
     </div>
 </div>
 
-<h5 class="mt-4 mb-3">Información del Responsable</h5>
+<hr class="my-4" />
+<h5 class="mb-3 text-primary"><i class="fas fa-user-tie me-2"></i>Información del Responsable</h5>
 
+@* SECCIÓN 5: RESPONSABLE *@
 <div class="row">
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="ResponsableNombre" class="form-label"></label>
-            <input asp-for="ResponsableNombre" class="form-control" />
-            <span asp-validation-for="ResponsableNombre" class="text-danger"></span>
+            <label asp-for="ResponsableCedula" class="form-label fw-bold"></label>
+            <input asp-for="ResponsableCedula" class="form-control" id="ResponsableCedula" placeholder="1.234.567-8" />
+            <small class="text-muted d-block mt-1">
+                <i class="fas fa-info-circle me-1"></i>Si es un Cliente registrado, los datos se autocompletarán.
+            </small>
+            <span asp-validation-for="ResponsableCedula" class="text-danger"></span>
         </div>
     </div>
     <div class="col-md-6">
-        <div class="form-group mb-3">
-            <label asp-for="ResponsableTelefono" class="form-label"></label>
-            <input asp-for="ResponsableTelefono" class="form-control" />
-            <span asp-validation-for="ResponsableTelefono" class="text-danger"></span>
-        </div>
+        @* Espacio vacío para mantener simetría *@
     </div>
 </div>
 
 <div class="row">
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="ResponsableCedula" class="form-label"></label>
-            <input asp-for="ResponsableCedula" class="form-control" />
-            <small class="text-muted">Si se ingresa el CI de un Cliente, se autocompletaran los datos del responsable</small>
-            <span asp-validation-for="ResponsableCedula" class="text-danger d-block"></span>
+            <label asp-for="ResponsableNombre" class="form-label fw-bold"></label>
+            <input asp-for="ResponsableNombre" class="form-control" id="ResponsableNombre" />
+            <span asp-validation-for="ResponsableNombre" class="text-danger"></span>
         </div>
     </div>
     <div class="col-md-6">
-        <div class="form-group mb-3"></div>
+        <div class="form-group mb-3">
+            <label asp-for="ResponsableTelefono" class="form-label fw-bold"></label>
+            <input asp-for="ResponsableTelefono" class="form-control" id="ResponsableTelefono" />
+            <span asp-validation-for="ResponsableTelefono" class="text-danger"></span>
+        </div>
     </div>
 </div>

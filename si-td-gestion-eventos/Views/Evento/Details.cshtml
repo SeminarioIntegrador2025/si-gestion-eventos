@@ -110,8 +110,8 @@
 <div class="row g-3">
     <div class="col-lg-8">
 
-        <div class="card shadow-sm mb-3 border-start border-4 border-success">
-            <div class="card-header bg-success text-white">
+        <div class="card shadow-sm mb-3 border-start border-4 ">
+            <div class="card-header bg-transparent text-white">
                 <h6 class="mb-0">
                     <i class="fa-solid fa-dollar-sign me-2"></i>Información Financiera
                 </h6>
@@ -262,7 +262,7 @@
                     </div>
                     <div class="mb-3 pb-2 border-bottom">
                         <small class="text-muted d-block">Horario</small>
-                        <strong>@Model.HoraInicio.ToString("hh\\:mm") - @Model.HoraFin.ToString("hh\\:mm")</strong>
+                        <strong>@Model.HoraInicio?.ToString(@"hh\:mm") - @Model.HoraInicio?.ToString(@"hh\:mm")</strong>
                     </div>
                     <div class="mb-0">
                         <small class="text-muted d-block">Fecha Contrato</small>
@@ -361,7 +361,7 @@
                                 <div>
                                     <label class="small text-muted">Hora</label>
                                     <input type="time" class="form-control" name="NuevaHoraInicio"
-                                           value="@Model.HoraInicio.ToString("hh\\:mm")" required />
+                                           value="@Model.HoraInicio?.ToString(@"hh\:mm") required  />
                                 </div>
                             </div>
 
@@ -374,7 +374,7 @@
                                 <div>
                                     <label class="small text-muted">Hora</label>
                                     <input type="time" class="form-control" name="NuevaHoraFin"
-                                           value="@Model.HoraFin.ToString("hh\\:mm")" required />
+                                           value="@Model.HoraFin?.ToString(@"hh\:mm") required  />
                                 </div>
                             </div>
                         </div>

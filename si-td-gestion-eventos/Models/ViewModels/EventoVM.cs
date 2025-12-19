@@ -21,11 +21,11 @@ namespace si_td_gestion_eventos.Models.ViewModels
 
         [Required(ErrorMessage = "La hora de inicio es obligatoria.")]
         [Display(Name = "Hora de Inicio")]
-        public TimeSpan HoraInicio { get; set; }
+        public TimeSpan? HoraInicio { get; set; }
 
         [Required(ErrorMessage = "La hora de fin es obligatoria.")]
         [Display(Name = "Hora de Fin")]
-        public TimeSpan HoraFin { get; set; }
+        public TimeSpan? HoraFin { get; set; }
 
         [Required(ErrorMessage = "El tipo de evento es obligatorio.")]
         [Display(Name = "Tipo de Evento")]

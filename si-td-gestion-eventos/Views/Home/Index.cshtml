@@ -183,7 +183,7 @@
                                     <tr>
                                         <td class="table-date">
                                             <strong>@evento.Inicio.ToString("dd/MM")</strong>
-                                            <small class="d-block text-muted">@evento.HoraInicio.ToString(@"hh\:mm")</small>
+                                            <small class="d-block text-muted">@evento.HoraInicio?.ToString(@"hh\:mm")</small>
                                         </td>
                                         <td>
                                             <strong>@evento.ClienteNombreCompleto</strong>
