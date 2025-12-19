@@ -608,7 +608,30 @@ namespace si_td_gestion_eventos.Services.Implementation
         #endregion
 
         #region 5. Helpers y Dropdowns
+        public async Task<ServiceResult<bool>> CambiarEstadoManualAsync(int id, EventoEstado nuevoEstado)
+        {
+            try
+            {
+                var evento = await _eventoRepository.GetByIdAsync(id);
+                if (evento == null) return ServiceResult<bool>.FailureResult("Evento no encontrado.");
 
+                string estadoAnterior = evento.Estado.ToString();
+                evento.Estado = nuevoEstado;
+
+                // Registro de auditoría en las observaciones
+                string nota = $"\n\n[ADMIN] {DateTime.Now:dd/MM/yyyy HH:mm}: Cambio manual de estado de '{estadoAnterior}' a '{nuevoEstado}'.";
+                evento.Observaciones += nota;
+
+                _eventoRepository.Update(evento);
+                await _eventoRepository.SaveChangesAsync();
+
+                return ServiceResult<bool>.SuccessResult(true, $"Estado forzado a {nuevoEstado} exitosamente.");
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<bool>.FailureResult($"Error técnico: {ex.Message}");
+            }
+        }
         public async Task<IEnumerable<SelectListItem>> GetEventosSinFianzaParaDropdownAsync()
         {
             var eventos = await _eventoRepository.FindWithIncludesAsync(

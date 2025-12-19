@@ -112,7 +112,7 @@
                         <td>@e.Tipo</td>
                         <td>@e.Inicio.ToString("dd/MM/yyyy")</td>
                         <td>
-                            <span class="badge @estadoClass">@e.Estado</span>
+                            <span class="badge @estadoClass">@Html.DisplayFor(_ => e.Estado)</span>
                         </td>
                         <td>
                             @if (!string.IsNullOrEmpty(e.Observaciones))

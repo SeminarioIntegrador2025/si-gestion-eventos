@@ -34,6 +34,7 @@ namespace si_td_gestion_eventos.Services.Contracts
         Task<ServiceResult<int>> CheckAndCancelUnpaidEventsAsync();
 
         // Helpers y Dropdowns
+        Task<ServiceResult<bool>> CambiarEstadoManualAsync(int id, EventoEstado nuevoEstado);
         Task<IEnumerable<SelectListItem>> GetEventosSinFianzaParaDropdownAsync();
         Task<IEnumerable<SelectListItem>> GetTiposEventoParaDropdownAsync();
         Task<IEnumerable<SelectListItem>> GetEventosAdeudadosParaDropdownAsync();

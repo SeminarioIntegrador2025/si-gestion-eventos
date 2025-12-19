@@ -181,6 +181,26 @@ namespace si_td_gestion_eventos.Controllers
             return View(eventoVM);
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CambiarEstado(int eventoId, EventoEstado nuevoEstado)
+        {
+            // Llamamos al servicio para realizar el cambio manual
+            var result = await _eventoService.CambiarEstadoManualAsync(eventoId, nuevoEstado);
+
+            if (result.Success)
+            {
+                TempData["Ok"] = result.Message;
+            }
+            else
+            {
+                TempData["Error"] = result.Message;
+            }
+
+            // Redireccionamos de vuelta a la vista de detalles
+            return RedirectToAction(nameof(Details), new { id = eventoId });
+        }
+
         // POST: Evento/Edit/{id} 
         [HttpPost]
         [ValidateAntiForgeryToken]
