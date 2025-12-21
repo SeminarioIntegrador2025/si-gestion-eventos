@@ -60,7 +60,6 @@
 <div class="row g-4">
     <div class="col-xl-9 col-lg-8">
 
-        <!-- KPIs -->
         <div class="row g-3 mb-4">
             <div class="col-md-3">
                 <div class="card card-kpi text-center">
@@ -100,7 +99,6 @@
             </div>
         </div>
 
-        <!-- Filtros (SIEMPRE visibles) -->
         <div class="card mb-4">
             <div class="card-body">
                 <form method="get" class="row g-3 align-items-end">
@@ -129,14 +127,7 @@
                         <select name="pageSize" class="form-select" onchange="this.form.submit()">
                             @foreach (var s in new[] { 10, 25, 50 })
                             {
-                                if (s == pageSize)
-                                {
-                                    <option value="@s" selected>@s</option>
-                                }
-                                else
-                                {
-                                    <option value="@s">@s</option>
-                                }
+                                <option value="@s" selected="@(s == pageSize)">@s</option>
                             }
                         </select>
                     </div>
@@ -146,7 +137,6 @@
                             <i class="fa-solid fa-search me-1"></i>Buscar
                         </button>
 
-                        <!-- Limpia filtro de evento (mantiene q y pageSize) -->
                         <a class="btn btn-outline-secondary"
                            asp-action="Index"
                            asp-route-q="@q"
@@ -159,7 +149,6 @@
             </div>
         </div>
 
-        <!-- Tabla -->
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span><i class="fa-solid fa-table me-2"></i>Lista de Pagos</span>
@@ -208,7 +197,7 @@
                                         }
                                     </td>
 
-                                    <td>@pago.Metodo</td>
+                                    <td>@Html.DisplayFor(_ => pago.Metodo)</td>
                                     <td class="small">@pago.Observaciones</td>
 
                                     <td>
@@ -228,6 +217,7 @@
                                         <div class="btn-group" role="group">
                                             @if (pago.Valido)
                                             {
+                                                @* ENLACE DE EDICIÓN AGREGADO *@
                                                 <a asp-action="Edit" asp-route-id="@pago.PagoId" class="btn btn-sm btn-outline-secondary" title="Editar">
                                                     <i class="fa-solid fa-pen"></i>
                                                 </a>
@@ -274,14 +264,13 @@
                 </table>
             </div>
 
-            <!-- Paginación -->
             <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <small class="text-muted">Página @Model.PageIndex de @Model.TotalPages</small>
 
                 <nav aria-label="Paginación">
                     <ul class="pagination mb-0">
                         <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
-                            <a class="page-link"
+                            <a class="page-link bg-transparent"
                                asp-action="Index"
                                asp-route-eventoId="@(isFilteredByEvent? eventoId : eventoIdQuery)"
                                asp-route-q="@q"
@@ -315,7 +304,6 @@
         </div>
     </div>
 
-    <!-- Sidebar -->
     <div class="col-xl-3 col-lg-4">
         <div class="card mb-4">
             <div class="card-header d-flex align-items-center justify-content-between">

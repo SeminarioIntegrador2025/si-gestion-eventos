@@ -28,6 +28,7 @@ namespace si_td_gestion_eventos.Validators
 
             // --- Detalles del Evento ---
             RuleFor(e => e.Tipo)
+                .NotNull().WithMessage("Debe seleccionar un tipo de evento válido.")
                 .IsInEnum().WithMessage("Debe seleccionar un tipo de evento válido."); // IsInEnum es más robusto que NotEmpty para enums
 
             RuleFor(e => e.CantidadPersonas)
@@ -64,9 +65,32 @@ namespace si_td_gestion_eventos.Validators
             // Valida que el rango Inicio/Fin/HoraInicio/HoraFin sea lógicamente posible y esté disponible
             RuleFor(x => x) // Valida el objeto completo
                 .Cascade(CascadeMode.Stop) // Si falla la primera, no sigue con la segunda
-                .MustAsync(async (evento, ct) => await _businessRules.IsValidDateRangeAsync(evento.Inicio, evento.Fin, (TimeSpan)evento.HoraInicio, (TimeSpan)evento.HoraFin))
+                .MustAsync(async (evento, ct) => 
+                {
+                    // Verificar que las horas no sean nulas antes de llamar a la regla de negocio
+                    if (!evento.HoraInicio.HasValue || !evento.HoraFin.HasValue)
+                        return true; // Si son nulas, otras reglas ya manejarán el error
+                    
+                    return await _businessRules.IsValidDateRangeAsync(
+                        evento.Inicio, 
+                        evento.Fin, 
+                        evento.HoraInicio.Value, 
+                        evento.HoraFin.Value);
+                })
                 .WithMessage("El rango de fechas y horarios no es válido (ej: duración negativa o excesiva).")
-                .MustAsync(async (evento, ct) => await _businessRules.IsDateRangeAvailableAsync(evento.Inicio, evento.Fin, evento.HoraInicio, evento.HoraFin, evento.EventoId == 0 ? null : evento.EventoId))
+                .MustAsync(async (evento, ct) => 
+                {
+                    // Verificar que las horas no sean nulas antes de llamar a la regla de negocio
+                    if (!evento.HoraInicio.HasValue || !evento.HoraFin.HasValue)
+                        return true; // Si son nulas, otras reglas ya manejarán el error
+                    
+                    return await _businessRules.IsDateRangeAvailableAsync(
+                        evento.Inicio, 
+                        evento.Fin, 
+                        evento.HoraInicio.Value, 
+                        evento.HoraFin.Value, 
+                        evento.EventoId == 0 ? null : evento.EventoId);
+                })
                 .WithMessage("Ya existe otro evento programado en este horario. Por favor, seleccione otra fecha u horario.");
 
             // --- Costos y Montos ---
