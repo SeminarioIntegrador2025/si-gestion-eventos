@@ -1,0 +1,105 @@
+﻿@model si_td_gestion_eventos.Models.ViewModels.PagoVM
+@using si_td_gestion_eventos.Models.Enums
+
+@{
+    ViewData["Title"] = "Editar Pago";
+}
+
+<div class="container mt-4">
+    <div class="card shadow-sm border-primary">
+        <div class="card-header bg-transparent text-white">
+            <h5 class="mb-0"><i class="fas fa-edit me-2"></i>Actualizar Información del Pago</h5>
+        </div>
+
+        @* Le agregamos un ID al formulario para manejarlo con JS *@
+        <form id="formEditPago" asp-action="Edit" method="post" enctype="multipart/form-data">
+            <input type="hidden" asp-for="PagoId" />
+            <input type="hidden" asp-for="EventoId" />
+            <input type="hidden" asp-for="Monto" />
+            <input type="hidden" asp-for="Fecha" />
+
+            <div class="card-body">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger p-2 small shadow-sm mb-3"></div>
+
+                <div class="row g-3">
+                    @* DATOS DE SOLO LECTURA *@
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold">Monto Registrado</label>
+                        <input class="form-control bg-transparent text-muted" value="@Model.Monto.ToString("N2")" readonly tabindex="-1" />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold">Fecha Original</label>
+                        <input class="form-control bg-transparent text-muted" value="@Model.Fecha.ToString("dd/MM/yyyy")" readonly tabindex="-1" />
+                    </div>
+
+                    @* DATOS EDITABLES *@
+                    <div class="col-md-6">
+                        <label asp-for="Metodo" class="form-label fw-bold">Método de Pago</label>
+                        <select asp-for="Metodo" class="form-select border-primary shadow-sm"
+                                asp-items="Html.GetEnumSelectList<MetodoPago>()">
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Actualizar Comprobante</label>
+                        @* ID agregado al input de archivo *@
+                        <input type="file" id="inputArchivo" asp-for="ArchivoComprobante" class="form-control border-primary shadow-sm"
+                               accept=".pdf,.jpg,.jpeg,.png" />
+
+                        @if (!string.IsNullOrEmpty(Model.RutaArchivoExistente))
+                        {
+                            @* Campo oculto para que JS sepa que ya existe un archivo *@
+                            <input type="hidden" id="tieneArchivoPrevio" value="true" />
+                            <div class="mt-1 small">
+                                <i class="fas fa-paperclip text-success"></i>
+                                <a href="/@Model.RutaArchivoExistente.TrimStart('/')" target="_blank" class="text-decoration-none">
+                                    Ver archivo cargado actualmente
+                                </a>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="col-12 mt-3">
+                        <label asp-for="Observaciones" class="form-label fw-bold">Observaciones del Pago</label>
+                        <textarea asp-for="Observaciones" class="form-control border-primary shadow-sm" rows="4"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer bg-transparent d-flex justify-content-between py-3">
+                <a asp-action="Index" asp-route-eventoId="@Model.EventoId" class="btn btn-outline-secondary px-4 shadow-sm">
+                    <i class="fas fa-arrow-left me-1"></i> Volver
+                </a>
+                <button type="submit" class="btn btn-primary px-5 fw-bold shadow">
+                    <i class="fas fa-save me-1"></i> Guardar Cambios
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        document.getElementById('formEditPago').addEventListener('submit', function (e) {
+            const inputArchivo = document.getElementById('inputArchivo');
+            const tieneArchivoPrevio = document.getElementById('tieneArchivoPrevio');
+
+            // Si seleccionó un archivo nuevo Y ya existía uno previo
+            if (inputArchivo.files.length > 0 && tieneArchivoPrevio && tieneArchivoPrevio.value === "true") {
+                const mensaje = "Atención: Ya existe un comprobante para este pago.\n\n" +
+                                "Si continúa, el archivo anterior se borrará permanentemente y será reemplazado por el nuevo.\n\n" +
+                                "¿Desea continuar?";
+
+                if (!confirm(mensaje)) {
+                    // Si el usuario cancela, detenemos el envío del formulario
+                    e.preventDefault();
+                }
+            }
+        });
+    </script>
+}   

@@ -87,8 +87,7 @@ namespace si_td_gestion_eventos.Tests.Validators
             evento.Tipo = null;
 
             // Configurar mocks mínimos para que solo falle el Tipo
-            _mockBusinessRules.Setup(br => br.IsClienteActiveAsync(It.IsAny<int>()))
-                .ReturnsAsync(true);
+            SetupDefaultMocks();
 
             // Act
             var result = await _validator.TestValidateAsync(evento);
@@ -248,7 +247,10 @@ namespace si_td_gestion_eventos.Tests.Validators
         {
             // Arrange
             var evento = CreateValidEventoVM();
-            evento.HoraInicio = default;
+            evento.HoraInicio = null;
+
+            // Configurar mocks para que pasen otras validaciones
+            SetupDefaultMocks();
 
             // Act
             var result = await _validator.TestValidateAsync(evento);
@@ -263,7 +265,10 @@ namespace si_td_gestion_eventos.Tests.Validators
         {
             // Arrange
             var evento = CreateValidEventoVM();
-            evento.HoraFin = default;
+            evento.HoraFin = null;
+
+            // Configurar mocks para que pasen otras validaciones
+            SetupDefaultMocks();
 
             // Act
             var result = await _validator.TestValidateAsync(evento);
