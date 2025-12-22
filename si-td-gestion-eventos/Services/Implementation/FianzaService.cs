@@ -77,18 +77,32 @@ namespace si_td_gestion_eventos.Services.Implementation
         // --- MÉTODO GETPAGINATED (Devuelve FianzaVM) ---
         public async Task<PaginatedList<FianzaVM>> GetPaginatedAsync(string? q, EstadoFianza? estado, int page, int pageSize)
         {
+            // 1. Normalización de la búsqueda (Ingeniería de Software: Fail-fast)
+            string queryLower = q?.Trim().ToLower() ?? "";
+            // Limpiamos puntos y guiones para buscar solo los números en CI o RUT
+            string queryNumbers = q?.Replace(".", "").Replace("-", "").Trim() ?? "";
+
+            // 2. Predicado robusto con manejo de nulos y normalización
             Expression<Func<Fianza, bool>> predicate = f =>
-                string.IsNullOrEmpty(q) ||
-                (f.Evento.Cliente.Nombre + " " + f.Evento.Cliente.Apellido).Contains(q) ||
-                f.Evento.Cliente.CedulaIdentidad.Contains(q) ||
-                f.Evento.Cliente.RUT.Contains(q) ||
-                f.Evento.Tipo.ToString().Contains(q);
+                string.IsNullOrEmpty(queryLower) ||
+                f.Evento.Cliente.Nombre.ToLower().Contains(queryLower) ||
+                (f.Evento.Cliente.Apellido != null && f.Evento.Cliente.Apellido.ToLower().Contains(queryLower)) ||
+                // Búsqueda por nombre completo
+                (f.Evento.Cliente.Nombre + " " + (f.Evento.Cliente.Apellido ?? "")).ToLower().Contains(queryLower) ||
+                // Búsqueda por CI (Normalizando los datos de la DB también)
+                (f.Evento.Cliente.CedulaIdentidad != null &&
+                 f.Evento.Cliente.CedulaIdentidad.Replace(".", "").Replace("-", "").Contains(queryNumbers)) ||
+                // Búsqueda por RUT
+                (f.Evento.Cliente.RUT != null &&
+                 f.Evento.Cliente.RUT.Replace(".", "").Replace("-", "").Contains(queryNumbers)) ||
+                // Búsqueda por Tipo de Evento (Enum a String)
+                f.Evento.Tipo.ToString().ToLower().Contains(queryLower);
 
             var fianzasQuery = (await _fianzaRepo.FindWithIncludesAsync(
-                                    predicate,
-                                    f => f.Evento,
-                                    f => f.Evento.Cliente
-                                )).AsQueryable();
+                                            predicate,
+                                            f => f.Evento,
+                                            f => f.Evento.Cliente
+                                        )).AsQueryable();
 
             if (estado.HasValue)
             {
@@ -96,10 +110,8 @@ namespace si_td_gestion_eventos.Services.Implementation
             }
 
             var fianzasOrdenadas = fianzasQuery.OrderByDescending(f => f.FechaRegistro);
-
             var totalCount = fianzasOrdenadas.Count();
             var fianzasPaginadas = fianzasOrdenadas.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-
             var items = _mapper.Map<List<FianzaVM>>(fianzasPaginadas);
 
             return new PaginatedList<FianzaVM>(items, totalCount, page, pageSize);
@@ -115,29 +127,41 @@ namespace si_td_gestion_eventos.Services.Implementation
         public async Task<ServiceResult<FianzaVM>> UpdateAsync(FianzaVM fianzaVM)
         {
             var fianza = await _fianzaRepo.GetByIdAsync(fianzaVM.FianzaId);
-            if (fianza == null) 
+            if (fianza == null)
                 return ServiceResult<FianzaVM>.FailureResult("Fianza no encontrada.");
 
-            // Validar que el monto devuelto no exceda el monto original
-            if (fianzaVM.MontoDevuelto.HasValue && fianzaVM.MontoDevuelto > fianzaVM.Monto)
-                return ServiceResult<FianzaVM>.FailureResult($"El monto a devolver ({fianzaVM.MontoDevuelto:C2}) no puede ser mayor al monto de la fianza ({fianzaVM.Monto:C2}).");
+            // Validar que el monto devuelto no exceda el monto original registrado
+            if (fianzaVM.MontoDevuelto.HasValue && fianzaVM.MontoDevuelto > fianza.Monto)
+                return ServiceResult<FianzaVM>.FailureResult($"El monto a devolver ({fianzaVM.MontoDevuelto:C2}) no puede ser mayor al monto de la fianza ({fianza.Monto:C2}).");
 
-            // NO modificar el monto original ni la fecha de registro
+            // Preservamos las observaciones enviadas desde la vista
             fianza.Observaciones = fianzaVM.Observaciones;
 
-            // Lógica de devolución
-            if (fianzaVM.MontoDevuelto.HasValue && fianzaVM.MontoDevuelto > 0)
+            // --- NUEVA LÓGICA DE ESTADOS BASADA EN EL MONTO ---
+            if (fianzaVM.MontoDevuelto.HasValue)
             {
-                fianza.MontoDevuelto = fianzaVM.MontoDevuelto;
+                // Asignamos el monto y la fecha (si no viene fecha, usamos hoy)
+                fianza.MontoDevuelto = fianzaVM.MontoDevuelto.Value;
                 fianza.FechaDevolucion = fianzaVM.FechaDevolucion ?? DateTime.Today;
 
-                if (fianza.MontoDevuelto >= fianza.Monto)
-                    fianza.Estado = EstadoFianza.DevueltaTotalmente;
+                if (fianza.MontoDevuelto > 0)
+                {
+                    // Caso A: Se devolvió dinero (Total o Parcial)
+                    if (fianza.MontoDevuelto >= fianza.Monto)
+                        fianza.Estado = EstadoFianza.DevueltaTotalmente;
+                    else
+                        fianza.Estado = EstadoFianza.DevueltaParcialmente;
+                }
                 else
-                    fianza.Estado = EstadoFianza.DevueltaParcialmente;
+                {
+                    // Caso B: El usuario ingresó 0 (No se devuelve nada)
+                    fianza.Estado = EstadoFianza.NoDevuelta;
+      
+                }
             }
             else
             {
+                // Caso C: El monto es NULL (Se "resetea" a estado inicial)
                 fianza.MontoDevuelto = null;
                 fianza.FechaDevolucion = null;
                 fianza.Estado = EstadoFianza.Registrada;
@@ -147,9 +171,9 @@ namespace si_td_gestion_eventos.Services.Implementation
             {
                 _fianzaRepo.Update(fianza);
                 await _fianzaRepo.SaveChangesAsync();
-                
+
                 var updatedVM = await GetByIdAsync(fianza.FianzaId);
-                return ServiceResult<FianzaVM>.SuccessResult(updatedVM!, "Fianza actualizada correctamente.");
+                return ServiceResult<FianzaVM>.SuccessResult(updatedVM!, "Fianza procesada correctamente.");
             }
             catch (Exception ex)
             {
