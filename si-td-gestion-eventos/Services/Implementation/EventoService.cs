@@ -463,9 +463,11 @@ namespace si_td_gestion_eventos.Services.Implementation
                         // Eventos que van a ocurrir pronto (o hoy)
                         (e.Inicio >= hoy && e.Inicio < deadline)
                         ||
-                        // GRUPO 2: PASADO IRREGULAR (Tu "Caso B")
-                        // Eventos que YA terminaron pero siguen debiendo plata (PendienteAdeudado)
-                        (e.Fin < DateTime.Now && e.Estado == EventoEstado.PendienteAdeudado)
+                        // GRUPO 2: PASADO IRREGULAR (Deudas viejas)
+                        // CORRECCIÓN AQUI: Agregamos '&& e.Inicio.Year > 2000'
+                        // Esto evita que los eventos con fecha "1900" (Reprogramados sin fecha)
+                        // salgan como "Evento Finalizado" y generen alerta.
+                        (e.Fin < DateTime.Now && e.Estado == EventoEstado.PendienteAdeudado && e.Inicio.Year > 2000)
                      ),
                 e => e.Cliente,
                 e => e.Pagos,
@@ -490,16 +492,17 @@ namespace si_td_gestion_eventos.Services.Implementation
                 {
                     if (yaPaso)
                     {
-                        // MENSAJE ESPECIAL PARA "CASO B"
+                        // MENSAJE ESPECIAL PARA "CASO B" (Pasado)
                         alertasEncontradas.Add($"¡EVENTO FINALIZADO! Falta pagar ${deuda:N0}");
                     }
                     else
                     {
+                        // MENSAJE NORMAL (Futuro)
                         alertasEncontradas.Add($"DEUDA: Falta saldar ${deuda:N0}");
                     }
                 }
 
-                // Lógica de Servicios (Solo si es futuro, porque si ya pasó, ya no importa tanto verificar AGADU)
+                // Lógica de Servicios (Solo si es futuro, porque si ya pasó, ya no importa tanto verificar servicios)
                 if (!yaPaso && vm.ServiciosEsenciales != null && vm.ServiciosEsenciales.Any(s => !s.Verificado))
                 {
                     alertasEncontradas.Add("SERVICIOS: Faltan verificar");

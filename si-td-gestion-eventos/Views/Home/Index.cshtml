@@ -59,10 +59,7 @@
 
                                             @* --- CORRECCIÓN DE FECHA Y HORA --- *@
                                             <td>
-                                                <span class="fw-bold">@evento.Inicio.ToString("dd/MM")</span>
-                                                <small class="ms-1">
-                                                    @(evento.HoraInicio.HasValue? evento.HoraInicio.Value.ToString(@"hh\:mm") : "00:00")
-                                                </small>
+                                                <span class="fw-bold">@evento.Inicio.ToString("dd/MM/yyyy")</span>
 
                                                 @if (evento.Estado == EventoEstado.Reprogramado)
                                                 {
