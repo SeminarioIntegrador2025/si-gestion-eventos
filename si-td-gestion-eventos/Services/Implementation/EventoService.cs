@@ -433,8 +433,9 @@ namespace si_td_gestion_eventos.Services.Implementation
                 if (model.FechaIndefinida)
                 {
                     // Lógica de "Estacionamiento" (Año 1900)
-                    evento.Inicio = new DateTime(1900, 1, 1) + evento.Inicio.TimeOfDay;
-                    evento.Fin = new DateTime(1900, 1, 1) + evento.Fin.TimeOfDay;
+                    // Preservar el mes y día original, solo cambiar el año a 1900
+                    evento.Inicio = new DateTime(1900, evento.Inicio.Month, evento.Inicio.Day) + evento.Inicio.TimeOfDay;
+                    evento.Fin = new DateTime(1900, evento.Fin.Month, evento.Fin.Day) + evento.Fin.TimeOfDay;
                     historial += " (Pasado a fecha por definir).";
                 }
                 else
@@ -592,17 +593,50 @@ namespace si_td_gestion_eventos.Services.Implementation
             }
         }
 
-        
-
         public async Task<ServiceResult<int>> CheckAndCancelUnpaidEventsAsync()
         {
-            // MÉTODO NEUTRALIZADO POR REGLA DE NEGOCIO (RF-16)
-            // La documentación dice "Verificar y Alertar", NO cancelar automáticamente.
-            // La lógica de alerta se ha movido a 'GetAlertasServiciosAsync'.
-            // Mantenemos este método devolviendo 0 para no romper la interfaz ni los Background Workers.
+            int canceledCount = 0;
+            try
+            {
+                // Buscar eventos que estén en estado PendienteAdeudado y que tengan inicio en menos de 48 horas
+                var deadline = DateTime.Now.AddHours(48);
+                var eventos = await _eventoRepository.FindWithIncludesAsync(
+                    e => e.Estado == EventoEstado.PendienteAdeudado &&
+                         e.Inicio <= deadline &&
+                         e.Inicio > DateTime.Now,
+                    e => e.Pagos
+                );
 
-            await Task.CompletedTask;
-            return ServiceResult<int>.SuccessResult(0, "Cancelación automática desactivada.");
+                if (!eventos.Any())
+                    return ServiceResult<int>.SuccessResult(0, "No hay eventos para verificar.");
+
+                foreach (var evento in eventos)
+                {
+                    // Calcular el total pagado (solo pagos válidos)
+                    decimal totalPagado = evento.Pagos?
+                        .Where(p => p.Valido)
+                        .Sum(p => (decimal)p.Monto) ?? 0;
+
+                    // Si no hay pago válido, cancelar el evento
+                    if (totalPagado <= 0)
+                    {
+                        evento.Estado = EventoEstado.Cancelado;
+                        string nota = $"\n\n[AUTO-CANCELADO] {DateTime.Now:dd/MM/yyyy HH:mm}: Evento cancelado automáticamente por falta de pago dentro de las 48 horas previas.";
+                        evento.Observaciones += nota;
+                        _eventoRepository.Update(evento);
+                        canceledCount++;
+                    }
+                }
+
+                if (canceledCount > 0)
+                    await _eventoRepository.SaveChangesAsync();
+
+                return ServiceResult<int>.SuccessResult(canceledCount, $"Se cancelaron {canceledCount} eventos por falta de pago.");
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<int>.FailureResult($"Error al verificar pagos: {ex.Message}");
+            }
         }
 
         #endregion

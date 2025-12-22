@@ -121,6 +121,9 @@ namespace si_td_gestion_eventos.Tests.Services
             )).ReturnsAsync(true);
 
             _mockMapper.Setup(m => m.Map<Evento>(eventoVM)).Returns(evento);
+            
+            _mockEventoRepository.Setup(r => r.AddAsync(It.IsAny<Evento>())).Returns(Task.CompletedTask);
+            _mockEventoRepository.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
 
             // Simular retorno de la base de datos tras crear
             _mockEventoRepository.Setup(r => r.GetByIdWithIncludesAsync(1, It.IsAny<Expression<Func<Evento, object>>[]>()))
@@ -205,6 +208,11 @@ namespace si_td_gestion_eventos.Tests.Services
             };
 
             _mockEventoRepository.Setup(r => r.GetByIdAsync(eventoId)).ReturnsAsync(evento);
+            _mockBusinessRules.Setup(br => br.IsDateRangeAvailableAsync(
+                nuevaFecha, nuevaFecha, horaInicio, horaFin, eventoId
+            )).ReturnsAsync(true);
+            _mockEventoRepository.Setup(r => r.Update(It.IsAny<Evento>()));
+            _mockEventoRepository.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
 
             // Act
             var result = await _sut.ReprogramarAsync(model);
@@ -240,6 +248,9 @@ namespace si_td_gestion_eventos.Tests.Services
                 It.IsAny<Expression<Func<Evento, bool>>>(),
                 It.IsAny<Expression<Func<Evento, object>>[]>()
             )).ReturnsAsync(eventos);
+            
+            _mockEventoRepository.Setup(r => r.Update(It.IsAny<Evento>()));
+            _mockEventoRepository.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
 
             // Act
             var result = await _sut.CheckAndCancelUnpaidEventsAsync();
@@ -302,6 +313,9 @@ namespace si_td_gestion_eventos.Tests.Services
                 It.IsAny<Expression<Func<Evento, bool>>>(),
                 It.IsAny<Expression<Func<Evento, object>>[]>()
             )).ReturnsAsync(eventos);
+            
+            _mockEventoRepository.Setup(r => r.Update(It.IsAny<Evento>()));
+            _mockEventoRepository.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
 
             // Act
             var result = await _sut.CheckAndCancelUnpaidEventsAsync();

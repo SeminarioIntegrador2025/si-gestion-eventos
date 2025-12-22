@@ -26,11 +26,9 @@
                     </h5>
                 </div>
 
+                @* Agregué id="formCrearEvento" para el script de validación *@
                 <form asp-action="Create" method="post" novalidate id="formCrearEvento">
                     <div class="card-body">
-                        @* IMPORTANTE: Dentro de este Parcial, asegúrate de que los inputs de hora 
-                           NO tengan un value predefinido si quieres ver el --:--
-                        *@
                         <partial name="_EventoCreateForm" model="Model" />
                     </div>
 
@@ -54,25 +52,34 @@
     <script>
         $(document).ready(function () {
 
-            // 1. Formato visual de la Cédula Uruguaya (mientras escribes: 1.234.567-8)
+            // 1. INICIALIZACIÓN DE SELECT2 (Buscador potente de clientes)
+            $('.select2-busqueda').select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                placeholder: 'Escriba para buscar cliente...',
+                language: {
+                    noResults: function() { return "No se encontraron coincidencias"; }
+                }
+            });
+
+            // 2. FORMATO DE CÉDULA URUGUAYA (1.234.567-8)
             $('#ResponsableCedula').on('input', function() {
                 let value = this.value.replace(/[^\d]/g, '');
-                if (value.length > 8) {
-                    value = value.substring(0, 8);
-                }
+                if (value.length > 8) value = value.substring(0, 8);
+
                 if (value.length >= 2) {
-                    value = value.substring(0, value.length - 1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') + '-' + value.substring(value.length - 1);
+                    value = value.substring(0, value.length - 1)
+                                 .replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') +
+                            '-' + value.substring(value.length - 1);
                 }
                 this.value = value;
             });
 
-            // 2. Autocompletado de Responsable al cambiar la Cédula
+            // 3. AUTOCOMPLETADO POR AJAX
             $('#ResponsableCedula').on('change', function () {
                 var ciIngresada = $(this).val();
-
-                if (ciIngresada && ciIngresada.length > 0) {
-                    // Feedback visual de carga
-                    $('#ResponsableNombre, #ResponsableTelefono').attr('placeholder', 'Buscando cliente...');
+                if (ciIngresada) {
+                    $('#ResponsableNombre, #ResponsableTelefono').attr('placeholder', 'Buscando...');
 
                     $.ajax({
                         url: '/Cliente/BuscarPorCI',
@@ -82,23 +89,16 @@
                             if (data.success) {
                                 $('#ResponsableNombre').val(data.nombre);
                                 $('#ResponsableTelefono').val(data.telefono);
-
-                                // Feedback visual de éxito
+                                // Feedback visual momentáneo
                                 $('#ResponsableNombre, #ResponsableTelefono').addClass('is-valid');
                                 setTimeout(() => $('.is-valid').removeClass('is-valid'), 2000);
                             }
-                        },
-                        error: function () {
-                            console.log("Cédula no encontrada. Ingrese los datos manualmente.");
-                        },
-                        complete: function() {
-                             $('#ResponsableNombre, #ResponsableTelefono').attr('placeholder', '');
                         }
                     });
                 }
             });
 
-            // 3. Validación de Negocio: Advertencia de Eventos < 48hs
+            // 4. VALIDACIÓN DE NEGOCIO (Regla de las 48hs)
             $("#formCrearEvento").on("submit", function(e) {
                 const fechaVal = $("#FechaInicio").val();
                 const horaVal = $("#HoraInicio").val();
@@ -106,29 +106,19 @@
                 if(!fechaVal || !horaVal) return;
 
                 const fechaInicio = new Date(fechaVal + "T" + horaVal);
-                const costoAlquiler = parseFloat($("#CostoAlquiler").val()) || 0;
-                const montoAire = parseFloat($("#MontoAireAcondicionado").val()) || 0;
+                const costoTotal = (parseFloat($("#CostoAlquiler").val()) || 0) +
+                                   (parseFloat($("#MontoAireAcondicionado").val()) || 0);
                 const montoReserva = parseFloat($("#MontoReserva").val()) || 0;
 
-                const costoTotal = costoAlquiler + montoAire;
                 const ahora = new Date();
                 const deadline48hs = new Date(ahora.getTime() + 48 * 60 * 60 * 1000);
 
-                const esDentroDe48Hs = (fechaInicio > ahora && fechaInicio < deadline48hs);
-                const esPagoParcial = montoReserva < costoTotal;
-
-                if (esDentroDe48Hs && esPagoParcial) {
-                    const mensaje = "⚠️ ATENCIÓN: \n\n" +
-                                    "Este evento está programado para realizarse en menos de 48 horas.\n" +
-                                    "Sin embargo, el monto ingresado es inferior al costo total.\n\n" +
-                                    "¿Desea confirmar la creación del evento de todas formas?";
-
-                    if (!confirm(mensaje)) {
-                        e.preventDefault();
-                    }
+                if (fechaInicio < deadline48hs && montoReserva < costoTotal) {
+                    const mensaje = "⚠️ ATENCIÓN: El evento es en menos de 48 horas y no está saldado totalmente.\n\n¿Desea continuar?";
+                    if (!confirm(mensaje)) e.preventDefault();
                 }
             });
 
-        });
+        }); // Cierre único del document.ready
     </script>
 }

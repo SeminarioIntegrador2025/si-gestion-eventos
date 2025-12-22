@@ -407,7 +407,6 @@ namespace si_td_gestion_eventos.Tests.Validators
 
         [Theory]
         [InlineData("A")]
-        [InlineData("AB")]
         public async Task Validate_ResponsableNombreMuyCorto_DeberiaFallar(string nombre)
         {
             // Arrange
@@ -428,10 +427,8 @@ namespace si_td_gestion_eventos.Tests.Validators
             var result = await _validator.TestValidateAsync(evento);
 
             // Assert
-            // Verificar que hay error en ResponsableNombre
-            var errors = result.Errors.Where(e => e.PropertyName == "ResponsableNombre").ToList();
-            Assert.NotEmpty(errors);
-            Assert.Contains(errors, e => e.ErrorMessage.Contains("entre 2 y 100 caracteres"));
+            result.ShouldHaveValidationErrorFor(e => e.ResponsableNombre)
+                .WithErrorMessage("El nombre del responsable debe tener entre 2 y 100 caracteres.");
         }
 
         [Theory]

@@ -21,7 +21,38 @@
     --ring: rgba(37, 99, 235, .25);
     --shadow: rgba(15, 23, 42, .08);
 }
+/* 1. Fondo de la caja de selección principal */
+.select2-container--bootstrap-5 .select2-selection {
+    background-color: transparent !important;
+    border-color: rgba(255, 255, 255, 0.2) !important; /* Borde suave */
+    color: #ffffff !important; /* Texto blanco */
+}
 
+/* 2. Color del texto del placeholder y del texto seleccionado */
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+    color: #ffffff !important;
+    opacity: 0.8;
+}
+
+/* 3. Fondo del buscador cuando está abierto (el input de búsqueda interno) */
+.select2-search__field {
+    background-color: rgba(255, 255, 255, 0.05) !important; /* Casi transparente */
+    color: white !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 4. Fondo de la lista desplegable (Dropdown) */
+.select2-dropdown {
+    background-color: #1a1d21 !important; /* Color oscuro sólido para legibilidad */
+    border-color: #343a40 !important;
+    color: white !important;
+}
+
+/* 5. Estilo de los elementos al pasar el mouse (Hover) */
+.select2-container--bootstrap-5 .select2-results__option--highlighted[aria-selected] {
+    background-color: #0d6efd !important; /* Color azul de Bootstrap */
+    color: white !important;
+}
 /* Dark mode con colores más ricos */
 @media (prefers-color-scheme: dark) {
     :root {

@@ -8,7 +8,8 @@
     <div class="col-md-6">
         <div class="form-group mb-3">
             <label asp-for="ClienteId" class="form-label fw-bold"></label>
-            <select asp-for="ClienteId" asp-items="ViewBag.Clientes" class="form-select">
+            @* CAMBIO AQUÍ: Se agregó la clase 'select2-busqueda' *@
+            <select asp-for="ClienteId" asp-items="ViewBag.Clientes" class="form-select select2-busqueda">
                 <option value="">-- Seleccionar Cliente --</option>
             </select>
             <span asp-validation-for="ClienteId" class="text-danger"></span>
@@ -45,7 +46,6 @@
     <div class="col-md-6">
         <div class="form-group mb-3">
             <label asp-for="HoraInicio" class="form-label fw-bold">Hora de Inicio</label>
-            @* Se usa value vacio para forzar el placeholder --:-- del navegador *@
             <input asp-for="HoraInicio" class="form-control" type="time" id="HoraInicio"
                    value="@(Model.HoraInicio?.ToString(@"hh\:mm"))" />
             <span asp-validation-for="HoraInicio" class="text-danger"></span>
@@ -141,7 +141,6 @@
         </div>
     </div>
     <div class="col-md-6">
-        @* Espacio vacío para mantener simetría *@
     </div>
 </div>
 
