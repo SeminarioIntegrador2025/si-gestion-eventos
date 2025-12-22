@@ -454,24 +454,58 @@ namespace si_td_gestion_eventos.Services.Implementation
             var deadline = DateTime.Now.AddHours(48);
             var now = DateTime.Now;
 
+            // 1. OBTENCIÓN DE EVENTOS (Entidades)
+            // Filtramos solo por tiempo y estados activos.
+            // NOTA: Al pedir 'e.Inicio > now', los eventos con fecha 1900 quedan fuera automáticamente.
+            // NOTA: Quitamos la restricción de '!= Reprogramado' para que las alertas funcionen en esos casos.
             var eventosProximos = await _eventoRepository.FindWithIncludesAsync(
-                e => e.Estado != EventoEstado.Cancelado && e.Estado != EventoEstado.Realizado && e.Estado != EventoEstado.Reprogramado && e.Inicio > now && e.Inicio < deadline,
-                e => e.Cliente, e => e.Pagos);
+                e => e.Estado != EventoEstado.Cancelado &&
+                     e.Estado != EventoEstado.Realizado &&
+                     e.Inicio > now &&
+                     e.Inicio < deadline,
+                e => e.Cliente,
+                e => e.Pagos,
+                e => e.ServiciosEsenciales // Traemos las entidades abstractas (Agadu, Sadaic, etc.)
+            );
 
             var listaAlertas = new List<EventoVM>();
 
-            foreach (var evento in eventosProximos)
+            foreach (var eventoEntity in eventosProximos)
             {
-                decimal totalPagado = evento.Pagos?.Where(p => p.Valido).Sum(p => (decimal)p.Monto) ?? 0;
-                decimal deuda = (decimal)(evento.CostoAlquiler + (evento.MontoAireAcondicionado ?? 0)) - totalPagado;
+                // 2. MAPEO INMEDIATO (La Clave de Ingeniería)
+                // Convertimos a VM *antes* de validar. 
+                // AutoMapper se encargará de llenar la lista 'ServiciosEsenciales' y calcular 'Verificado'.
+                var vm = _mapper.Map<EventoVM>(eventoEntity);
 
-                if (deuda > 0.5m)
+                var alertasEncontradas = new List<string>();
+
+                // 3. VALIDACIÓN DE PAGOS (RF: Deuda pendiente a 48hs)
+                // Usamos los datos financieros calculados en el mapeo o los recalculamos aquí para precisión
+                decimal totalPagado = eventoEntity.Pagos?.Where(p => p.Valido).Sum(p => (decimal)p.Monto) ?? 0;
+                decimal costoTotal = (decimal)(eventoEntity.CostoAlquiler + (eventoEntity.MontoAireAcondicionado ?? 0));
+                decimal deuda = costoTotal - totalPagado;
+
+                if (deuda > 10) // Umbral de tolerancia
                 {
-                    var vm = _mapper.Map<EventoVM>(evento);
-                    vm.Observaciones = $"ALERTA: Falta saldar ${deuda:N0}";
+                    alertasEncontradas.Add($"DEUDA: Falta saldar ${deuda:N0}");
+                }
+
+                // 4. VALIDACIÓN DE SERVICIOS
+                // Ahora es trivial: usamos la propiedad 'Verificado' que AutoMapper ya calculó por nosotros.
+                if (vm.ServiciosEsenciales != null && vm.ServiciosEsenciales.Any(s => !s.Verificado))
+                {
+                    alertasEncontradas.Add("SERVICIOS: Faltan verificar servicios esenciales");
+                }
+
+                // 5. CONSOLIDACIÓN
+                if (alertasEncontradas.Any())
+                {
+                    // Usamos el campo Observaciones del VM para transportar el mensaje de alerta al Dashboard
+                    vm.Observaciones = string.Join(" | ", alertasEncontradas);
                     listaAlertas.Add(vm);
                 }
             }
+
             return listaAlertas;
         }
 

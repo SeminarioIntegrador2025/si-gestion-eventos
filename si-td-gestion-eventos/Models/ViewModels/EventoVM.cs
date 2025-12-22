@@ -97,5 +97,6 @@ namespace si_td_gestion_eventos.Models.ViewModels
 
         // Nueva propiedad para controlar si se puede agregar pago
         public bool PermiteAgregarPago { get; set; }
+        public List<ServicioEsencialVM> ServiciosEsenciales { get; set; } = new List<ServicioEsencialVM>();
     }
 }
