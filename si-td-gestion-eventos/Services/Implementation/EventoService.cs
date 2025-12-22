@@ -485,7 +485,7 @@ namespace si_td_gestion_eventos.Services.Implementation
                 decimal costoTotal = (decimal)(eventoEntity.CostoAlquiler + (eventoEntity.MontoAireAcondicionado ?? 0));
                 decimal deuda = costoTotal - totalPagado;
 
-                if (deuda > 10) // Umbral de tolerancia
+                if (deuda > 10) 
                 {
                     alertasEncontradas.Add($"DEUDA: Falta saldar ${deuda:N0}");
                 }

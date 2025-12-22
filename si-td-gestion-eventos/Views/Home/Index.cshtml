@@ -1,9 +1,12 @@
 ﻿@using si_td_gestion_eventos.Models.ViewModels
+@using si_td_gestion_eventos.Models.Enums
+
 @{
     ViewData["Title"] = "Inicio";
     var reportes = ViewBag.Reportes as ReportesVM;
     var proximosEventos = ViewBag.ProximosEventos as List<EventoVM> ?? new List<EventoVM>();
-    var alertasAgadu = ViewBag.AlertasServicios as IEnumerable<EventoVM>;
+    // Casteamos explícitamente para usar LINQ en la vista
+    var alertas = ViewBag.AlertasServicios as List<EventoVM>;
 }
 
 <div>
@@ -18,7 +21,8 @@
             </div>
         </div>
 
-        @if (alertasAgadu != null && alertasAgadu.Any())
+        @* --- SECCIÓN DE ALERTAS (CORREGIDA) --- *@
+        @if (alertas != null && alertas.Any())
         {
             <div class="alert alert-danger border-danger shadow-sm mb-4">
                 <div class="d-flex align-items-start">
@@ -26,45 +30,51 @@
                         <i class="fas fa-exclamation-triangle fa-2x text-white"></i>
                     </div>
                     <div class="flex-grow-1">
-                        @* Cambiado a text-white para máximo contraste *@
+
+                        @* TÍTULO GENÉRICO (Ya no dice solo "Servicios") *@
                         <h4 class="alert-heading fs-5 fw-bold text-white">
-                            ¡Acción Requerida! Faltan Servicios Esenciales
+                            ¡Atención! Eventos Próximos con Problemas
                         </h4>
-                        @* Reemplazado text-dark por text-white *@
-                        <p class="mb-2 text-white">
-                            Los siguientes eventos comienzan en menos de 48hs y <strong>no tienen los servicios esenciales verificados</strong>.
+
+                        <p class="mb-2 text-white small">
+                            Los siguientes eventos comienzan en menos de 48hs y requieren acción inmediata (Deuda pendiente o Servicios sin verificar).
                         </p>
 
                         <div class="table-responsive bg-transparent rounded border border-danger-subtle">
                             <table class="table table-sm table-hover mb-0">
-                                @* Encabezados en blanco para que resalten sobre el fondo rojo *@
                                 <thead class="text-white border-bottom border-danger">
                                     <tr>
                                         <th>Cliente</th>
                                         <th>Tipo Evento</th>
                                         <th>Fecha Inicio</th>
+                                        <th>Motivo de Alerta</th> @* NUEVA COLUMNA *@
                                         <th class="text-end">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var evento in alertasAgadu)
+                                    @foreach (var evento in alertas)
                                     {
-                                        <tr class="text-white">
-                                            <td class="align-middle text-white">@evento.ClienteNombreCompleto</td>
-                                            <td class="align-middle text-white">@evento.Tipo</td>
-                                            @* Corregido: Formato de fecha sin hora y color blanco *@
-                                            <td class="align-middle fw-bold text-white">
-                                                @evento.Inicio.ToString("dd/MM/yyyy")
+                                        <tr class="text-white align-middle">
+                                            <td class="fw-bold">@evento.ClienteNombreCompleto</td>
+                                            <td>@evento.Tipo</td>
+                                            <td>
+                                                @evento.Inicio.ToString("dd/MM HH:mm")
+                                                @if (evento.Estado == EventoEstado.Reprogramado)
+                                                {
+                                                    <span class="badge bg-info text-dark ms-1" style="font-size: 0.65rem;">Reprogramado</span>
+                                                }
                                             </td>
+
+                                            @* AQUÍ MOSTRAMOS LA RAZÓN REAL (DEUDA / SERVICIOS) *@
+                                            <td class="text-warning fw-bold small">
+                                                <i class="fa-solid fa-circle-exclamation me-1"></i>
+                                                @evento.Observaciones
+                                            </td>
+
                                             <td class="text-end">
                                                 <a asp-controller="Evento" asp-action="Details" asp-route-id="@evento.EventoId"
-                                                   class="btn btn-sm btn-outline-light me-1">
-                                                    <i class="fas fa-eye"></i> Gestionar
-                                                </a>
-
-                                                <a asp-controller="Evento" asp-action="Cancel" asp-route-id="@evento.EventoId"
-                                                   class="btn btn-sm btn-danger border-white text-white">
-                                                    <i class="fas fa-ban me-1"></i> Cancelar
+                                                   class="btn btn-sm btn-light fw-bold border-0 text-danger">
+                                                    <i class="fas fa-gear me-1"></i> Gestionar
                                                 </a>
                                             </td>
                                         </tr>
@@ -77,11 +87,10 @@
             </div>
         }
 
-        @* El resto del código de KPIs y Próximos Eventos se mantiene igual *@
+        @* --- SECCIÓN DE KPIs (MANTENIDA IGUAL) --- *@
         @if (reportes != null)
         {
             <div class="row g-3">
-                @* ... (Bloques de KPIs sin cambios) ... *@
                 <div class="col-12 col-md-6 col-lg-3">
                     <div class="card card-kpi p-3">
                         <div class="card-title">Eventos del mes</div>
@@ -148,11 +157,11 @@
             </div>
         }
 
-        <div class="card mt-4">
+        @* --- SECCIÓN PRÓXIMOS EVENTOS --- *@
+        <div class="card mt-4 shadow-sm border-0">
             <div class="card-body">
-                @* ... (Sección de Próximos Eventos) ... *@
                 <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h2 class="h6 mb-0">
+                    <h2 class="h6 mb-0 fw-bold text-secondary">
                         <i class="fa-solid fa-calendar-days me-2 text-primary"></i>
                         Próximos eventos
                     </h2>
@@ -164,8 +173,8 @@
                 @if (proximosEventos.Any())
                 {
                     <div class="table-responsive">
-                        <table class="table align-middle mb-0">
-                            <thead>
+                        <table class="table align-middle mb-0 table-hover">
+                            <thead class="table-light">
                                 <tr>
                                     <th>Fecha</th>
                                     <th>Cliente</th>
@@ -178,22 +187,31 @@
                             <tbody>
                                 @foreach (var evento in proximosEventos)
                                 {
+                                    // Lógica de color para el estado
+                                    string estadoClass = evento.Estado switch
+                                    {
+                                        EventoEstado.PendientePagado => "bg-success",
+                                        EventoEstado.PendienteAdeudado => "bg-warning text-dark",
+                                        EventoEstado.Reprogramado => "bg-info text-dark",
+                                        EventoEstado.Cancelado => "bg-danger",
+                                        _ => "bg-secondary"
+                                    };
+
                                     <tr>
                                         <td class="table-date">
                                             <strong>@evento.Inicio.ToString("dd/MM")</strong>
                                             <small class="d-block text-muted">@evento.HoraInicio?.ToString(@"hh\:mm")</small>
                                         </td>
                                         <td><strong>@evento.ClienteNombreCompleto</strong></td>
-                                        <td><span class="badge bg-info-subtle text-info">@evento.Tipo</span></td>
+                                        <td><span class="badge bg-light text-dark border">@evento.Tipo</span></td>
                                         <td class="text-center">@evento.CantidadPersonas</td>
                                         <td class="text-center">
-                                            @* Badge de estado con switch manual *@
-                                            <span class="badge @(evento.Estado == si_td_gestion_eventos.Models.Enums.EventoEstado.PendientePagado ? "bg-success" : "bg-warning")">
+                                            <span class="badge @estadoClass">
                                                 @evento.Estado
                                             </span>
                                         </td>
                                         <td class="text-end">
-                                            <a class="btn btn-sm btn-outline-secondary" asp-controller="Evento" asp-action="Details" asp-route-id="@evento.EventoId">
+                                            <a class="btn btn-sm btn-outline-primary border-0" asp-controller="Evento" asp-action="Details" asp-route-id="@evento.EventoId" title="Ver detalles">
                                                 <i class="fa-regular fa-eye"></i>
                                             </a>
                                         </td>
@@ -201,6 +219,13 @@
                                 }
                             </tbody>
                         </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4 text-muted">
+                        <i class="fa-solid fa-calendar-xmark fa-2x mb-2"></i>
+                        <p>No hay eventos próximos registrados.</p>
                     </div>
                 }
             </div>
