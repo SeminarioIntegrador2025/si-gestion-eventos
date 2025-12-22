@@ -25,14 +25,9 @@ namespace si_td_gestion_eventos.Services.Contracts
         // --- NUEVO MÉTODO DE REPROGRAMACIÓN ---
         Task<ServiceResult<bool>> ReprogramarAsync(ReprogramarEventoVM model);
 
-        // ELIMINAR O COMENTAR EL MÉTODO VIEJO:
-        // Task<ServiceResult<bool>> RescheduleAsync(int id, DateTime nuevaFechaInicio...);
-
         // Servicios de Fondo (Background)
         Task<List<EventoVM>> GetAlertasServiciosAsync();
-        Task<ServiceResult<int>> MarkCompletedEventsAsync();
-        Task<ServiceResult<int>> CheckAndCancelUnpaidEventsAsync();
-
+        Task<ServiceResult<int>> ActualizarEstadosEventosPasadosAsync();
         // Helpers y Dropdowns
         Task<ServiceResult<bool>> CambiarEstadoManualAsync(int id, EventoEstado nuevoEstado);
         Task<IEnumerable<SelectListItem>> GetEventosSinFianzaParaDropdownAsync();

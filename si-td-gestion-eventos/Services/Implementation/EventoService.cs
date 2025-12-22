@@ -452,55 +452,62 @@ namespace si_td_gestion_eventos.Services.Implementation
         public async Task<List<EventoVM>> GetAlertasServiciosAsync()
         {
             var deadline = DateTime.Now.AddHours(48);
-            var now = DateTime.Now;
+            var hoy = DateTime.Today; // 00:00 de hoy
 
-            // 1. OBTENCIÓN DE EVENTOS (Entidades)
-            // Filtramos solo por tiempo y estados activos.
-            // NOTA: Al pedir 'e.Inicio > now', los eventos con fecha 1900 quedan fuera automáticamente.
-            // NOTA: Quitamos la restricción de '!= Reprogramado' para que las alertas funcionen en esos casos.
-            var eventosProximos = await _eventoRepository.FindWithIncludesAsync(
+            // CONSULTA HÍBRIDA (Pasado + Futuro)
+            var eventosProblema = await _eventoRepository.FindWithIncludesAsync(
                 e => e.Estado != EventoEstado.Cancelado &&
                      e.Estado != EventoEstado.Realizado &&
-                     e.Inicio > now &&
-                     e.Inicio < deadline,
+                     (
+                        // GRUPO 1: FUTURO INMEDIATO (Próximas 48hs)
+                        // Eventos que van a ocurrir pronto (o hoy)
+                        (e.Inicio >= hoy && e.Inicio < deadline)
+                        ||
+                        // GRUPO 2: PASADO IRREGULAR (Tu "Caso B")
+                        // Eventos que YA terminaron pero siguen debiendo plata (PendienteAdeudado)
+                        (e.Fin < DateTime.Now && e.Estado == EventoEstado.PendienteAdeudado)
+                     ),
                 e => e.Cliente,
                 e => e.Pagos,
-                e => e.ServiciosEsenciales // Traemos las entidades abstractas (Agadu, Sadaic, etc.)
+                e => e.ServiciosEsenciales
             );
 
             var listaAlertas = new List<EventoVM>();
 
-            foreach (var eventoEntity in eventosProximos)
+            foreach (var eventoEntity in eventosProblema)
             {
-                // 2. MAPEO INMEDIATO (La Clave de Ingeniería)
-                // Convertimos a VM *antes* de validar. 
-                // AutoMapper se encargará de llenar la lista 'ServiciosEsenciales' y calcular 'Verificado'.
                 var vm = _mapper.Map<EventoVM>(eventoEntity);
-
                 var alertasEncontradas = new List<string>();
 
-                // 3. VALIDACIÓN DE PAGOS (RF: Deuda pendiente a 48hs)
-                // Usamos los datos financieros calculados en el mapeo o los recalculamos aquí para precisión
+                // Lógica de Deuda
                 decimal totalPagado = eventoEntity.Pagos?.Where(p => p.Valido).Sum(p => (decimal)p.Monto) ?? 0;
                 decimal costoTotal = (decimal)(eventoEntity.CostoAlquiler + (eventoEntity.MontoAireAcondicionado ?? 0));
                 decimal deuda = costoTotal - totalPagado;
+                bool yaPaso = eventoEntity.Fin < DateTime.Now;
 
-                if (deuda > 10) 
+                // MENSAJES PERSONALIZADOS
+                if (deuda > 10)
                 {
-                    alertasEncontradas.Add($"DEUDA: Falta saldar ${deuda:N0}");
+                    if (yaPaso)
+                    {
+                        // MENSAJE ESPECIAL PARA "CASO B"
+                        alertasEncontradas.Add($"¡EVENTO FINALIZADO! Falta pagar ${deuda:N0}");
+                    }
+                    else
+                    {
+                        alertasEncontradas.Add($"DEUDA: Falta saldar ${deuda:N0}");
+                    }
                 }
 
-                // 4. VALIDACIÓN DE SERVICIOS
-                // Ahora es trivial: usamos la propiedad 'Verificado' que AutoMapper ya calculó por nosotros.
-                if (vm.ServiciosEsenciales != null && vm.ServiciosEsenciales.Any(s => !s.Verificado))
+                // Lógica de Servicios (Solo si es futuro, porque si ya pasó, ya no importa tanto verificar AGADU)
+                if (!yaPaso && vm.ServiciosEsenciales != null && vm.ServiciosEsenciales.Any(s => !s.Verificado))
                 {
-                    alertasEncontradas.Add("SERVICIOS: Faltan verificar servicios esenciales");
+                    alertasEncontradas.Add("SERVICIOS: Faltan verificar");
                 }
 
-                // 5. CONSOLIDACIÓN
+                // Si encontramos algo, lo agregamos
                 if (alertasEncontradas.Any())
                 {
-                    // Usamos el campo Observaciones del VM para transportar el mensaje de alerta al Dashboard
                     vm.Observaciones = string.Join(" | ", alertasEncontradas);
                     listaAlertas.Add(vm);
                 }
@@ -509,38 +516,71 @@ namespace si_td_gestion_eventos.Services.Implementation
             return listaAlertas;
         }
 
-        public async Task<ServiceResult<int>> MarkCompletedEventsAsync()
+        public async Task<ServiceResult<int>> ActualizarEstadosEventosPasadosAsync()
         {
             try
             {
-                var eventsToMark = await _eventoRepository.FindAsync(e => e.Fin.Date < DateTime.Today && (e.Estado == EventoEstado.PendienteAdeudado || e.Estado == EventoEstado.PendientePagado));
-                foreach (var evento in eventsToMark) { evento.Estado = EventoEstado.Realizado; _eventoRepository.Update(evento); }
-                if (eventsToMark.Any()) await _eventoRepository.SaveChangesAsync();
-                return ServiceResult<int>.SuccessResult(eventsToMark.Count(), "Eventos marcados como Realizados.");
-            }
-            catch (Exception ex) { return ServiceResult<int>.FailureResult(ex.Message); }
-        }
+                var hoy = DateTime.Now;
 
-        public async Task<ServiceResult<int>> CheckAndCancelUnpaidEventsAsync()
-        {
-            try
-            {
-                var deadline = DateTime.Now.AddHours(48);
-                var eventos = await _eventoRepository.FindWithIncludesAsync(e => e.Estado == EventoEstado.PendienteAdeudado && e.Inicio <= deadline && e.Inicio > DateTime.Now, e => e.Pagos);
-                int count = 0;
-                foreach (var ev in eventos)
+                // 1. OBTENER CANDIDATOS:
+                // Buscamos TODOS los eventos que ya terminaron (Fin < hoy)
+                // y que no han sido cerrados definitivamente (no son ni Realizado ni Cancelado).
+                var eventosPasados = await _eventoRepository.FindWithIncludesAsync(
+                    e => e.Fin < hoy &&
+                         e.Estado != EventoEstado.Realizado &&
+                         e.Estado != EventoEstado.Cancelado,
+                    e => e.Pagos // Traemos pagos para hacer la matemática financiera
+                );
+
+                int contadorModificados = 0;
+
+                foreach (var evento in eventosPasados)
                 {
-                    if ((ev.Pagos?.Where(p => p.Valido).Sum(p => (decimal)p.Monto) ?? 0) <= 0)
+                    // 2. CALCULO FINANCIERO EXACTO
+                    decimal totalPagado = evento.Pagos?.Where(p => p.Valido).Sum(p => (decimal)p.Monto) ?? 0;
+                    decimal costoTotal = (decimal)(evento.CostoAlquiler + (evento.MontoAireAcondicionado ?? 0));
+                    decimal saldo = costoTotal - totalPagado;
+
+                    // 3. TOMA DE DECISIONES
+
+                    // CASO A: Evento finalizado y PAGADO (Saldo ~0)
+                    if (saldo <= 10)
                     {
-                        ev.Estado = EventoEstado.Cancelado;
-                        ev.Observaciones += $"\n\n[AUTO-CANCELADO] {DateTime.Now}: Falta de pago.";
-                        _eventoRepository.Update(ev); count++;
+                        if (evento.Estado != EventoEstado.Realizado)
+                        {
+                            evento.Estado = EventoEstado.Realizado;
+                            // Opcional: Log interno
+                            // evento.Observaciones += " | [SISTEMA] Cerrado automáticamente por pago completo.";
+                            _eventoRepository.Update(evento);
+                            contadorModificados++;
+                        }
+                    }
+                    // CASO B: Evento finalizado pero DEBE DINERO
+                    // Lo marcamos como 'PendienteAdeudado' para que salga en las Alertas Rojas y KPIs de deuda
+                    else
+                    {
+                        if (evento.Estado != EventoEstado.PendienteAdeudado)
+                        {
+                            evento.Estado = EventoEstado.PendienteAdeudado;
+                            // No lo cancelamos, solo marcamos la deuda para gestión
+                            _eventoRepository.Update(evento);
+                            contadorModificados++;
+                        }
                     }
                 }
-                if (count > 0) await _eventoRepository.SaveChangesAsync();
-                return ServiceResult<int>.SuccessResult(count, "Eventos cancelados.");
+
+                // 4. GUARDAR CAMBIOS EN LOTE
+                if (contadorModificados > 0)
+                {
+                    await _eventoRepository.SaveChangesAsync();
+                }
+
+                return ServiceResult<int>.SuccessResult(contadorModificados, $"Se actualizaron {contadorModificados} eventos pasados.");
             }
-            catch (Exception ex) { return ServiceResult<int>.FailureResult(ex.Message); }
+            catch (Exception ex)
+            {
+                return ServiceResult<int>.FailureResult(ex.Message);
+            }
         }
 
         #endregion

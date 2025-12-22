@@ -1,10 +1,9 @@
 ﻿using AutoMapper;
 using FluentValidation;
 using FluentValidation.Results;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Moq;
-using si_td_gestion_eventos.Context; // Namespace del Contexto
+using si_td_gestion_eventos.Context;
 using si_td_gestion_eventos.Entities;
 using si_td_gestion_eventos.Models.Enums;
 using si_td_gestion_eventos.Models.ViewModels;
@@ -26,8 +25,6 @@ namespace si_td_gestion_eventos.Tests.Services
         private readonly Mock<IEventoBusinessRules> _mockBusinessRules;
         private readonly Mock<IMapper> _mockMapper;
         private readonly Mock<IFileStorageService> _mockFileStorageService;
-
-        // NUEVO: Mock para el contexto de base de datos
         private readonly Mock<AppDbContext> _mockContext;
 
         private readonly EventoService _sut;
@@ -42,10 +39,9 @@ namespace si_td_gestion_eventos.Tests.Services
             _mockMapper = new Mock<IMapper>();
             _mockFileStorageService = new Mock<IFileStorageService>();
 
-            // Inicialización del mock del contexto pasándole opciones vacías
+            // Inicialización del mock del contexto
             _mockContext = new Mock<AppDbContext>(new DbContextOptions<AppDbContext>());
 
-            // Instanciamos el servicio con los 8 parámetros requeridos
             _sut = new EventoService(
                 _mockEventoRepository.Object,
                 _mockPagoRepository.Object,
@@ -54,7 +50,7 @@ namespace si_td_gestion_eventos.Tests.Services
                 _mockMapper.Object,
                 _mockFileStorageService.Object,
                 _mockComprobanteRepository.Object,
-                _mockContext.Object // <--- Argumento que faltaba (Error CS7036)
+                _mockContext.Object
             );
         }
 
@@ -174,20 +170,52 @@ namespace si_td_gestion_eventos.Tests.Services
 
         #endregion
 
-        #region CheckAndCancelUnpaidEventsAsync Tests
+        #region ActualizarEstadosEventosPasadosAsync Tests (NUEVO)
 
         [Fact]
-        public async Task CheckAndCancelUnpaidEventsAsync_SinPago_CancelaEvento()
+        public async Task ActualizarEstados_EventoPagadoPasado_MarcaComoRealizado()
         {
-            // Arrange
+            // Arrange (CASO A: Pagó todo y el evento ya pasó)
             var eventos = new List<Evento>
             {
                 new Evento
                 {
                     EventoId = 1,
-                    Estado = EventoEstado.PendienteAdeudado,
-                    Inicio = DateTime.Now.AddHours(40),
-                    Pagos = new List<Pago>()
+                    Estado = EventoEstado.PendientePagado, // Estado previo
+                    Fin = DateTime.Now.AddDays(-1), // Ya pasó
+                    CostoAlquiler = 1000,
+                    Pagos = new List<Pago> { new Pago { Monto = 1000, Valido = true } } // Pagó todo
+                }
+            };
+
+            // Mockeamos la búsqueda para que devuelva este evento
+            _mockEventoRepository.Setup(r => r.FindWithIncludesAsync(
+                It.IsAny<Expression<Func<Evento, bool>>>(),
+                It.IsAny<Expression<Func<Evento, object>>[]>()
+            )).ReturnsAsync(eventos);
+
+            // Act
+            var result = await _sut.ActualizarEstadosEventosPasadosAsync();
+
+            // Assert
+            Assert.True(result.Success);
+            Assert.Equal(1, result.Data); // 1 evento modificado
+            Assert.Equal(EventoEstado.Realizado, eventos[0].Estado); // Debe pasar a Realizado
+        }
+
+        [Fact]
+        public async Task ActualizarEstados_EventoDeudorPasado_MarcaComoPendienteAdeudado()
+        {
+            // Arrange (CASO B: Debe plata y el evento ya pasó)
+            var eventos = new List<Evento>
+            {
+                new Evento
+                {
+                    EventoId = 2,
+                    Estado = EventoEstado.PendientePagado, // Estaba pendiente
+                    Fin = DateTime.Now.AddDays(-1), // Ya pasó
+                    CostoAlquiler = 1000,
+                    Pagos = new List<Pago>() // No pagó nada
                 }
             };
 
@@ -197,12 +225,13 @@ namespace si_td_gestion_eventos.Tests.Services
             )).ReturnsAsync(eventos);
 
             // Act
-            var result = await _sut.CheckAndCancelUnpaidEventsAsync();
+            var result = await _sut.ActualizarEstadosEventosPasadosAsync();
 
             // Assert
             Assert.True(result.Success);
             Assert.Equal(1, result.Data);
-            Assert.Equal(EventoEstado.Cancelado, eventos[0].Estado);
+            // IMPORTANTE: Según tu nueva lógica, NO se cancela, se marca como PendienteAdeudado
+            Assert.Equal(EventoEstado.PendienteAdeudado, eventos[0].Estado);
         }
 
         #endregion
