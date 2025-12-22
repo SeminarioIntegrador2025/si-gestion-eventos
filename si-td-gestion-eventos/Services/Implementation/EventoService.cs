@@ -375,33 +375,77 @@ namespace si_td_gestion_eventos.Services.Implementation
                 var evento = await _eventoRepository.GetByIdAsync(model.EventoId);
                 if (evento == null) return ServiceResult<bool>.FailureResult("No existe el evento.");
 
-                string historial = $"[REPROGRAMADO], Fecha original: {evento.Inicio:dd/MM/yyyy}. Reprogramado el {DateTime.Now:dd/MM/yyyy HH:mm}.";
+                // 1. DETECCIÓN DE ESTADO POR FECHA (Lógica Centinela)
+                // Verificamos si la fecha guardada es el "Flag" de 1900
+                bool estabaIndefinido = evento.Inicio.Year == 1900;
 
+                // 2. SNAPSHOT HISTÓRICO
+                string fechaOriginalStr = estabaIndefinido
+                    ? "FECHA POR DEFINIR"
+                    : evento.Inicio.ToString("dd/MM/yyyy HH:mm");
+
+                string mensajeAuditoria = "";
+                string fechaHoy = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+
+                // 3. APLICACIÓN DE CAMBIOS
                 if (model.FechaIndefinida)
                 {
-                    evento.Inicio = new DateTime(1900, evento.Inicio.Month, evento.Inicio.Day) + evento.Inicio.TimeOfDay;
-                    evento.Fin = new DateTime(1900, evento.Fin.Month, evento.Fin.Day) + evento.Fin.TimeOfDay;
+                    // --- CASO A: Pasa a Indefinido ---
+                    evento.Estado = EventoEstado.Reprogramado;
+
+                    // NO usamos una propiedad bool. USAMOS LA FECHA CENTINELA (1900).
+                    evento.Inicio = new DateTime(1900, 1, 1);
+                    evento.Fin = new DateTime(1900, 1, 1);
+                    // Limpiamos horas para evitar ruido
+                    evento.HoraInicio = TimeSpan.Zero;
+                    evento.HoraFin = TimeSpan.Zero;
+
+                    mensajeAuditoria = $"[REPROGRAMADO] Fecha original: {fechaOriginalStr}. Pasado a FECHA POR DEFINIR el {fechaHoy}.";
                 }
-                else if (model.NuevaFechaInicio.HasValue && model.NuevaFechaFin.HasValue && model.NuevaHoraInicio.HasValue && model.NuevaHoraFin.HasValue)
+                else if (model.NuevaFechaInicio.HasValue && model.NuevaFechaFin.HasValue &&
+                         model.NuevaHoraInicio.HasValue && model.NuevaHoraFin.HasValue)
                 {
-                    if (!await _businessRules.IsDateRangeAvailableAsync(model.NuevaFechaInicio.Value, model.NuevaFechaFin.Value, model.NuevaHoraInicio.Value, model.NuevaHoraFin.Value, model.EventoId))
-                        return ServiceResult<bool>.FailureResult("El salón ya está ocupado en ese horario.");
+                    // --- CASO B: Pasa a Fecha Concreta ---
+
+                    // Validación de negocio (Disponibilidad)
+                    if (!await _businessRules.IsDateRangeAvailableAsync(
+                        model.NuevaFechaInicio.Value, model.NuevaFechaFin.Value,
+                        model.NuevaHoraInicio.Value, model.NuevaHoraFin.Value, model.EventoId))
+                    {
+                        return ServiceResult<bool>.FailureResult("El salón ya está ocupado en ese nuevo horario.");
+                    }
+
+                    evento.Estado = EventoEstado.Reprogramado;
+                    // Aquí simplemente sobrescribimos la fecha 1900 con la real. No hace falta cambiar flags.
 
                     evento.Inicio = model.NuevaFechaInicio.Value.Date + model.NuevaHoraInicio.Value;
                     evento.Fin = model.NuevaFechaFin.Value.Date + model.NuevaHoraFin.Value;
                     evento.HoraInicio = model.NuevaHoraInicio.Value;
                     evento.HoraFin = model.NuevaHoraFin.Value;
-                }
-                else return ServiceResult<bool>.FailureResult("Faltan datos de fecha u hora.");
 
-                evento.Observaciones = string.IsNullOrEmpty(evento.Observaciones) ? historial : $"{evento.Observaciones}\n\n{historial}";
-                evento.Estado = EventoEstado.Reprogramado;
+                    string nuevaFechaStr = evento.Inicio.ToString("dd/MM/yyyy HH:mm");
+                    mensajeAuditoria = $"[REPROGRAMADO] Fecha original: {fechaOriginalStr}. Nueva fecha: {nuevaFechaStr}. Modificado el {fechaHoy}.";
+                }
+                else
+                {
+                    return ServiceResult<bool>.FailureResult("Faltan datos para reprogramar.");
+                }
+
+                // 4. ACTUALIZACIÓN DE OBSERVACIONES
+                if (string.IsNullOrEmpty(evento.Observaciones))
+                    evento.Observaciones = mensajeAuditoria;
+                else
+                    evento.Observaciones += $"{Environment.NewLine}{mensajeAuditoria}";
+
                 _eventoRepository.Update(evento);
                 await _eventoRepository.SaveChangesAsync();
 
-                return ServiceResult<bool>.SuccessResult(true, "Evento reprogramado.");
+                return ServiceResult<bool>.SuccessResult(true, "Evento reprogramado correctamente.");
             }
-            catch (Exception ex) { return ServiceResult<bool>.FailureResult($"Error: {ex.Message}"); }
+            catch (Exception ex)
+            {
+                return ServiceResult<bool>.FailureResult($"Error: {ex.Message}");
+            }
         }
 
         #endregion
