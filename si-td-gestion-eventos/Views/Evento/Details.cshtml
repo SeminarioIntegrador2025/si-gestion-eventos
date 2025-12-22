@@ -288,21 +288,64 @@
     </div>
 </div>
 
-@* MODAL REPROGRAMAR *@
+@* MODAL REPROGRAMAR DEFINITIVO *@
 <div class="modal fade" id="modalReprogramar" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header bg-warning text-dark"><h5 class="modal-title fw-bold">Reprogramar Evento</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <form asp-action="Reprogramar" method="post">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title fw-bold">Reprogramar Evento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="Reprogramar" method="post" id="formReprogramar">
                 <div class="modal-body">
+                    @* ID del evento oculto *@
                     <input type="hidden" name="EventoId" value="@Model.EventoId" />
-                    <div class="form-check form-switch mb-3"><input class="form-check-input" type="checkbox" name="FechaIndefinida" id="chkFechaIndefinida" value="true"><label class="form-check-label">Dejar fecha por definir</label></div>
+
+                    @* SWITCH DE FECHA INDEFINIDA CON LÓGICA DE BLOQUEO *@
+                    <div class="form-check form-switch mb-3">
+                        @if (Model.EsFechaIndefinida)
+                        {
+                            @* CASO A: El evento YA ES indefinido. 
+                               Bloqueamos el switch para obligar al usuario a elegir una fecha concreta. *@
+                            <input class="form-check-input" type="checkbox" id="chkFechaIndefinida" disabled>
+                            <label class="form-check-label text-muted" for="chkFechaIndefinida">
+                                Dejar fecha por definir
+                                <small class="d-block text-dark mt-1">
+                                    <i class="fa-solid fa-info-circle me-1"></i>
+                                    El evento ya se encuentra sin fecha. Debes seleccionar una nueva fecha para reprogramar.
+                                </small>
+                            </label>
+                            @* Enviamos explícitamente false para que el Validator exija fechas *@
+                            <input type="hidden" name="FechaIndefinida" value="false" />
+                        }
+                        else
+                        {
+                            @* CASO B: El evento TIENE fecha.
+                               Permitimos pasar a indefinida. *@
+                            <input class="form-check-input" type="checkbox" name="FechaIndefinida" id="chkFechaIndefinida" value="true">
+                            <label class="form-check-label text-dark" for="chkFechaIndefinida">Dejar fecha por definir</label>
+                        }
+                    </div>
+
+                    @* PANEL DE FECHAS *@
                     <div id="panelFechas" class="row">
-                        <div class="col-6"><label class="small fw-bold">Nuevo Inicio</label><input type="date" name="NuevaFechaInicio" class="form-control mb-2" required><input type="time" name="NuevaHoraInicio" class="form-control" value="@Model.HoraInicio?.ToString(@"hh\:mm")" required></div>
-                        <div class="col-6"><label class="small fw-bold">Nuevo Fin</label><input type="date" name="NuevaFechaFin" class="form-control mb-2" required><input type="time" name="NuevaHoraFin" class="form-control" value="@Model.HoraFin?.ToString(@"hh\:mm")" required></div>
+                        <div class="col-6">
+                            <label class="small fw-bold text-dark">Nuevo Inicio</label>
+                            @* IDs agregados para el JS: NuevaFechaInicio, NuevaHoraInicio *@
+                            <input type="date" id="NuevaFechaInicio" name="NuevaFechaInicio" class="form-control mb-2 input-repro" required>
+                            <input type="time" id="NuevaHoraInicio" name="NuevaHoraInicio" class="form-control input-repro" value="@Model.HoraInicio?.ToString(@"hh\:mm")" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="small text-dark fw-bold">Nuevo Fin</label>
+                            @* IDs agregados para el JS: NuevaFechaFin, NuevaHoraFin *@
+                            <input type="date" id="NuevaFechaFin" name="NuevaFechaFin" class="form-control mb-2 input-repro" required>
+                            <input type="time" id="NuevaHoraFin" name="NuevaHoraFin" class="form-control input-repro" value="@Model.HoraFin?.ToString(@"hh\:mm")" required>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer"><button type="submit" class="btn btn-warning fw-bold shadow-sm">Confirmar Cambio</button></div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-warning fw-bold shadow-sm">Confirmar Cambio</button>
+                </div>
             </form>
         </div>
     </div>
@@ -328,18 +371,50 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+        // --- LÓGICA DE REPROGRAMACIÓN (CORREGIDA) ---
         var chk = document.getElementById('chkFechaIndefinida');
         var panel = document.getElementById('panelFechas');
-        if (chk && panel) {
-            chk.addEventListener('change', function() {
-                panel.style.opacity = this.checked ? '0.4' : '1';
-                panel.style.pointerEvents = this.checked ? 'none' : 'auto';
+        // Seleccionamos todos los inputs dentro del panel que tengan la clase 'input-repro'
+        // o simplemente seleccionamos todos los inputs del panel
+        var inputsFecha = panel.querySelectorAll('input');
+
+        function toggleEstadoFechas() {
+            var isIndefinida = chk.checked;
+
+            // 1. Efecto Visual
+            panel.style.opacity = isIndefinida ? '0.4' : '1';
+
+            // 2. Bloqueo de Interacción y Atributos
+            inputsFecha.forEach(function(input) {
+                if (isIndefinida) {
+                    // Si es indefinida: Deshabilitamos edición, limpiamos valor y QUITAMOS REQUIRED
+                    input.readOnly = true; // Usamos readOnly para que no se borre el valor al enviar si fuera necesario, o disabled si queremos null
+                    input.disabled = true; // Disabled hace que no se envíe el valor (llega null al server)
+                    input.value = '';      // Limpiamos visualmente
+                    input.removeAttribute('required'); // <--- LA CLAVE DEL ARREGLO
+                } else {
+                    // Si es fecha específica: Habilitamos y PONEMOS REQUIRED
+                    input.readOnly = false;
+                    input.disabled = false;
+                    input.setAttribute('required', 'required');
+                }
             });
         }
+
+        if (chk && panel) {
+            // Escuchar cambios
+            chk.addEventListener('change', toggleEstadoFechas);
+
+            // Ejecutar al cargar la página por si viene marcado del servidor (ej: error de validación previo)
+            toggleEstadoFechas();
+        }
+
+        // --- LÓGICA DE COPIADO DE FECHAS (UX) ---
         var inputInicio = document.getElementById('NuevaFechaInicio');
         var inputFin = document.getElementById('NuevaFechaFin');
         if(inputInicio && inputFin){
             inputInicio.addEventListener('change', function() {
+                // Solo copiar si la fecha fin está vacía
                 if (!inputFin.value) inputFin.value = this.value;
             });
         }

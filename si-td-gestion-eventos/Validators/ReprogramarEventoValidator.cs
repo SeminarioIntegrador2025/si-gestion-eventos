@@ -1,63 +1,86 @@
 ﻿using FluentValidation;
 using si_td_gestion_eventos.Services.Contracts;
+using si_td_gestion_eventos.Models.ViewModels;
 
-public class ReprogramarEventoValidator : AbstractValidator<ReprogramarEventoVM>
+namespace si_td_gestion_eventos.Validators
 {
-    private readonly IEventoBusinessRules _businessRules;
-
-    public ReprogramarEventoValidator(IEventoBusinessRules businessRules)
+    public class ReprogramarEventoValidator : AbstractValidator<ReprogramarEventoVM>
     {
-        _businessRules = businessRules;
+        private readonly IEventoBusinessRules _businessRules;
 
-        When(x => !x.FechaIndefinida, () =>
+        public ReprogramarEventoValidator(IEventoBusinessRules businessRules)
         {
-            // 1. Obligatoriedad
-            RuleFor(x => x.NuevaFechaInicio).NotNull().WithMessage("Fecha inicio obligatoria.");
-            RuleFor(x => x.NuevaHoraInicio).NotNull().WithMessage("Hora inicio obligatoria.");
-            RuleFor(x => x.NuevaFechaFin).NotNull().WithMessage("Fecha fin obligatoria.");
-            RuleFor(x => x.NuevaHoraFin).NotNull().WithMessage("Hora fin obligatoria.");
+            _businessRules = businessRules;
 
-            // 2. Coherencia Temporal (Fin > Inicio)
-            RuleFor(x => x)
-                .Must(m =>
-                {
-                    if (!m.NuevaFechaInicio.HasValue || !m.NuevaFechaFin.HasValue ||
-                        !m.NuevaHoraInicio.HasValue || !m.NuevaHoraFin.HasValue) return true;
+            // LA CLAVE: Todo este bloque se salta si FechaIndefinida es TRUE.
+            // Esto permite que el formulario pase con fechas vacías (null) cuando es "Por Definir".
+            When(x => !x.FechaIndefinida, () =>
+            {
+                // 1. Obligatoriedad de campos
+                RuleFor(x => x.NuevaFechaInicio)
+                    .NotNull().WithMessage("La fecha de inicio es obligatoria.");
 
-                    var inicio = m.NuevaFechaInicio.Value.Date + m.NuevaHoraInicio.Value;
-                    var fin = m.NuevaFechaFin.Value.Date + m.NuevaHoraFin.Value;
+                RuleFor(x => x.NuevaHoraInicio)
+                    .NotNull().WithMessage("La hora de inicio es obligatoria.");
 
-                    return fin > inicio;
-                })
-                .WithMessage("La fecha/hora de fin debe ser posterior al inicio.");
+                RuleFor(x => x.NuevaFechaFin)
+                    .NotNull().WithMessage("La fecha de fin es obligatoria.");
 
-            // 3. No al Pasado
-            RuleFor(x => x)
-                .Must(m =>
-                {
-                    if (!m.NuevaFechaInicio.HasValue || !m.NuevaHoraInicio.HasValue) return true;
-                    var inicio = m.NuevaFechaInicio.Value.Date + m.NuevaHoraInicio.Value;
-                    return inicio >= DateTime.Now.AddMinutes(-1);
-                })
-                .WithMessage("No puedes programar en el pasado.");
+                RuleFor(x => x.NuevaHoraFin)
+                    .NotNull().WithMessage("La hora de fin es obligatoria.");
 
-            // 4. Disponibilidad (Lógica Simple y Directa)
-            RuleFor(x => x)
-                .MustAsync(async (m, ct) =>
-                {
-                    if (!m.NuevaFechaInicio.HasValue || !m.NuevaFechaFin.HasValue ||
-                        !m.NuevaHoraInicio.HasValue || !m.NuevaHoraFin.HasValue) return true;
+                // 2. Coherencia Temporal (Fin > Inicio)
+                // Usamos 'DependentRules' para ejecutar esto solo si los datos básicos existen
+                RuleFor(x => x)
+                    .Must(m =>
+                    {
+                        // Si falta algún dato, devolvemos true para no duplicar mensajes de error (ya saltó el NotNull arriba)
+                        if (FaltanDatos(m)) return true;
 
-                    // Pasamos las fechas tal cual las eligió el usuario. Cero magia.
-                    return await _businessRules.IsDateRangeAvailableAsync(
-                        m.NuevaFechaInicio.Value,
-                        m.NuevaFechaFin.Value,
-                        m.NuevaHoraInicio.Value,
-                        m.NuevaHoraFin.Value,
-                        m.EventoId
-                    );
-                })
-                .WithMessage("El salón ya está ocupado en ese rango.");
-        });
+                        var inicio = m.NuevaFechaInicio!.Value.Date + m.NuevaHoraInicio!.Value;
+                        var fin = m.NuevaFechaFin!.Value.Date + m.NuevaHoraFin!.Value;
+
+                        return fin > inicio;
+                    })
+                    .WithMessage("La fecha de fin debe ser posterior al inicio.");
+
+                // 3. No al Pasado
+                RuleFor(x => x)
+                    .Must(m =>
+                    {
+                        if (!m.NuevaFechaInicio.HasValue || !m.NuevaHoraInicio.HasValue) return true;
+
+                        var inicio = m.NuevaFechaInicio.Value.Date + m.NuevaHoraInicio.Value;
+                        // Damos 1 minuto de margen por latencia de red
+                        return inicio >= DateTime.Now.AddMinutes(-1);
+                    })
+                    .WithMessage("No puedes programar el evento en el pasado.");
+
+                // 4. Disponibilidad (Lógica de Negocio)
+                RuleFor(x => x)
+                    .MustAsync(async (m, ct) =>
+                    {
+                        if (FaltanDatos(m)) return true;
+
+                        return await _businessRules.IsDateRangeAvailableAsync(
+                            m.NuevaFechaInicio!.Value,
+                            m.NuevaFechaFin!.Value,
+                            m.NuevaHoraInicio!.Value,
+                            m.NuevaHoraFin!.Value,
+                            m.EventoId
+                        );
+                    })
+                    .WithMessage("El salón ya se encuentra ocupado en ese rango de fechas y horas.");
+            });
+        }
+
+        // Helper privado para limpiar el código y evitar repetir la chequeada de nulos
+        private bool FaltanDatos(ReprogramarEventoVM m)
+        {
+            return !m.NuevaFechaInicio.HasValue ||
+                   !m.NuevaFechaFin.HasValue ||
+                   !m.NuevaHoraInicio.HasValue ||
+                   !m.NuevaHoraFin.HasValue;
+        }
     }
 }
