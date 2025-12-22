@@ -7,8 +7,7 @@
 <div class="row">
     <div class="col-md-6">
         <div class="form-group mb-3">
-            <label asp-for="ClienteId" class="form-label fw-bold"></label>
-            @* CAMBIO AQUÍ: Se agregó la clase 'select2-busqueda' *@
+            <label asp-for="ClienteId" class="form-label fw-bold" ></label>
             <select asp-for="ClienteId" asp-items="ViewBag.Clientes" class="form-select select2-busqueda">
                 <option value="">-- Seleccionar Cliente --</option>
             </select>

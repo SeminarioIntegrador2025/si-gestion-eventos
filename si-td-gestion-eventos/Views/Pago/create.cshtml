@@ -4,7 +4,7 @@
     ViewData["Title"] = "Registrar Nuevo Pago";
     bool showEventDropdown = ViewBag.Eventos != null;
     var eventoId = ViewData["EventoId"];
-    
+
     // Datos financieros del evento
     var saldoAnterior = (float?)ViewData["SaldoAnterior"] ?? 0f;
     var totalPagado = (float?)ViewData["TotalPagadoActual"] ?? 0f;
@@ -26,29 +26,29 @@
     </div>
 
     <div class="row">
-        <!-- COLUMNA IZQUIERDA: FORMULARIO -->
         <div class="col-lg-8">
-            <div class="card shadow-sm">
-                <div class="card-header">
+            <div class="card shadow-sm border-0 bg-transparent">
+                <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">
                         <i class="fa-solid fa-file-invoice-dollar me-2"></i>
                         Datos del Pago
                     </h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body border border-top-0 border-secondary rounded-bottom">
                     <form asp-action="Create" method="post" enctype="multipart/form-data" id="formPago">
 
                         <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
                         @if (showEventDropdown)
                         {
-                            <div class="form-group mb-3">
-                                <label asp-for="EventoId" class="control-label fw-semibold">Seleccionar Evento</label>
-                                <select asp-for="EventoId" 
-                                        asp-items="@ViewBag.Eventos" 
-                                        class="form-control"
+                            <div class="form-group mb-4">
+                                <label asp-for="EventoId" class="control-label fw-bold mb-2">Seleccionar Evento</label>
+                                @* Agregamos la clase select2-busqueda para activar el buscador *@
+                                <select asp-for="EventoId"
+                                        asp-items="@ViewBag.Eventos"
+                                        class="form-control select2-busqueda"
                                         id="eventoSelect">
-                                    <option value="">-- Seleccione un evento... --</option>
+                                    <option value="">-- Escriba el nombre del cliente o evento... --</option>
                                 </select>
                                 <span asp-validation-for="EventoId" class="text-danger"></span>
                             </div>
@@ -58,57 +58,61 @@
                             <input type="hidden" asp-for="EventoId" />
                         }
 
-                        <div class="col-md-6">
-                            <div class="form-group mb-3">
-                                <label asp-for="Monto" class="control-label fw-semibold">Monto del Pago</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-transparent text-light fw-bold border-secondary">UYU</span>
-                                    <input asp-for="Monto"
-                                           class="form-control"
-                                           type="number"
-                                           step="0.01"
-                                           id="montoPago"
-                                           placeholder="0.00" />
-                                    @if (!showEventDropdown && saldoAnterior > 0)
-                                    {
-                                        <button type="button"
-                                                class="btn btn-primary"
-                                                id="btnPagarTotal"
-                                                title="Pagar el saldo restante completo">
-                                            <i class="fa-solid fa-check-double me-1"></i>Pagar Total
-                                        </button>
-                                    }
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="Monto" class="control-label fw-semibold">Monto del Pago</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-transparent text-white fw-bold border-secondary">UYU</span>
+                                        <input asp-for="Monto"
+                                               class="form-control border-secondary text-white"
+                                               type="number"
+                                               step="0.01"
+                                               id="montoPago"
+                                               placeholder="0.00" />
+                                        @if (!showEventDropdown && saldoAnterior > 0)
+                                        {
+                                            <button type="button"
+                                                    class="btn btn-primary"
+                                                    id="btnPagarTotal"
+                                                    title="Pagar el saldo restante completo">
+                                                <i class="fa-solid fa-check-double me-1"></i>Pagar Total
+                                            </button>
+                                        }
+                                    </div>
+                                    <span asp-validation-for="Monto" class="text-danger"></span>
                                 </div>
-                                <span asp-validation-for="Monto" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label asp-for="Metodo" class="control-label fw-semibold">Método de Pago</label>
+                                    <select asp-for="Metodo" asp-items="Html.GetEnumSelectList<si_td_gestion_eventos.Models.Enums.MetodoPago>()" class="form-select border-secondary">
+                                        <option value="">Seleccione...</option>
+                                    </select>
+                                    <span asp-validation-for="Metodo" class="text-danger"></span>
+                                </div>
                             </div>
                         </div>
 
                         <div class="form-group mb-3">
-                            <label asp-for="Metodo" class="control-label fw-semibold">Método de Pago</label>
-                            <select asp-for="Metodo" asp-items="Html.GetEnumSelectList<si_td_gestion_eventos.Models.Enums.MetodoPago>()" class="form-control">
-                                <option value="">Seleccione...</option>
-                            </select>
-                            <span asp-validation-for="Metodo" class="text-danger"></span>
-                        </div>
-
-                        <div class="form-group mb-3">
                             <label asp-for="Observaciones" class="control-label fw-semibold">Observaciones</label>
-                            <input asp-for="Observaciones" class="form-control" placeholder="Ej: Pago parcial, saldo..." />
+                            <input asp-for="Observaciones" class="form-control border-secondary" placeholder="Ej: Pago parcial, saldo..." />
                             <span asp-validation-for="Observaciones" class="text-danger"></span>
                         </div>
 
                         <div class="form-group mb-3">
                             <label asp-for="ArchivoComprobante" class="control-label fw-semibold">Adjuntar Comprobante (opcional)</label>
-                            <input asp-for="ArchivoComprobante" type="file" class="form-control" accept=".pdf,.jpg,.jpeg,.png" />
+                            <input asp-for="ArchivoComprobante" type="file" class="form-control border-secondary" accept=".pdf,.jpg,.jpeg,.png" />
                             <span asp-validation-for="ArchivoComprobante" class="text-danger"></span>
                             <small class="text-muted">Formatos aceptados: PDF, JPG, PNG</small>
                         </div>
 
                         <div class="d-flex justify-content-between mt-4">
-                            <a asp-action="Index" asp-route-eventoId="@eventoId" class="btn btn-secondary">
+                            <a asp-action="Index" asp-route-eventoId="@eventoId" class="btn btn-outline-secondary">
                                 <i class="fa-solid fa-times me-2"></i>Cancelar
                             </a>
-                            <button type="submit" class="btn btn-success btn-lg">
+                            <button type="submit" class="btn btn-success btn-lg px-5">
                                 <i class="fa-solid fa-save me-2"></i>Guardar Pago
                             </button>
                         </div>
@@ -117,12 +121,11 @@
             </div>
         </div>
 
-        <!-- COLUMNA DERECHA: RESUMEN FINANCIERO -->
         <div class="col-lg-4">
             @if (!showEventDropdown)
             {
-                <div class="card shadow-sm mb-3">
-                    <div class="card-header bg-success text-white">
+                <div class="card shadow-sm mb-3 border-secondary bg-transparent">
+                    <div class="card-header bg-success text-white border-secondary">
                         <h6 class="mb-0">
                             <i class="fa-solid fa-chart-line me-2"></i>
                             Resumen Financiero
@@ -133,12 +136,12 @@
                             <small class="text-muted d-block">Costo Total del Evento</small>
                             <h4 class="mb-0 text-primary">@costoTotal.ToString("C2")</h4>
                         </div>
-                        <hr />
+                        <hr class="border-secondary" />
                         <div class="mb-3">
                             <small class="text-muted d-block">Total Pagado Anteriormente</small>
                             <h5 class="mb-0 text-success">@totalPagado.ToString("C2")</h5>
                         </div>
-                        <hr />
+                        <hr class="border-secondary" />
                         <div class="mb-0">
                             <small class="text-muted d-block">Saldo Restante</small>
                             <h3 class="mb-0 fw-bold text-danger">@saldoAnterior.ToString("C2")</h3>
@@ -146,7 +149,7 @@
                     </div>
                     @if (saldoAnterior > 0)
                     {
-                        <div class="card-footer bg-light text-center">
+                        <div class="card-footer bg-dark text-center border-secondary">
                             <small class="text-muted">
                                 <i class="fa-solid fa-info-circle me-1"></i>
                                 Use el botón "Pagar Total" para saldar la deuda completa
@@ -155,21 +158,16 @@
                     }
                     else if (saldoAnterior == 0)
                     {
-                        <div class="card-footer bg-success text-white text-center">
+                        <div class="card-footer bg-success text-white text-center border-secondary">
                             <i class="fa-solid fa-check-circle me-1"></i>
                             <strong>Evento completamente pagado</strong>
                         </div>
                     }
                 </div>
-
-                <div class="alert alert-info border-0">
-                    <i class="fa-solid fa-lightbulb me-2"></i>
-                    <strong>Consejo:</strong> Si el pago es parcial, indíquelo en las observaciones.
-                </div>
             }
             else
             {
-                <div class="alert alert-warning border-0">
+                <div class="alert alert-warning border-0 shadow-sm">
                     <i class="fa-solid fa-triangle-exclamation me-2"></i>
                     <strong>Atención:</strong> Seleccione un evento para ver el resumen financiero.
                 </div>
@@ -180,36 +178,43 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    
+
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        $(document).ready(function() {
+            // 1. INICIALIZACIÓN DE SELECT2
+            $('.select2-busqueda').select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                placeholder: '-- Escriba para buscar evento o cliente... --',
+                language: {
+                    noResults: function() { return "No se encontraron eventos pendientes"; }
+                }
+            });
+
             const btnPagarTotal = document.getElementById('btnPagarTotal');
             const montoPagoInput = document.getElementById('montoPago');
-            const eventoSelect = document.getElementById('eventoSelect');
-            
-            // Botón "Pagar Total"
+            const eventoSelect = $('#eventoSelect');
+
+            // 2. Lógica del Botón "Pagar Total"
             if (btnPagarTotal && montoPagoInput) {
                 btnPagarTotal.addEventListener('click', function() {
-                    const saldoRestante = @saldoAnterior;
+                    const saldoRestante = @saldoAnterior.ToString(System.Globalization.CultureInfo.InvariantCulture);
                     montoPagoInput.value = saldoRestante.toFixed(2);
-                    
+
                     const obsInput = document.querySelector('input[name="Observaciones"]');
                     if (obsInput && !obsInput.value) {
                         obsInput.value = 'Pago total del saldo restante';
                     }
                 });
             }
-            
-            // Actualización dinámica al seleccionar evento
-            if (eventoSelect) {
-                eventoSelect.addEventListener('change', function() {
-                    const eventoId = this.value;
-                    if (eventoId) {
-                        // Recargar página con eventoId
-                        window.location.href = '@Url.Action("Create", "Pago")?eventoId=' + eventoId;
-                    }
-                });
-            }
+
+            // 3. Redirección dinámica al seleccionar evento (Actualizado para Select2)
+            eventoSelect.on('change', function() {
+                const id = $(this).val();
+                if (id) {
+                    window.location.href = '@Url.Action("Create", "Pago")?eventoId=' + id;
+                }
+            });
         });
     </script>
 }
