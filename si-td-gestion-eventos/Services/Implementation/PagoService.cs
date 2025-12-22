@@ -144,16 +144,24 @@ namespace si_td_gestion_eventos.Services.Implementation
 
                 // Recalcular estado del evento
                 var evento = await _eventoService.GetByIdAsync(pagoVM.EventoId);
+
                 if (evento != null)
                 {
-                    float costoTotal = (float)(evento.CostoAlquiler + (evento.MontoAireAcondicionado ?? 0));
-                    float totalPagado = (float)evento.TotalPagado + pagoEntity.Monto;
+                    // LÓGICA INFALIBLE:
+                    // Si el saldo es positivo (mayor a 0), SIEMPRE es Adeudado.
+                    // Si el saldo es 0 o negativo (por centavos), es Pagado.
+                    // Usamos decimal para evitar errores de precisión de float.
 
-                    if (totalPagado >= costoTotal && evento.Estado == EventoEstado.PendienteAdeudado)
+                    if (evento.SaldoRestante > 0)
+                    {
+                        evento.Estado = EventoEstado.PendienteAdeudado;
+                    }
+                    else
                     {
                         evento.Estado = EventoEstado.PendientePagado;
-                        await _eventoService.UpdateAsync(evento);
                     }
+
+                    await _eventoService.UpdateAsync(evento);
                 }
 
                 var pagoGuardadoVM = await GetByIdAsync(pagoEntity.PagoId);
