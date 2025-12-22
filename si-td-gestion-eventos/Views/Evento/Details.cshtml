@@ -251,8 +251,9 @@
                     <div class="d-grid">
                         <a asp-controller="Fianza" asp-action="Details" asp-route-id="@Model.FianzaId"
                            asp-route-returnUrl="@Url.Action("Details", "Evento", new { id = Model.EventoId })"
-                           class="btn btn-outline-light btn-sm text-dark border-secondary">
-                            <i class="fa-solid fa-eye me-2"></i>Detalles Fianza
+                           class="btn btn-outline-light btn-sm text-light border-secondary">
+                            <i class="fa-solid fa-eye me-2"></i>
+                            <Label class="text-light">Detalles Fianza</Label>
                         </a>
                     </div>
                 </div>
