@@ -485,7 +485,7 @@ namespace si_td_gestion_eventos.Services.Implementation
         public async Task<IEnumerable<SelectListItem>> GetEventosSinFianzaParaDropdownAsync()
         {
             var eventos = await _eventoRepository.FindWithIncludesAsync(e => e.Estado != EventoEstado.Cancelado && e.FianzaId == null, e => e.Cliente);
-            return eventos.Select(e => new SelectListItem { Value = e.EventoId.ToString(), Text = $"{e.Cliente.Nombre} - {e.Tipo} ({e.Inicio:dd/MM})" });
+            return eventos.Select(e => new SelectListItem { Value = e.EventoId.ToString(), Text = $"{e.Cliente.Nombre} {(e.Cliente.Apellido ?? "")} - {e.Tipo} - Fecha de Inicio: {e.Inicio:dd/MM}" });
         }
 
         public async Task<IEnumerable<SelectListItem>> GetTiposEventoParaDropdownAsync() => Enum.GetValues<TipoEvento>().Select(t => new SelectListItem { Value = t.ToString(), Text = t.ToString() });
@@ -493,7 +493,7 @@ namespace si_td_gestion_eventos.Services.Implementation
         public async Task<IEnumerable<SelectListItem>> GetEventosAdeudadosParaDropdownAsync()
         {
             var eventos = await _eventoRepository.FindWithIncludesAsync(e => e.Estado == EventoEstado.PendienteAdeudado, e => e.Cliente);
-            return eventos.Select(e => new SelectListItem { Value = e.EventoId.ToString(), Text = $"{e.Cliente.Nombre} - {e.Inicio:dd/MM}" });
+            return eventos.Select(e => new SelectListItem { Value = e.EventoId.ToString(), Text = $"{e.Cliente.Nombre}  {(e.Cliente.Apellido ?? "")} - Fecha de Inicio: {e.Inicio:dd/MM}" });
         }
 
         public async Task<bool> CanModifyEventoAsync(int id) => await _businessRules.CanModifyEventoAsync(id);
