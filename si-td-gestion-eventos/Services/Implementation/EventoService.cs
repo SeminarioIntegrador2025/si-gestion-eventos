@@ -381,11 +381,11 @@ namespace si_td_gestion_eventos.Services.Implementation
 
                 // 2. SNAPSHOT HISTÓRICO
                 string fechaOriginalStr = estabaIndefinido
-                    ? "FECHA POR DEFINIR"
-                    : evento.Inicio.ToString("dd/MM/yyyy HH:mm");
+                    ? "Fecha por definir"
+                    : evento.Inicio.ToString("dd/MM/yyyy");
 
                 string mensajeAuditoria = "";
-                string fechaHoy = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+                string fechaHoy = DateTime.Now.ToString("dd/MM/yyyy");
 
                 // 3. APLICACIÓN DE CAMBIOS
                 if (model.FechaIndefinida)
@@ -396,11 +396,8 @@ namespace si_td_gestion_eventos.Services.Implementation
                     // NO usamos una propiedad bool. USAMOS LA FECHA CENTINELA (1900).
                     evento.Inicio = new DateTime(1900, 1, 1);
                     evento.Fin = new DateTime(1900, 1, 1);
-                    // Limpiamos horas para evitar ruido
-                    evento.HoraInicio = TimeSpan.Zero;
-                    evento.HoraFin = TimeSpan.Zero;
 
-                    mensajeAuditoria = $"[REPROGRAMADO] Fecha original: {fechaOriginalStr}. Pasado a FECHA POR DEFINIR el {fechaHoy}.";
+                    mensajeAuditoria = $"[REPROGRAMADO] Fecha original: {fechaOriginalStr}. Pasado a fecha por definir el {fechaHoy}.";
                 }
                 else if (model.NuevaFechaInicio.HasValue && model.NuevaFechaFin.HasValue &&
                          model.NuevaHoraInicio.HasValue && model.NuevaHoraFin.HasValue)

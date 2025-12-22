@@ -15,70 +15,71 @@
 @* ALERTAS DE SISTEMA *@
 @if (TempData["Ok"] != null)
 {
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
         <i class="fa-solid fa-check-circle me-2"></i>@TempData["Ok"]
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 }
 @if (TempData["Error"] != null)
 {
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
         <i class="fa-solid fa-circle-exclamation me-2"></i>@TempData["Error"]
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="m-0">Lista de Eventos</h2>
-    <a class="btn btn-primary" asp-action="Create">
+    <h2 class="m-0 page-title"><i class="fa-solid fa-calendar-check me-2 text-primary"></i>Lista de Eventos</h2>
+    <a class="btn btn-primary shadow-sm" asp-action="Create">
         <i class="fa-solid fa-plus me-1"></i> Nuevo Evento
     </a>
 </div>
 
 @* SECCIÓN DE FILTROS *@
-<form method="get" class="row g-3 mb-4 align-items-end">
-    <div class="col-md-3">
-        <label for="q" class="form-label fw-bold">Búsqueda</label>
-        @* Placeholder actualizado para reflejar la búsqueda integral *@
-        <input type="text" name="q" id="q" class="form-control" value="@q"
-               placeholder="Nombre, CI, RUT o Empresa..." />
+<div class="card shadow-sm mb-4 border-0 bg-light">
+    <div class="card-body py-3">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label for="q" class="form-label fw-bold small text-muted">Búsqueda Inteligente</label>
+                <input type="text" name="q" id="q" class="form-control" value="@q"
+                       placeholder="Nombre, CI, RUT o Empresa..." />
+            </div>
+            <div class="col-md-2">
+                <label for="fechaDesde" class="form-label small text-muted">Desde</label>
+                <input type="date" name="fechaDesde" id="fechaDesde" class="form-control" value="@fechaDesde?.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-2">
+                <label for="fechaHasta" class="form-label small text-muted">Hasta</label>
+                <input type="date" name="fechaHasta" id="fechaHasta" class="form-control" value="@fechaHasta?.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-2">
+                <label for="estado" class="form-label small text-muted">Estado</label>
+                <select name="estado" id="estado" class="form-select"
+                        asp-items="Html.GetEnumSelectList<si_td_gestion_eventos.Models.Enums.EventoEstado>()">
+                    <option value="">-- Todos --</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="ordenPor" class="form-label small text-muted">Orden</label>
+                <select name="ordenPor" id="ordenPor" class="form-select" asp-items="ViewBag.OrdenPorList" onchange="this.form.submit()">
+                </select>
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-primary w-100" title="Aplicar Filtros">
+                    <i class="fa-solid fa-filter"></i>
+                </button>
+            </div>
+        </form>
     </div>
-    <div class="col-md-2">
-        <label for="fechaDesde" class="form-label">Fecha Desde</label>
-        <input type="date" name="fechaDesde" id="fechaDesde" class="form-control" value="@fechaDesde?.ToString("yyyy-MM-dd")" />
-    </div>
-    <div class="col-md-2">
-        <label for="fechaHasta" class="form-label">Fecha Hasta</label>
-        <input type="date" name="fechaHasta" id="fechaHasta" class="form-control" value="@fechaHasta?.ToString("yyyy-MM-dd")" />
-    </div>
-    <div class="col-md-3">
-        <label for="estado" class="form-label">Estado</label>
-        @* Usamos GetEnumSelectList para traer los nombres con espacios automáticamente *@
-        <select name="estado" id="estado" class="form-select"
-                asp-items="Html.GetEnumSelectList<si_td_gestion_eventos.Models.Enums.EventoEstado>()">
-            <option value="">-- Mostrar Todos --</option>
-        </select>
-    </div>
-    <div class="col-md-2">
-        <label for="ordenPor" class="form-label">Ordenar por</label>
-        <select name="ordenPor" id="ordenPor" class="form-select" asp-items="ViewBag.OrdenPorList" onchange="this.form.submit()">
-        </select>
-    </div>
-    <div class="col-md-1">
-       
-        <button type="submit" class="btn btn-primary w-100" title="Buscar">
-            <i class="fa-solid fa-magnifying-glass me-2"></i>Buscar
-        </button>
-    </div>
-</form>
+</div>
 
 @* TABLA DE EVENTOS *@
-<div class="table-responsive shadow-sm rounded">
-    <table class="table table-striped table-hover mb-0">
+<div class="table-responsive shadow-sm rounded bg-white">
+    <table class="table table-hover mb-0 align-middle">
         <thead class="table-dark">
             <tr>
                 <th>Cliente Responsable</th>
-                <th>Tipo de Evento</th>
+                <th>Tipo</th>
                 <th>Fecha Inicio</th>
                 <th>Estado</th>
                 <th>Observaciones</th>
@@ -89,9 +90,12 @@
             @if (!Model.Any())
             {
                 <tr>
-                    <td colspan="6" class="text-center py-4">
-                        <i class="fa-solid fa-calendar-xmark fa-2x text-muted mb-2 d-block"></i>
-                        <span class="text-muted">No se encontraron eventos con los filtros aplicados.</span>
+                    <td colspan="6" class="text-center py-5">
+                        <div class="text-muted opacity-50">
+                            <i class="fa-solid fa-calendar-xmark fa-3x mb-3"></i>
+                            <h5>No se encontraron eventos</h5>
+                            <p class="small">Intenta ajustar los filtros de búsqueda.</p>
+                        </div>
                     </td>
                 </tr>
             }
@@ -110,36 +114,68 @@
                     };
 
                     <tr>
-                        <td class="fw-bold">@e.ClienteNombreCompleto</td>
-                        <td>@e.Tipo</td>
-                        <td>@e.Inicio.ToString("dd/MM/yyyy")</td>
-                        <td>
-                            <span class="badge @estadoClass">@Html.DisplayFor(_ => e.Estado)</span>
+                        <td class="fw-semibold">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-initials bg-light text-primary rounded-circle me-2 d-flex justify-content-center align-items-center" style="width:35px; height:35px; font-size:0.8rem; font-weight:bold;">
+                                    @(e.ClienteNombreCompleto.Length > 0 ? e.ClienteNombreCompleto.Substring(0, 1) : "?")
+                                </div>
+                                @e.ClienteNombreCompleto
+                            </div>
                         </td>
+                        <td><span class="badge bg-light text-dark border">@e.Tipo</span></td>
+
+                        @* --- AQUÍ ESTÁ EL CAMBIO VISUAL (Patrón de Presentación) --- *@
                         <td>
-                            @if (!string.IsNullOrEmpty(e.Observaciones))
+                            @if (e.Inicio.Year == 1900)
                             {
-                                <span title="@e.Observaciones" class="d-inline-block text-truncate" style="max-width: 150px;">
-                                    @e.Observaciones
+                                @* CASO INDEFINIDO: Badge Amarillo *@
+                                <span class="badge bg-warning text-dark border border-warning rounded-pill">
+                                    <i class="fa-solid fa-calendar-circle-question me-1"></i>Por Definir
                                 </span>
                             }
                             else
                             {
-                                <span class="text-muted fst-italic">Sin obs.</span>
+                                @* CASO FECHA REAL: Fecha + Hora *@
+                                <div class="d-flex flex-column">
+                                    <span class="fw-bold text-dark">
+                                        @e.Inicio.ToString("dd/MM/yyyy")
+                                    </span>
+                                    <small class="text-muted" style="font-size: 0.75rem;">
+                                        <i class="fa-regular fa-clock me-1"></i>@e.Inicio.ToString("HH:mm")
+                                    </small>
+                                </div>
+                            }
+                        </td>
+                        @* -------------------------------------------------------- *@
+
+                        <td>
+                            <span class="badge @estadoClass rounded-pill">@Html.DisplayFor(_ => e.Estado)</span>
+                        </td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(e.Observaciones))
+                            {
+                                <span title="@e.Observaciones" class="d-inline-block text-truncate text-muted small" style="max-width: 150px; cursor: help;">
+                                    <i class="fa-regular fa-comment-dots me-1"></i>@e.Observaciones
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="text-muted small opacity-50">-</span>
                             }
                         </td>
                         <td class="text-center">
-                            <div class="btn-group">
-                                <a asp-action="Details" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-info" title="Detalles">
+                            <div class="btn-group shadow-sm" role="group">
+                                <a asp-action="Details" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-primary" title="Ver Detalles">
                                     <i class="fa-solid fa-eye"></i>
                                 </a>
                                 <a asp-action="Edit" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-secondary" title="Editar">
                                     <i class="fa-solid fa-pen"></i>
                                 </a>
 
+                                @* BOTÓN REPROGRAMAR *@
                                 @if (e.Estado == EventoEstado.Cancelado || e.Estado == EventoEstado.Reprogramado)
                                 {
-                                    <button type="button" class="btn btn-sm btn-outline-warning"
+                                    <button type="button" class="btn btn-sm btn-outline-warning text-dark"
                                             title="Reprogramar / Asignar Fecha"
                                             data-bs-toggle="modal" data-bs-target="#modalReprogramarIndex"
                                             onclick="setEventoId(@e.EventoId)">
@@ -148,23 +184,24 @@
                                 }
                                 else
                                 {
-                                    <a asp-action="Cancel" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-danger" title="Cancelar">
+                                    <a asp-action="Cancel" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-danger" title="Cancelar Evento">
                                         <i class="fa-solid fa-ban"></i>
                                     </a>
                                 }
 
+                                @* BOTÓN DE PAGOS *@
                                 @if (e.SaldoRestante > 0 && e.Estado != EventoEstado.Cancelado)
                                 {
                                     <a asp-controller="Pago" asp-action="Create" asp-route-eventoId="@e.EventoId"
-                                       class="btn btn-sm btn-outline-success" title="Agregar Pago">
+                                       class="btn btn-sm btn-outline-success" title="Registrar Pago">
                                         <i class="fa-solid fa-dollar-sign"></i>
                                     </a>
                                 }
                                 else
                                 {
                                     <a asp-controller="Pago" asp-action="Index" asp-route-eventoId="@e.EventoId"
-                                       class="btn btn-sm btn-outline-primary" title="Historial">
-                                        <i class="fa-solid fa-list"></i>
+                                       class="btn btn-sm btn-outline-info" title="Historial de Pagos">
+                                        <i class="fa-solid fa-receipt"></i>
                                     </a>
                                 }
                             </div>
@@ -177,12 +214,17 @@
 </div>
 
 @* PAGINACIÓN *@
-<div class="d-flex justify-content-between align-items-center mt-3">
-    <nav aria-label="Paginación">
-        <ul class="pagination mb-0">
+<div class="d-flex justify-content-between align-items-center mt-4">
+    <p class="text-muted small mb-0">
+        Mostrando página <strong>@Model.PageIndex</strong> de <strong>@Model.TotalPages</strong> (Total: @Model.TotalCount eventos)
+    </p>
+    <nav aria-label="Navegación de páginas">
+        <ul class="pagination pagination-sm mb-0 shadow-sm">
             <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
-                <a class="page-link bg-transparent" asp-action="Index"
-                   asp-route-page="@(Model.PageIndex - 1)" asp-route-q="@q" asp-route-pageSize="@pageSize">Anterior</a>
+                <a class="page-link" asp-action="Index"
+                   asp-route-page="@(Model.PageIndex - 1)" asp-route-q="@q" asp-route-pageSize="@pageSize">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </a>
             </li>
             @for (int i = 1; i <= Model.TotalPages; i++)
             {
@@ -191,20 +233,19 @@
                 </li>
             }
             <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
-                <a class="page-link bg-transparent" asp-action="Index"
-                   asp-route-page="@(Model.PageIndex + 1)" asp-route-q="@q" asp-route-pageSize="@pageSize">Siguiente</a>
+                <a class="page-link" asp-action="Index"
+                   asp-route-page="@(Model.PageIndex + 1)" asp-route-q="@q" asp-route-pageSize="@pageSize">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </a>
             </li>
         </ul>
     </nav>
-    <p class="text-muted small">
-        Página @Model.PageIndex de @Model.TotalPages (Total: @Model.TotalCount)
-    </p>
 </div>
 
-@* MODAL REPROGRAMAR (CON LOGICA DE INICIO Y FIN) *@
+@* MODAL REPROGRAMAR COMPARTIDO *@
 <div class="modal fade" id="modalReprogramarIndex" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
-        <div class="modal-content border-warning">
+        <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-warning text-dark">
                 <h5 class="modal-title fw-bold">
                     <i class="fa-solid fa-calendar-days me-2"></i>Reprogramar Evento
@@ -213,16 +254,16 @@
             </div>
 
             <form asp-action="Reprogramar" method="post" id="formReprogramarIndex">
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <input type="hidden" id="Index_EventoId" name="EventoId" value="" />
 
-                    <div class="alert alert-info small border-0 bg-light mb-3">
+                    <div class="alert alert-info small border-0 bg-light mb-4">
                         <i class="fa-solid fa-circle-info me-1 text-primary"></i>
                         Seleccione el nuevo rango de fecha y hora. La disponibilidad será validada automáticamente.
                     </div>
 
                     @* SWITCH FECHA INDEFINIDA *@
-                    <div class="p-3 border rounded mb-3 bg-light">
+                    <div class="p-3 border rounded mb-4 bg-light">
                         <div class="form-check form-switch mb-0">
                             <input class="form-check-input" type="checkbox" id="chkIndexIndefinida"
                                    name="FechaIndefinida" value="true" style="cursor: pointer;">
@@ -233,40 +274,25 @@
                     </div>
 
                     <div id="panelFechasIndex">
-                        <div class="row">
-                            @* NUEVO INICIO *@
-                            <div class="col-6 mb-3">
-                                <label class="form-label text-dark fw-bold border-bottom w-100">Nuevo Inicio</label>
-                                <div class="mb-2">
-                                    <label class="small text-muted">Fecha</label>
-                                    <input type="date" class="form-control" id="NuevaFechaInicio" name="NuevaFechaInicio" required />
-                                </div>
-                                <div>
-                                    <label class="small text-muted">Hora</label>
-                                    <input type="time" class="form-control" name="NuevaHoraInicio" required />
-                                </div>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <label class="form-label text-dark fw-bold small">NUEVO INICIO</label>
+                                <input type="date" class="form-control mb-2" id="NuevaFechaInicio" name="NuevaFechaInicio" required />
+                                <input type="time" class="form-control" name="NuevaHoraInicio" required />
                             </div>
-
-                            @* NUEVO FIN *@
-                            <div class="col-6 mb-3">
-                                <label class="form-label text-dark fw-bold border-bottom w-100">Nuevo Fin</label>
-                                <div class="mb-2">
-                                    <label class="small text-muted">Fecha</label>
-                                    <input type="date" class="form-control" id="NuevaFechaFin" name="NuevaFechaFin" required />
-                                </div>
-                                <div>
-                                    <label class="small text-muted">Hora</label>
-                                    <input type="time" class="form-control" name="NuevaHoraFin" required />
-                                </div>
+                            <div class="col-6">
+                                <label class="form-label text-dark fw-bold small">NUEVO FIN</label>
+                                <input type="date" class="form-control mb-2" id="NuevaFechaFin" name="NuevaFechaFin" required />
+                                <input type="time" class="form-control" name="NuevaHoraFin" required />
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-warning text-dark fw-bold">
-                        <i class="fa-solid fa-check me-2"></i>Confirmar Cambio
+                <div class="modal-footer bg-light border-top-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning text-dark fw-bold px-4 shadow-sm">
+                        <i class="fa-solid fa-check me-2"></i>Confirmar
                     </button>
                 </div>
             </form>
@@ -284,32 +310,42 @@
         document.addEventListener("DOMContentLoaded", function() {
             const chk = document.getElementById('chkIndexIndefinida');
             const panel = document.getElementById('panelFechasIndex');
-            const inputs = panel.querySelectorAll('input');
+            // Selector específico para evitar tocar inputs ocultos (como el Token AntiForgery)
+            const inputs = panel.querySelectorAll('input[type="date"], input[type="time"]');
 
-            // Control de visibilidad/bloqueo para fecha indefinida
+            // --- LÓGICA DE VISIBILIDAD Y VALIDACIÓN ---
             if (chk) {
                 chk.addEventListener('change', function() {
-                    if (this.checked) {
-                        panel.style.opacity = '0.4';
-                        panel.style.pointerEvents = 'none';
-                        inputs.forEach(input => {
-                            input.required = false;
+                    const isIndefinida = this.checked;
+
+                    // 1. Efecto Visual
+                    panel.style.opacity = isIndefinida ? '0.4' : '1';
+
+                    // 2. Manipulación de Atributos para pasar validación HTML5
+                    inputs.forEach(input => {
+                        if (isIndefinida) {
+                            // Si es indefinida: Desactivamos y quitamos REQUIRED
+                            input.readOnly = true;
+                            input.style.pointerEvents = 'none';
                             input.value = '';
-                        });
-                    } else {
-                        panel.style.opacity = '1';
-                        panel.style.pointerEvents = 'auto';
-                        inputs.forEach(input => input.required = true);
-                    }
+                            input.removeAttribute('required'); // <--- CRÍTICO
+                        } else {
+                            // Si es normal: Activamos y ponemos REQUIRED
+                            input.readOnly = false;
+                            input.style.pointerEvents = 'auto';
+                            input.setAttribute('required', 'required');
+                        }
+                    });
                 });
             }
 
-            // UX: Al elegir fecha de inicio, sugerir la misma para el fin
+            // --- UX: Copiado automático de fechas ---
             const inputInicio = document.getElementById('NuevaFechaInicio');
             const inputFin = document.getElementById('NuevaFechaFin');
 
             if(inputInicio && inputFin){
                 inputInicio.addEventListener('change', function() {
+                    // Si el usuario pone fecha inicio y fecha fin está vacía, la copiamos
                     if (!inputFin.value) {
                         inputFin.value = this.value;
                     }
