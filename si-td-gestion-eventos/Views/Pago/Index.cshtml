@@ -144,7 +144,7 @@
                                value="@q" />
                     </div>
 
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label fw-semibold">
                             <i class="fa-solid fa-filter me-1"></i>Filtrar por Evento
                         </label>
@@ -153,7 +153,8 @@
                         </select>
                     </div>
 
-                    <div class="col-md-2">
+                    @* ✅ FIX: Reducir tamaño de "Mostrar" de col-md-2 a col-md-1 *@
+                    <div class="col-md-1">
                         <label class="form-label fw-semibold">Mostrar</label>
                         <select name="pageSize" class="form-select" onchange="this.form.submit()">
                             @foreach (var s in new[] { 10, 25, 50 })
@@ -163,18 +164,20 @@
                         </select>
                     </div>
 
-                    <div class="col-md-2 d-flex gap-2">
-                        <button type="submit" class="btn btn-primary w-100">
+                    @* ✅ FIX: Aumentar tamaño de la columna de botones de col-md-2 a col-md-4 *@
+                    <div class="col-md-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-fill">
                             <i class="fa-solid fa-search me-1"></i>
-                            <span class="d-none d-md-inline">Buscar</span>
+                            <span class="d-none d-lg-inline">Buscar</span>
                         </button>
 
-                        <a class="btn btn-outline-secondary"
+                        <a class="btn btn-outline-secondary flex-shrink-0"
                            asp-action="Index"
                            asp-route-page="1"
                            asp-route-pageSize="@pageSize"
                            title="Limpiar filtros y recargar"
-                           aria-label="Limpiar todos los filtros">
+                           aria-label="Limpiar todos los filtros"
+                           style="min-width: 42px;">
                             <i class="fa-solid fa-rotate-left"></i>
                         </a>
                     </div>
