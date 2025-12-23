@@ -521,118 +521,59 @@ body.app {
 }
 
 /* Paginación */
+/* ===== PAGINACIÓN DISCRETA Y MINIMALISTA ===== */
 .pagination {
     gap: 0.25rem;
 }
 
-.page-link {
-    background: var(--bg-2);
-    border: 1px solid var(--line);
-    color: var(--ink-light);
-    border-radius: 0.5rem;
-    padding: 0.625rem 1rem;
-    text-decoration: none;
-}
+    .pagination .page-link {
+        color: var(--ink-light);
+        background-color: transparent;
+        border: 1px solid var(--line-light);
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        border-radius: 0.375rem;
+    }
 
-    .page-link:hover {
-        background: var(--primary);
+    .pagination .page-item:not(.active):not(.disabled) .page-link:hover {
+        background-color: var(--bg-3);
+        color: var(--primary);
+        border-color: var(--line);
+    }
+
+    .pagination .page-item.active .page-link {
         color: white;
+        background-color: var(--primary);
         border-color: var(--primary);
+        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
     }
 
-.page-item.active .page-link {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-    color: white;
-    border-color: transparent;
-}
-
-/* Footer */
-.footer {
-    background: var(--bg-2);
-    border-top: 1px solid var(--line);
-    padding: 1.5rem 0;
-    margin-top: auto;
-}
-
-/* Responsividad */
-@media (max-width: 768px) {
-    .layout {
-        grid-template-columns: 1fr;
+    .pagination .page-item.disabled .page-link {
+        color: var(--muted);
+        background-color: transparent;
+        opacity: 0.4;
+        cursor: not-allowed;
+        border-color: transparent;
     }
 
-        .layout.collapsed {
-            grid-template-columns: 1fr;
-        }
-
-    .sidebar {
-        position: fixed;
-        left: -280px;
-        top: 70px;
-        height: calc(100vh - 70px);
-        width: 280px;
-        z-index: 1050;
-    }
-
-        .sidebar.show {
-            left: 0;
-        }
-
-    .content {
-        padding: 1rem;
+/* Responsive: reducir tamaño en móviles */
+@media (max-width: 576px) {
+    .pagination .page-link {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.8rem;
     }
 }
 
-/* Animaciones adicionales */
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
+/* Modo oscuro */
+@media (prefers-color-scheme: dark) {
+    .pagination .page-item:not(.active):not(.disabled) .page-link:hover {
+        background-color: var(--bg-3);
+        border-color: var(--line);
     }
 }
 
-.page-content {
-    animation: slideIn 0.4s ease-out;
-}
-
-/* Mejoras de accesibilidad */
-.btn:focus,
-.form-control:focus,
-.nav-link:focus {
-    outline: 2px solid var(--primary);
-    outline-offset: 2px;
-}
-
-/* Estados de carga */
-.loading {
-    opacity: 0.7;
-    pointer-events: none;
-    position: relative;
-}
-
-    .loading::after {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 20px;
-        height: 20px;
-        margin: -10px 0 0 -10px;
-        border: 2px solid transparent;
-        border-top-color: var(--primary);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-    }
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
 
 /* === ESTILOS PARA DETALLES DEL EVENTO === */
 .detail-section {

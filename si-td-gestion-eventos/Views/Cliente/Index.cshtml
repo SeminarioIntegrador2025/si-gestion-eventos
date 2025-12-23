@@ -257,46 +257,52 @@
                 </table>
             </div>
 
-            @* ✅ FIX: Paginación con bordes correctos *@
             <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <small class="text-muted">
-                    Página @Model.PageIndex de @Model.TotalPages
-                </small>
+    <small class="text-muted">
+        Página @Model.PageIndex de @Model.TotalPages (@Model.TotalCount resultados)
+    </small>
 
-                <nav aria-label="Paginación">
-                    <ul class="pagination mb-0">
-                        <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
-                            <a class="page-link rounded-start"
-                               asp-action="Index"
-                               asp-route-q="@q"
-                               asp-route-estado="@estado"
-                               asp-route-page="@(Model.PageIndex - 1)"
-                               asp-route-pageSize="@pageSize">Anterior</a>
-                        </li>
+    @if (Model.TotalPages > 1)
+    {
+        <nav aria-label="Paginación">
+            <ul class="pagination mb-0">
+                <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-q="@q"
+                       asp-route-estado="@estado"
+                       asp-route-page="@(Model.PageIndex - 1)"
+                       asp-route-pageSize="@pageSize">
+                        <i class="fas fa-chevron-left me-1"></i>Anterior
+                    </a>
+                </li>
 
-                        @for (int i = Model.StartPage; i <= Model.EndPage; i++)
-                        {
-                            <li class="page-item @(i == Model.PageIndex ? "active" : "")">
-                                <a class="page-link rounded-0"
-                                   asp-action="Index"
-                                   asp-route-q="@q"
-                                   asp-route-estado="@estado"
-                                   asp-route-page="@i"
-                                   asp-route-pageSize="@pageSize">@i</a>
-                            </li>
-                        }
+                @for (int i = Model.StartPage; i <= Model.EndPage; i++)
+                {
+                    <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                        <a class="page-link"
+                           asp-action="Index"
+                           asp-route-q="@q"
+                           asp-route-estado="@estado"
+                           asp-route-page="@i"
+                           asp-route-pageSize="@pageSize">@i</a>
+                    </li>
+                }
 
-                        <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
-                            <a class="page-link rounded-end"
-                               asp-action="Index"
-                               asp-route-q="@q"
-                               asp-route-estado="@estado"
-                               asp-route-page="@(Model.PageIndex + 1)"
-                               asp-route-pageSize="@pageSize">Siguiente</a>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
+                <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-q="@q"
+                       asp-route-estado="@estado"
+                       asp-route-page="@(Model.PageIndex + 1)"
+                       asp-route-pageSize="@pageSize">
+                        Siguiente<i class="fas fa-chevron-right ms-1"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>
         </div>
     </div>
 
