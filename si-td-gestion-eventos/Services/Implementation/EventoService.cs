@@ -322,10 +322,35 @@ namespace si_td_gestion_eventos.Services.Implementation
                 (!fechaHasta.HasValue || e.Inicio.Date <= fechaHasta.Value.Date) &&
                 (!estado.HasValue || e.Estado == estado.Value);
 
-            var listaEntidades = await _eventoRepository.FindWithIncludesAsync(predicate, e => e.Cliente);
-            return _mapper.Map<List<EventoVM>>(listaEntidades.OrderByDescending(e => e.Inicio));
-        }
+    var listaEntidades = await _eventoRepository.FindWithIncludesAsync(
+        predicate, 
+        e => e.Cliente, 
+        e => e.Pagos  // ← ESTE ES EL CAMBIO CLAVE
+    );
+    
+    var listaOrdenada = listaEntidades.OrderByDescending(e => e.Inicio).ToList();
+    var items = _mapper.Map<List<EventoVM>>(listaOrdenada);
 
+    foreach (var eventoVM in items)
+    {
+        var eventoEntity = listaOrdenada.FirstOrDefault(e => e.EventoId == eventoVM.EventoId);
+        if (eventoEntity != null)
+        {
+            // Calculamos el total de pagos válidos
+            decimal totalPagadoReal = eventoEntity.Pagos?
+                                            .Where(p => p.Valido)
+                                            .Sum(p => (decimal)p.Monto) ?? 0;
+
+            eventoVM.TotalPagado = totalPagadoReal;
+
+            // Calculamos el costo total y el saldo restante
+            decimal costoTotal = (decimal)eventoEntity.CostoAlquiler + (decimal)(eventoEntity.MontoAireAcondicionado ?? 0);
+            eventoVM.SaldoRestante = costoTotal - totalPagadoReal;
+        }
+    }
+
+    return items;
+}
         #endregion
 
         #region 3. Acciones de Negocio (Estado y Fechas)

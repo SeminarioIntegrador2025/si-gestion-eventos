@@ -352,8 +352,8 @@ namespace si_td_gestion_eventos.Controllers
 
                 // --- TITLE ---
                 worksheet.Cell(1, 1).Value = "Reporte General de Eventos";
-                worksheet.Range("A1:G1").Merge().Style.Font.FontSize = 14;
-                worksheet.Range("A1:G1").Style.Font.Bold = true;
+                worksheet.Range("A1:J1").Merge().Style.Font.FontSize = 14;
+                worksheet.Range("A1:J1").Style.Font.Bold = true;
 
                 worksheet.Cell(2, 1).Value = $"Generado el: {DateTime.Now:dd/MM/yyyy HH:mm}";
 
@@ -364,30 +364,65 @@ namespace si_td_gestion_eventos.Controllers
                 worksheet.Cell(headerRow, 3).Value = "Tipo Evento";
                 worksheet.Cell(headerRow, 4).Value = "Fecha Inicio";
                 worksheet.Cell(headerRow, 5).Value = "Estado";
-                worksheet.Cell(headerRow, 6).Value = "Costo Total";
-                worksheet.Cell(headerRow, 7).Value = "Saldo Pendiente";
+                worksheet.Cell(headerRow, 6).Value = "Alquiler Base";
+                worksheet.Cell(headerRow, 7).Value = "Aire Acond.";
+                worksheet.Cell(headerRow, 8).Value = "Costo Total";
+                worksheet.Cell(headerRow, 9).Value = "Total Pagos";
+                worksheet.Cell(headerRow, 10).Value = "Saldo Pendiente";
 
-                worksheet.Range(headerRow, 1, headerRow, 7).Style = headerStyle;
+                worksheet.Range(headerRow, 1, headerRow, 10).Style = headerStyle;
 
                 // --- DATA ---
                 int row = 5;
                 foreach (var item in eventos)
                 {
+                    // Cálculo financiero: Costo Total = Alquiler + Aire Acondicionado
+                    decimal costoAlquiler = item.CostoAlquiler;
+                    decimal montoAire = item.MontoAireAcondicionado ?? 0;
+                    decimal costoTotal = costoAlquiler + montoAire;
+
+                    // Total de pagos válidos (reutilizando la lógica que ya existe en el servicio)
+                    decimal totalPagos = item.TotalPagado;
+
+                    // Saldo Pendiente = Costo Total - Total Pagos
+                    decimal saldoPendiente = costoTotal - totalPagos;
+
                     worksheet.Cell(row, 1).Value = item.EventoId;
                     worksheet.Cell(row, 2).Value = item.ClienteNombreCompleto;
                     worksheet.Cell(row, 3).Value = item.Tipo.ToString();
                     worksheet.Cell(row, 4).Value = item.Inicio;
                     worksheet.Cell(row, 5).Value = item.Estado.ToString();
 
-                    worksheet.Cell(row, 6).Value = item.CostoTotal;
+                    // Nueva columna: Alquiler Base
+                    worksheet.Cell(row, 6).Value = costoAlquiler;
                     worksheet.Cell(row, 6).Style.NumberFormat.Format = "$ #,##0.00";
 
-                    worksheet.Cell(row, 7).Value = item.SaldoRestante;
+                    // Nueva columna: Aire Acondicionado
+                    worksheet.Cell(row, 7).Value = montoAire;
                     worksheet.Cell(row, 7).Style.NumberFormat.Format = "$ #,##0.00";
 
-                    if (item.SaldoRestante > 0)
+                    // Costo Total (suma de ambos)
+                    worksheet.Cell(row, 8).Value = costoTotal;
+                    worksheet.Cell(row, 8).Style.NumberFormat.Format = "$ #,##0.00";
+                    worksheet.Cell(row, 8).Style.Font.Bold = true;
+
+                    // Total de Pagos
+                    worksheet.Cell(row, 9).Value = totalPagos;
+                    worksheet.Cell(row, 9).Style.NumberFormat.Format = "$ #,##0.00";
+                    worksheet.Cell(row, 9).Style.Font.FontColor = XLColor.Green;
+
+                    // Saldo Pendiente
+                    worksheet.Cell(row, 10).Value = saldoPendiente;
+                    worksheet.Cell(row, 10).Style.NumberFormat.Format = "$ #,##0.00";
+
+                    if (saldoPendiente > 0)
                     {
-                        worksheet.Cell(row, 7).Style.Font.FontColor = XLColor.Red;
+                        worksheet.Cell(row, 10).Style.Font.FontColor = XLColor.Red;
+                        worksheet.Cell(row, 10).Style.Font.Bold = true;
+                    }
+                    else
+                    {
+                        worksheet.Cell(row, 10).Style.Font.FontColor = XLColor.Green;
                     }
 
                     row++;
