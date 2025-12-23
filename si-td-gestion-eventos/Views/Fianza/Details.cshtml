@@ -29,7 +29,7 @@
                             _ => "bg-secondary"
                         };
                     }
-                    <span class="badge @badgeClass fs-6">@Model.Estado</span>
+                    <span class="badge @badgeClass fs-6">@Html.DisplayFor(m => m.Estado)</span>
                 </div>
 
                 <div class="card-body p-4">
@@ -89,28 +89,25 @@
 
                 <div class="card-footer">
                     @{
-    var returnUrl = Context.Request.Query["returnUrl"].ToString();
-}
+                        var returnUrl = Context.Request.Query["returnUrl"].ToString();
+                    }
 
-<!-- En el footer, reemplazar botón volver -->
-<div class="card-footer">
-    @if (!string.IsNullOrEmpty(returnUrl))
-    {
-        <a href="@returnUrl" class="btn btn-secondary">
-            <i class="fa-solid fa-arrow-left me-2"></i>Volver al Evento
-        </a>
-    }
-    else
-    {
-        <a asp-action="Index" class="btn btn-secondary">
-            <i class="fa-solid fa-arrow-left me-2"></i>Volver a Fianzas
-        </a>
-    }
+                    @if (!string.IsNullOrEmpty(returnUrl))
+                    {
+                        <a href="@returnUrl" class="btn btn-secondary">
+                            <i class="fa-solid fa-arrow-left me-2"></i>Volver al Evento
+                        </a>
+                    }
+                    else
+                    {
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="fa-solid fa-arrow-left me-2"></i>Volver a Fianzas
+                        </a>
+                    }
     
-    <a asp-action="Edit" asp-route-id="@Model.FianzaId" class="btn btn-warning">
-        <i class="fa-solid fa-pen me-2"></i>Gestionar Devolución
-    </a>
-</div>
+                    <a asp-action="Edit" asp-route-id="@Model.FianzaId" class="btn btn-warning">
+                        <i class="fa-solid fa-pen me-2"></i>Gestionar Devolución
+                    </a>
                 </div>
             </div>
         </div>

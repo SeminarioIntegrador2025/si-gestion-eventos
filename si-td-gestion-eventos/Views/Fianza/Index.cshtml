@@ -96,7 +96,7 @@
                     </td>
                     <td class="fw-bold">$ @item.Monto.ToString("N2")</td>
                     <td>
-                        <span class="badge @badgeClass">@item.Estado</span>
+                        <span class="badge @badgeClass">@Html.DisplayFor(m => item.Estado)</span>
                     </td>
                     <td>@item.FechaRegistro.ToShortDateString()</td>
                     <td class="text-center">
