@@ -64,9 +64,12 @@
             </button>
         }
 
-        <a asp-action="Edit" asp-route-id="@Model.EventoId" class="btn btn-primary btn-sm">
-            <i class="fa-solid fa-pen me-1"></i><span class="d-none d-md-inline">Editar</span>
-        </a>
+        @if (Model.Estado != EventoEstado.Realizado && Model.Estado != EventoEstado.Cancelado)
+        {
+            <a asp-action="Edit" asp-route-id="@Model.EventoId" class="btn btn-primary btn-sm">
+                <i class="fa-solid fa-pen me-1"></i><span class="d-none d-md-inline">Editar</span>
+            </a>
+        }
 
         @if (Model.PermiteAgregarPago)
         {

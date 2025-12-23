@@ -175,6 +175,13 @@ namespace si_td_gestion_eventos.Controllers
             {
                 return NotFound();
             }
+
+            if (eventoVM.Estado == EventoEstado.Cancelado || eventoVM.Estado == EventoEstado.Realizado)
+            {
+                TempData["Error"] = $"No se puede editar un evento en estado '{eventoVM.Estado}'. Los eventos realizados o cancelados no pueden ser modificados.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+
             var canModify = await _eventoService.CanModifyEventoAsync(id);
             ViewBag.CanModify = canModify;
             await PopulateClientesDropdown();
@@ -209,6 +216,18 @@ namespace si_td_gestion_eventos.Controllers
             if (id != eventoVM.EventoId)
             {
                 return NotFound();
+            }
+
+            var eventoActual = await _eventoService.GetByIdAsync(id);
+            if (eventoActual == null)
+            {
+                return NotFound();
+            }
+
+            if (eventoActual.Estado == EventoEstado.Cancelado || eventoActual.Estado == EventoEstado.Realizado)
+            {
+                TempData["Error"] = $"No se puede editar un evento en estado '{eventoActual.Estado}'.";
+                return RedirectToAction(nameof(Details), new { id });
             }
 
             var validationResult = await _validator.ValidateAsync(eventoVM, options =>

@@ -1,42 +1,222 @@
 ﻿@model si_td_gestion_eventos.Models.ViewModels.EventoVM
+@using si_td_gestion_eventos.Models.Enums
 
 @{
-    ViewData["Title"] = "Confirmar Cancelación";
+    ViewData["Title"] = "Cancelar Evento";
+    
+    // Cálculos financieros
+    float costoTotal = (float)(Model.CostoAlquiler + (Model.MontoAireAcondicionado ?? 0));
+    float saldo = costoTotal - (float)Model.TotalPagado;
+    
+    // Determinar si hay fecha programada
+    bool tieneFechaProgramada = Model.Inicio.Year > 2000;
+    
+    // Color del badge según estado
+    string badgeClass = Model.Estado switch
+    {
+        EventoEstado.PendienteAdeudado => "bg-warning text-dark",
+        EventoEstado.PendientePagado => "bg-success",
+        EventoEstado.Reprogramado => "bg-primary",
+        _ => "bg-secondary"
+    };
 }
 
-<h2>@ViewData["Title"]</h2>
-<p class="text-danger">¿Estás seguro de que querés cancelar el siguiente evento?</p>
+<div class="container-fluid">
+    @* ENCABEZADO *@
+    <div class="page-header mb-4">
+        <h2 class="page-title text-danger">
+            <i class="fas fa-exclamation-triangle me-3"></i>Cancelar Evento
+        </h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a asp-controller="Evento" asp-action="Index">Eventos</a></li>
+                <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@Model.EventoId">Detalles</a></li>
+                <li class="breadcrumb-item active">Cancelar</li>
+            </ol>
+        </nav>
+    </div>
 
-<hr />
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            @* ALERTA PRINCIPAL *@
+            <div class="alert alert-danger border-danger shadow-sm mb-4" role="alert">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-exclamation-circle fa-3x me-3"></i>
+                    <div>
+                        <h5 class="alert-heading mb-2 fw-bold">⚠️ Confirmación Requerida</h5>
+                        <p class="mb-0">
+                            Esta acción <strong>cancelará permanentemente</strong> el evento seleccionado.
+                            Se registrará la cancelación en las observaciones del evento.
+                        </p>
+                    </div>
+                </div>
+            </div>
 
-<div>
-    <h4>Datos del Evento a Cancelar</h4>
-    <dl class="row">
-        <dt class="col-sm-3">Cliente</dt>
-        <dd class="col-sm-10">@Model.ClienteNombreCompleto</dd>
+            @* TARJETA DE INFORMACIÓN DEL EVENTO *@
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-light border-bottom">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2 text-primary"></i>Información del Evento a Cancelar
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        @* COLUMNA IZQUIERDA *@
+                        <div class="col-md-6">
+                            <div class="info-group mb-3 pb-3 border-bottom">
+                                <label class="text-muted small mb-1">
+                                    <i class="fas fa-user me-1"></i>Cliente Contratante
+                                </label>
+                                <p class="mb-0 fw-bold fs-5">@Model.ClienteNombreCompleto</p>
+                            </div>
 
-        <dt class="col-sm-3">Tipo de Evento</dt>
-        <dd class="col-sm-9">@Model.Tipo</dd>
+                            <div class="info-group mb-3 pb-3 border-bottom">
+                                <label class="text-muted small mb-1">
+                                    <i class="fas fa-tag me-1"></i>Tipo de Evento
+                                </label>
+                                <p class="mb-0 fw-semibold">@Model.Tipo</p>
+                            </div>
 
-        <dt class="col-sm-3">Fecha del Contrato</dt>
-        <dd class="col-sm-9">@Model.FechaContrato.ToShortDateString()</dd>
+                            <div class="info-group mb-3 pb-3 border-bottom">
+                                <label class="text-muted small mb-1">
+                                    <i class="fas fa-users me-1"></i>Cantidad de Invitados
+                                </label>
+                                <p class="mb-0">
+                                    <span class="badge bg-info text-dark fs-6">@Model.CantidadPersonas personas</span>
+                                </p>
+                            </div>
 
-        <dt class="col-sm-3">Fecha de Inicio</dt>
-        <dd class="col-sm-9">@Model.Inicio.ToShortDateString()</dd>
+                            <div class="info-group mb-0">
+                                <label class="text-muted small mb-1">
+                                    <i class="fas fa-info-circle me-1"></i>Estado Actual
+                                </label>
+                                <p class="mb-0">
+                                    <span class="badge @badgeClass fs-6">@Model.Estado</span>
+                                </p>
+                            </div>
+                        </div>
 
-        <dt class="col-sm-3">Cantidad de Personas</dt>
-        <dd class="col-sm-9">@Model.CantidadPersonas</dd>
+                        @* COLUMNA DERECHA *@
+                        <div class="col-md-6">
+                            <div class="info-group mb-3 pb-3 border-bottom">
+                                <label class="text-muted small mb-1">
+                                    <i class="fas fa-calendar-check me-1"></i>Fecha del Contrato
+                                </label>
+                                <p class="mb-0 fw-semibold">@Model.FechaContrato.ToString("dd/MM/yyyy")</p>
+                            </div>
 
-        <dt class="col-sm-3">Estado Actual</dt>
-        <dd class="col-sm-9">@Model.Estado</dd>
-    </dl>
+                            <div class="info-group mb-3 pb-3 border-bottom">
+                                <label class="text-muted small mb-1">
+                                    <i class="fas fa-calendar-day me-1"></i>Fecha Programada
+                                </label>
+                                @if (tieneFechaProgramada)
+                                {
+                                    <p class="mb-0 fw-semibold">
+                                        @Model.Inicio.ToString("dd/MM/yyyy HH:mm")
+                                    </p>
+                                }
+                                else
+                                {
+                                    <p class="mb-0">
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="fas fa-question-circle me-1"></i>Fecha por definir
+                                        </span>
+                                    </p>
+                                }
+                            </div>
+
+                            @* INFORMACIÓN FINANCIERA *@
+                            <div class="info-group mb-3 pb-3 border-bottom">
+                                <label class="text-muted small mb-1">
+                                    <i class="fas fa-dollar-sign me-1"></i>Situación Financiera
+                                </label>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="small">Costo Total:</span>
+                                    <span class="fw-bold">@costoTotal.ToString("C")</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="small">Total Pagado:</span>
+                                    <span class="fw-bold text-success">@Model.TotalPagado.ToString("C")</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                                    <span class="small fw-bold">Saldo Pendiente:</span>
+                                    <span class="fw-bold @(saldo > 0 ? "text-danger" : "text-success") fs-5">
+                                        @saldo.ToString("C")
+                                    </span>
+                                </div>
+                            </div>
+
+                            @if (saldo > 0)
+                            {
+                                <div class="alert alert-warning border-warning mb-0 py-2 small">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    <strong>Atención:</strong> Existe un saldo pendiente de pago.
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    @* OBSERVACIONES ACTUALES - CORREGIDO *@
+                    @if (!string.IsNullOrEmpty(Model.Observaciones))
+                    {
+                        <hr class="my-4" />
+                        <div class="info-group">
+                            <label class="text-muted small mb-2 fw-bold">
+                                <i class="fas fa-file-lines me-1"></i>Observaciones Registradas
+                            </label>
+                            <div class="bg-white p-3 rounded border border-secondary" 
+                                 style="max-height: 300px; overflow-y: auto;">
+                                <pre class="mb-0 text-dark" style="white-space: pre-wrap; word-wrap: break-word; font-family: inherit; font-size: 0.95rem; line-height: 1.6;">@Model.Observaciones</pre>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @* ADVERTENCIA FINAL Y BOTONES *@
+            <div class="card shadow-sm border-danger mb-4">
+                <div class="card-body">
+                    <div class="alert alert-light border border-danger mb-3">
+                        <h6 class="mb-2">
+                            <i class="fas fa-clipboard-check me-2 text-danger"></i>
+                            Al confirmar la cancelación:
+                        </h6>
+                        <ul class="mb-0 small">
+                            <li>El evento cambiará a estado <strong>"Cancelado"</strong></li>
+                            <li>Se registrará automáticamente la fecha y hora de cancelación</li>
+                            <li>El evento seguirá visible en el sistema con fines de auditoría</li>
+                            <li>No se podrá editar ni reprogramar posteriormente</li>
+                        </ul>
+                    </div>
+
+                    <form asp-action="Cancel" method="post" id="formCancelar">
+                        <input type="hidden" asp-for="EventoId" />
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a asp-action="Details" asp-route-id="@Model.EventoId" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Volver sin Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger btn-lg px-5 shadow-sm" 
+                                    onclick="return confirm('⚠️ ¿Está completamente seguro de cancelar este evento?\n\nEsta acción NO se puede deshacer.')">
+                                <i class="fas fa-ban me-2"></i>Confirmar Cancelación
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<hr />
-
-<form asp-action="Cancel" method="post">
-    <input type="hidden" asp-for="EventoId" />
-
-    <button type="submit" class="btn btn-danger">Confirmar Cancelación</button>
-    <a asp-action="Index" class="btn btn-secondary">Volver a la lista</a>
-</form>
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Efecto visual en el formulario al intentar enviar
+            $('#formCancelar').on('submit', function(e) {
+                const btn = $(this).find('button[type="submit"]');
+                btn.prop('disabled', true);
+                btn.html('<i class="fas fa-spinner fa-spin me-2"></i>Cancelando...');
+            });
+        });
+    </script>
+}

@@ -160,11 +160,15 @@
                                 <a asp-action="Details" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-info" title="Detalles">
                                     <i class="fa-solid fa-eye"></i>
                                 </a>
-                                <a asp-action="Edit" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-secondary" title="Editar">
-                                    <i class="fa-solid fa-pen"></i>
-                                </a>
+                                
+                                @if (e.Estado != EventoEstado.Realizado && e.Estado != EventoEstado.Cancelado)
+                                {
+                                    <a asp-action="Edit" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-secondary" title="Editar">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </a>
+                                }
 
-                                @if (e.Estado == EventoEstado.Cancelado || e.Estado == EventoEstado.Reprogramado)
+                                @if (e.Estado != EventoEstado.Cancelado && e.Estado != EventoEstado.Realizado)
                                 {
                                     <button type="button" class="btn btn-sm btn-outline-warning"
                                             title="Reprogramar / Asignar Fecha"
@@ -173,14 +177,15 @@
                                         <i class="fa-solid fa-clock-rotate-left"></i>
                                     </button>
                                 }
-                                else
+
+                                @if (e.Estado != EventoEstado.Realizado && e.Estado != EventoEstado.Cancelado)
                                 {
                                     <a asp-action="Cancel" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-danger" title="Cancelar">
                                         <i class="fa-solid fa-ban"></i>
                                     </a>
                                 }
 
-                                @if (e.SaldoRestante > 0 && e.Estado != EventoEstado.Cancelado)
+                                @if (e.SaldoRestante > 0 && e.Estado != EventoEstado.Cancelado && e.Estado != EventoEstado.Realizado)
                                 {
                                     <a asp-controller="Pago" asp-action="Create" asp-route-eventoId="@e.EventoId"
                                        class="btn btn-sm btn-outline-success" title="Agregar Pago">

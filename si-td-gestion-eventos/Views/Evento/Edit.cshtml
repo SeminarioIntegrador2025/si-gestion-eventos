@@ -1,4 +1,5 @@
 ﻿@model si_td_gestion_eventos.Models.ViewModels.EventoVM
+@using si_td_gestion_eventos.Models.Enums
 
 @{
     ViewData["Title"] = "Editar Evento";
@@ -20,18 +21,30 @@
 
     <div class="row justify-content-center">
         <div class="col-lg-10">
-            @if (!ViewData.ModelState.IsValid)
+   
+            @if (ViewData.ModelState.Any(x => string.IsNullOrEmpty(x.Key) && x.Value.Errors.Any()))
             {
-                <div class="alert alert-danger shadow-sm" role="alert">
+                <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
                     <h6 class="alert-heading fw-bold">
-                        <i class="fas fa-exclamation-triangle me-2"></i>Atención
+                        <i class="fas fa-exclamation-triangle me-2"></i>Error al Guardar
                     </h6>
                     <ul class="mb-0 small">
-                        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        @foreach (var error in ViewData.ModelState.Where(x => string.IsNullOrEmpty(x.Key)).SelectMany(v => v.Value.Errors))
                         {
                             <li>@error.ErrorMessage</li>
                         }
                     </ul>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @* ALERTA GENERAL *@
+            @if (ViewData.ModelState.Any(x => !string.IsNullOrEmpty(x.Key) && x.Value.Errors.Any()))
+            {
+                <div class="alert alert-warning alert-dismissible fade show shadow-sm" role="alert">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Hay errores en el formulario.</strong> Por favor, revisa los campos marcados en rojo.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             }
 
@@ -71,12 +84,11 @@
 
             // --- BLOQUE 1: Formato Visual de Cédula ---
             $('#ResponsableCedula').on('input', function() {
-                let value = this.value.replace(/[^\d]/g, ''); // Solo números
+                let value = this.value.replace(/[^\d]/g, '');
                 if (value.length > 8) {
                     value = value.substring(0, 8);
                 }
                 if (value.length >= 2) {
-                    // Formato 1.234.567-8
                     value = value.substring(0, value.length - 1).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') + '-' + value.substring(value.length - 1);
                 }
                 this.value = value;
@@ -89,28 +101,22 @@
 
             $inputCI.on("blur", function () {
                 let cedula = $(this).val();
-
-                // Si está vacío, no hacemos nada
                 if (!cedula) return;
 
-                // Feedback visual (opacidad mientras busca)
                 $inputCI.addClass("opacity-50");
 
                 $.ajax({
-                    url: '@Url.Action("BuscarPorCI", "Cliente")', // Llama al método en ClienteController
+                    url: '@Url.Action("BuscarPorCI", "Cliente")',
                     type: 'GET',
                     data: { ci: cedula },
                     success: function (response) {
                         if (response.success) {
-                            // Encontrado: Rellenamos campos
                             $inputNombre.val(response.nombre);
                             $inputTel.val(response.telefono);
 
-                            // Efecto visual verde (Feedback de éxito)
                             $inputNombre.addClass("is-valid");
                             $inputTel.addClass("is-valid");
 
-                            // Quitamos el verde después de 1.5 seg
                             setTimeout(() => {
                                 $inputNombre.removeClass("is-valid");
                                 $inputTel.removeClass("is-valid");
@@ -118,12 +124,9 @@
                         }
                     },
                     error: function () {
-                        // Si no encuentra, simplemente dejamos que el usuario escriba
-                        // (Opcional: puedes mostrar un pequeño mensaje en consola)
                         console.log("Cliente no encontrado, manteniendo datos manuales.");
                     },
                     complete: function () {
-                        // Quitamos el feedback visual de carga
                         $inputCI.removeClass("opacity-50");
                     }
                 });

@@ -334,18 +334,38 @@ namespace si_td_gestion_eventos.Services.Implementation
         {
             try
             {
-                if (!await _businessRules.CanCancelEventoAsync(id)) return ServiceResult<bool>.FailureResult("No se puede cancelar este evento.");
+                if (!await _businessRules.CanCancelEventoAsync(id)) 
+                    return ServiceResult<bool>.FailureResult("No se puede cancelar este evento.");
 
                 var evento = await _eventoRepository.GetByIdAsync(id);
-                if (evento == null) return ServiceResult<bool>.FailureResult("Evento no encontrado.");
+                if (evento == null) 
+                    return ServiceResult<bool>.FailureResult("Evento no encontrado.");
 
+                var estadoAnterior = evento.Estado;
+                var fechaOriginal = evento.Inicio.Year > 2000 
+                    ? evento.Inicio.ToString("dd/MM/yyyy HH:mm") 
+                    : "Fecha por definir";
+
+                // Cambiar estado
                 evento.Estado = EventoEstado.Cancelado;
+
+                string fechaHoy = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+                string mensajeAuditoria = $"[EVENTO CANCELADO] Estado anterior: '{estadoAnterior}'. Fecha programada: {fechaOriginal}. Cancelado el {fechaHoy}.";
+                
+                if (string.IsNullOrEmpty(evento.Observaciones))
+                    evento.Observaciones = mensajeAuditoria;
+                else
+                    evento.Observaciones += $"{Environment.NewLine}{mensajeAuditoria}";
+
                 _eventoRepository.Update(evento);
                 await _eventoRepository.SaveChangesAsync();
 
-                return ServiceResult<bool>.SuccessResult(true, "El evento ha sido cancelado.");
+                return ServiceResult<bool>.SuccessResult(true, "El evento ha sido cancelado y se registró en las observaciones.");
             }
-            catch (Exception) { return ServiceResult<bool>.FailureResult("Error inesperado al cancelar."); }
+            catch (Exception ex) 
+            { 
+                return ServiceResult<bool>.FailureResult($"Error inesperado al cancelar: {ex.Message}"); 
+            }
         }
 
         public async Task<ServiceResult<bool>> ConfirmAsync(int id)
