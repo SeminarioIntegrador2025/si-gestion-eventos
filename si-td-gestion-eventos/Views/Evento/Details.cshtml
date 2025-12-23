@@ -243,7 +243,7 @@
             <div class="card shadow-sm border-warning mb-3">
                 <div class="card-header bg-warning text-light d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h6 class="mb-0"><i class="fa-solid fa-shield-alt me-2"></i>Fianza</h6>
-                    <span class="badge bg-light text-dark">@Model.DetalleFianza.Estado</span>
+                    <span class="badge bg-light text-dark">@Html.DisplayFor(m => m.DetalleFianza.Estado)</span>
                 </div>
                 <div class="card-body">
                     <h5 class="text-center mb-3">@Model.DetalleFianza.Monto.ToString("C0")</h5>

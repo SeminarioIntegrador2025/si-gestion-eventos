@@ -28,26 +28,15 @@
 <div class="page-header d-flex align-items-start justify-content-between flex-wrap gap-3">
     <div>
         <h1 class="page-title mb-1">
-            <i class="fa-solid fa-users text-primary me-3"></i>Gestion de Clientes
+            <i class="fa-solid fa-users text-primary me-3"></i>Gestión de Clientes
         </h1>
     </div>
 
-    <!-- Acciones a la derecha -->
+    <!-- Acciones a la derecha - ✅ REMOVIDO BOTÓN EXPORTAR -->
     <div class="ms-auto d-flex gap-2">
         <a class="btn btn-success" asp-action="Create">
             <i class="fa-solid fa-user-plus me-2"></i>Nuevo Cliente
         </a>
-
-        <div class="dropdown">
-            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                <i class="fa-solid fa-download me-2"></i>Exportar
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end">
-                <!-- OJO: si no implementaste estas acciones, comentá estos links -->
-                <li><a class="dropdown-item" asp-action="ExportExcel"><i class="fa-solid fa-file-excel me-2"></i>Excel</a></li>
-                <li><a class="dropdown-item" asp-action="ExportCsv"><i class="fa-solid fa-file-csv me-2"></i>CSV</a></li>
-            </ul>
-        </div>
     </div>
 </div>
 
@@ -70,19 +59,19 @@
 
             <div class="col-md-4">
                 <div class="card card-kpi text-center">
-                    <div class="card-body">
-                        <div class="card-title mb-1">Activos (página)</div>
-                        <div class="display-6 text-success fw-bold">@Model.Count(c => c.Activo)</div>
-                    </div>
+                <div class="card-body">
+                    <div class="card-title mb-1">Activos (página)</div>
+                    <div class="display-6 text-success fw-bold">@Model.Count(c => c.Activo)</div>
+                </div>
                 </div>
             </div>
 
             <div class="col-md-4">
                 <div class="card card-kpi text-center">
-                    <div class="card-body">
-                        <div class="card-title mb-1">Inactivos (página)</div>
-                        <div class="display-6 text-warning fw-bold">@Model.Count(c => !c.Activo)</div>
-                    </div>
+                <div class="card-body">
+                    <div class="card-title mb-1">Inactivos (página)</div>
+                    <div class="display-6 text-warning fw-bold">@Model.Count(c => !c.Activo)</div>
+                </div>
                 </div>
             </div>
         </div>
@@ -91,10 +80,9 @@
         <div class="card mb-4">
             <div class="card-body">
                 <form method="get" class="row g-3 align-items-end">
-                    <!-- Siempre que filtre, vuelvo a la página 1 -->
                     <input type="hidden" name="page" value="1" />
 
-                    <div class="col-md-5">
+                    <div class="col-md-4">
                         <label class="form-label fw-semibold">
                             <i class="fa-solid fa-magnifying-glass me-1"></i>Buscar Cliente
                         </label>
@@ -114,27 +102,32 @@
                         </select>
                     </div>
 
-                    <div class="col-md-2">
+                    @* ✅ FIX: Quitar "por página" del texto *@
+                    <div class="col-md-1">
                         <label class="form-label fw-semibold">Mostrar</label>
                         <select name="pageSize" class="form-select" onchange="this.form.submit()">
                             @foreach (var s in new[] { 10, 25, 50 })
                             {
-                                if (s == pageSize)
-                                {
-                                    <option value="@s" selected>@s por página</option>
-                                }
-                                else
-                                {
-                                    <option value="@s">@s por página</option>
-                                }
+                                <option value="@s" selected="@(s == pageSize)">@s</option>
                             }
                         </select>
                     </div>
 
-                    <div class="col-md-2">
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="fa-solid fa-search me-1"></i>Buscar
+                    @* ✅ FIX: Añadir botón limpiar filtros *@
+                    <div class="col-md-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-fill">
+                            <i class="fa-solid fa-search me-1"></i>
+                            <span class="d-none d-lg-inline">Buscar</span>
                         </button>
+                        <a class="btn btn-outline-secondary flex-shrink-0" 
+                           asp-action="Index"
+                           asp-route-page="1"
+                           asp-route-pageSize="@pageSize"
+                           title="Limpiar filtros"
+                           aria-label="Limpiar filtros"
+                           style="min-width: 42px;">
+                            <i class="fa-solid fa-rotate-left"></i>
+                        </a>
                     </div>
                 </form>
             </div>
@@ -264,7 +257,7 @@
                 </table>
             </div>
 
-            <!-- Paginación -->
+            @* ✅ FIX: Paginación con bordes correctos *@
             <div class="card-footer d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <small class="text-muted">
                     Página @Model.PageIndex de @Model.TotalPages
@@ -273,7 +266,7 @@
                 <nav aria-label="Paginación">
                     <ul class="pagination mb-0">
                         <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
-                            <a class="page-link bg-transparent"
+                            <a class="page-link rounded-start"
                                asp-action="Index"
                                asp-route-q="@q"
                                asp-route-estado="@estado"
@@ -284,7 +277,7 @@
                         @for (int i = Model.StartPage; i <= Model.EndPage; i++)
                         {
                             <li class="page-item @(i == Model.PageIndex ? "active" : "")">
-                                <a class="page-link"
+                                <a class="page-link rounded-0"
                                    asp-action="Index"
                                    asp-route-q="@q"
                                    asp-route-estado="@estado"
@@ -294,7 +287,7 @@
                         }
 
                         <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
-                            <a class="page-link bg-transparent"
+                            <a class="page-link rounded-end"
                                asp-action="Index"
                                asp-route-q="@q"
                                asp-route-estado="@estado"
@@ -309,7 +302,6 @@
 
     <!-- Sidebar derecho (≈ 1/4) -->
     <div class="col-xl-3 col-lg-4">
-        <!-- Últimos 5 clientes agregados (en la página actual; si querés “últimos reales”, se debe consultar aparte) -->
         <div class="card mb-4">
             <div class="card-header d-flex align-items-center justify-content-between">
                 <span><i class="fa-solid fa-clock-rotate-left me-2"></i>Últimos clientes</span>
@@ -335,7 +327,6 @@
             </div>
         </div>
 
-        <!-- Estadísticas rápidas (sobre la página) -->
         <div class="card">
             <div class="card-header">
                 <i class="fa-solid fa-chart-pie me-2"></i>Estadísticas

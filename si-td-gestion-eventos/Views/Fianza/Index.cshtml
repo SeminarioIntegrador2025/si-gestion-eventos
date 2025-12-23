@@ -36,21 +36,30 @@
         <input type="text" name="q" id="q" class="form-control" value="@q" placeholder="Cliente, CI o Tipo de Evento" />
     </div>
 
-    <div class="col-md-3">
+    <div class="col-md-2">
         <label for="estado" class="form-label">Estado</label>
         <select name="estado" id="estado" class="form-select" asp-items="ViewBag.EstadosList">
-            <option value="">-- Todos los Estados --</option>
+            <option value="">-- Todos --</option>
         </select>
     </div>
 
-    <div class="col-md-2">
-        <label for="pageSize" class="form-label">Por Página</label>
+    <div class="col-md-1">
+        <label for="pageSize" class="form-label">Mostrar</label>
         <select name="pageSize" id="pageSize" class="form-select" asp-items="ViewBag.PageSizeList" onchange="this.form.submit()">
         </select>
     </div>
 
-    <div class="col-md-2">
-        <button type="submit" class="btn btn-primary w-100"><i class="fa-solid fa-magnifying-glass"></i> Buscar</button>
+    <div class="col-md-5 d-flex gap-2">
+        <button type="submit" class="btn btn-primary flex-fill">
+            <i class="fa-solid fa-magnifying-glass me-1"></i>
+            <span class="d-none d-lg-inline">Buscar</span>
+        </button>
+        <a class="btn btn-outline-secondary flex-shrink-0" 
+           asp-action="Index"
+           title="Limpiar filtros"
+           style="min-width: 42px;">
+            <i class="fa-solid fa-rotate-left"></i>
+        </a>
     </div>
 </form>
 
@@ -125,16 +134,16 @@
     <nav>
         <ul class="pagination mb-0">
             <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
-                <a class="page-link bg-transparent" asp-action="Index" asp-route-page="@(Model.PageIndex - 1)" asp-route-q="@q" asp-route-estado="@estado" asp-route-pageSize="@pageSize">Anterior</a>
+                <a class="page-link rounded-start" asp-action="Index" asp-route-page="@(Model.PageIndex - 1)" asp-route-q="@q" asp-route-estado="@estado" asp-route-pageSize="@pageSize">Anterior</a>
             </li>
             @for (int i = 1; i <= Model.TotalPages; i++)
             {
                 <li class="page-item @(i == Model.PageIndex ? "active" : "")">
-                    <a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-q="@q" asp-route-estado="@estado" asp-route-pageSize="@pageSize">@i</a>
+                    <a class="page-link rounded-0" asp-action="Index" asp-route-page="@i" asp-route-q="@q" asp-route-estado="@estado" asp-route-pageSize="@pageSize">@i</a>
                 </li>
             }
             <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
-                <a class="page-link bg-transparent" asp-action="Index" asp-route-page="@(Model.PageIndex + 1)" asp-route-q="@q" asp-route-estado="@estado" asp-route-pageSize="@pageSize">Siguiente</a>
+                <a class="page-link rounded-end" asp-action="Index" asp-route-page="@(Model.PageIndex + 1)" asp-route-q="@q" asp-route-estado="@estado" asp-route-pageSize="@pageSize">Siguiente</a>
             </li>
         </ul>
     </nav>
