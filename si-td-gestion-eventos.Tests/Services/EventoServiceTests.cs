@@ -110,30 +110,104 @@ namespace si_td_gestion_eventos.Tests.Services
             {
                 CostoAlquiler = 2000,
                 Inicio = DateTime.Now.AddDays(5),
-                ClienteId = 1
+                ClienteId = 1,
+                Fin = DateTime.Now.AddDays(5).AddHours(5),
+                HoraInicio = TimeSpan.FromHours(18),
+                HoraFin = TimeSpan.FromHours(23),
+                CantidadPersonas = 50,
+                ResponsableNombre = "Juan Pérez"
             };
 
-            var evento = new Evento { EventoId = 1, Estado = EventoEstado.PendienteAdeudado };
+            var cliente = new Cliente 
+            { 
+                ClienteId = 1, 
+                Nombre = "Juan",
+                Apellido = "Pérez",
+                CedulaIdentidad = "12345678"
+            };
 
-            _mockValidator.Setup(v => v.ValidateAsync(It.IsAny<EventoVM>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new ValidationResult());
+            var evento = new Evento 
+            { 
+                EventoId = 0, // Inicialmente sin ID (simula antes de guardar)
+                Estado = EventoEstado.PendienteAdeudado,
+                CostoAlquiler = 2000,
+                ClienteId = 1,
+                Cliente = cliente,
+                Inicio = DateTime.Now.AddDays(5),
+                Fin = DateTime.Now.AddDays(5).AddHours(5),
+                HoraInicio = TimeSpan.FromHours(18),
+                HoraFin = TimeSpan.FromHours(23)
+            };
 
+            // CORRECCIÓN CRÍTICA: Mock correcto para ValidateAsync con opciones
+            _mockValidator.Setup(v => v.ValidateAsync(
+                It.IsAny<IValidationContext>(), 
+                It.IsAny<CancellationToken>()
+            )).ReturnsAsync(new ValidationResult());
+
+            // Configuración de reglas de negocio
             _mockBusinessRules.Setup(br => br.IsDateRangeAvailableAsync(
-                It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>(), null
+                It.IsAny<DateTime>(), 
+                It.IsAny<DateTime>(), 
+                It.IsAny<TimeSpan>(), 
+                It.IsAny<TimeSpan>(), 
+                null
             )).ReturnsAsync(true);
 
-            _mockMapper.Setup(m => m.Map<Evento>(eventoVM)).Returns(evento);
-            _mockEventoRepository.Setup(r => r.AddAsync(It.IsAny<Evento>())).Returns(Task.CompletedTask);
-            _mockEventoRepository.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
-            _mockEventoRepository.Setup(r => r.GetByIdWithIncludesAsync(1, It.IsAny<Expression<Func<Evento, object>>[]>()))
-                .ReturnsAsync(evento);
-            _mockMapper.Setup(m => m.Map<EventoVM>(evento)).Returns(eventoVM);
+            // Configuración del mapper: EventoVM -> Evento
+            _mockMapper.Setup(m => m.Map<Evento>(It.IsAny<EventoVM>()))
+                .Returns(evento);
+
+            // Simular que AddAsync asigna el ID
+            _mockEventoRepository.Setup(r => r.AddAsync(It.IsAny<Evento>()))
+                .Callback<Evento>(e => e.EventoId = 1) // Simula la asignación del ID por la BD
+                .Returns(Task.CompletedTask);
+
+            _mockEventoRepository.Setup(r => r.SaveChangesAsync())
+                .Returns(Task.CompletedTask);
+
+            // GetByIdWithIncludesAsync devolverá el evento con ID=1
+            _mockEventoRepository.Setup(r => r.GetByIdWithIncludesAsync(
+                1, // ID específico que se asignó en el Callback
+                It.IsAny<Expression<Func<Evento, object>>[]>()
+            )).ReturnsAsync((int id, Expression<Func<Evento, object>>[] includes) => 
+    {
+        // Actualizamos el evento para reflejar el estado después de guardar
+        evento.EventoId = id;
+        return evento;
+    });
+
+            // Configuración del mapper: Evento -> EventoVM
+            _mockMapper.Setup(m => m.Map<EventoVM>(It.IsAny<Evento>()))
+                .Returns((Evento e) => new EventoVM 
+                { 
+                    EventoId = e.EventoId, 
+                    CostoAlquiler = (decimal)e.CostoAlquiler,
+                    ClienteId = e.Cliente?.ClienteId ?? 0,
+                    ResponsableNombre = e.Cliente?.Nombre ?? "N/A",
+                    Inicio = e.Inicio,
+                    Fin = e.Fin,
+                    HoraInicio = e.HoraInicio,
+                    HoraFin = e.HoraFin,
+                    Estado = e.Estado
+                });
 
             // Act
             var result = await _sut.CreateAsync(eventoVM);
 
             // Assert
-            Assert.True(result.Success);
+            Assert.True(result.Success, $"Expected success but got: {string.Join(", ", result.Errors)}");
+            Assert.NotNull(result.Data);
+            Assert.Equal(1, result.Data.EventoId);
+            Assert.Equal(EventoEstado.PendienteAdeudado, result.Data.Estado);
+            Assert.Equal("Evento creado exitosamente.", result.Message);
+            
+            // Verificaciones adicionales
+            _mockEventoRepository.Verify(r => r.AddAsync(It.IsAny<Evento>()), Times.Once);
+            _mockEventoRepository.Verify(r => r.SaveChangesAsync(), Times.Once);
+            _mockEventoRepository.Verify(r => r.GetByIdWithIncludesAsync(1, It.IsAny<Expression<Func<Evento, object>>[]>()), Times.Once);
+            _mockMapper.Verify(m => m.Map<Evento>(It.IsAny<EventoVM>()), Times.Once);
+            _mockMapper.Verify(m => m.Map<EventoVM>(It.IsAny<Evento>()), Times.Once);
         }
 
         #endregion

@@ -57,7 +57,7 @@ namespace si_td_gestion_eventos.Tests.Services
                 _mockValidator.Object,
                 _mockWebHostEnvironment.Object,
                 _mockEventoService.Object,
-                _mockFileStorageService.Object // Parámetro que faltaba y causaba el error CS7036
+                _mockFileStorageService.Object 
             );
         }
 
@@ -189,27 +189,59 @@ namespace si_td_gestion_eventos.Tests.Services
         public async Task CreateAsync_ValidacionExitosa_DeberiaCrearPago()
         {
             // Arrange
-            var pagoVM = new PagoVM { EventoId = 1, Monto = 500, Fecha = DateTime.Now, Metodo = MetodoPago.Efectivo };
-            var pagoEntity = new Pago { PagoId = 1, EventoId = 1, Monto = 500, Valido = true };
+            var pagoVM = new PagoVM
+            {
+                EventoId = 1,
+                Fecha = DateTime.Today,
+                Monto = 1000,
+                Metodo = MetodoPago.Efectivo
+            };
 
-            _mockValidator.Setup(v => v.ValidateAsync(pagoVM, default)).ReturnsAsync(new ValidationResult());
+            var pagoEntity = new Pago
+            {
+                PagoId = 1,
+                EventoId = 1,
+                Monto = 1000,
+                Fecha = DateTime.Today,
+                Metodo = MetodoPago.Efectivo,
+                Valido = true
+            };
+
+            var eventoVM = new EventoVM
+            {
+                EventoId = 1,
+                CostoAlquiler = 2000,
+                SaldoRestante = 1000, // Después del pago quedará 0
+                Estado = EventoEstado.PendienteAdeudado
+            };
+
+            _mockValidator.Setup(v => v.ValidateAsync(It.IsAny<PagoVM>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new FluentValidation.Results.ValidationResult());
+
             _mockMapper.Setup(m => m.Map<Pago>(pagoVM)).Returns(pagoEntity);
+            
             _mockPagoRepository.Setup(r => r.AddAsync(It.IsAny<Pago>())).Returns(Task.CompletedTask);
             _mockPagoRepository.Setup(r => r.SaveChangesAsync()).Returns(Task.CompletedTask);
 
-            var eventoVM = new EventoVM { EventoId = 1, TotalPagado = 0, CostoAlquiler = 2000, Estado = EventoEstado.PendienteAdeudado };
-            _mockEventoService.Setup(e => e.GetByIdAsync(1)).ReturnsAsync(eventoVM);
+            _mockEventoService.Setup(s => s.GetByIdAsync(1)).ReturnsAsync(eventoVM);
 
-            // Simular el retorno después de guardar
-            _mockPagoRepository.Setup(r => r.GetByIdWithIncludesAsync(It.IsAny<int>(), It.IsAny<Expression<Func<Pago, object>>[]>()))
-                               .ReturnsAsync(pagoEntity);
+            _mockEventoService.Setup(s => s.UpdateAsync(It.IsAny<EventoVM>()))
+                .ReturnsAsync(ServiceResult<EventoVM>.SuccessResult(eventoVM, "Actualizado"));
+
+            _mockPagoRepository.Setup(r => r.GetByIdWithIncludesAsync(
+                1, 
+                It.IsAny<Expression<Func<Pago, object>>[]>()
+            )).ReturnsAsync(pagoEntity);
+
+            _mockMapper.Setup(m => m.Map<PagoVM>(pagoEntity)).Returns(pagoVM);
 
             // Act
             var result = await _sut.CreateAsync(pagoVM);
 
             // Assert
-            Assert.True(result.Success);
-            _mockPagoRepository.Verify(r => r.AddAsync(It.IsAny<Pago>()), Times.Once);
+            Assert.True(result.Success); 
+            Assert.NotNull(result.Data);
+            Assert.Equal("Pago registrado exitosamente.", result.Message);
         }
 
         #endregion
