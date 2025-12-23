@@ -375,6 +375,12 @@ namespace si_td_gestion_eventos.Services.Implementation
                 var evento = await _eventoRepository.GetByIdAsync(model.EventoId);
                 if (evento == null) return ServiceResult<bool>.FailureResult("No existe el evento.");
 
+                // VALIDACIÓN: No permitir reprogramar eventos finalizados
+                if (evento.Estado == EventoEstado.Realizado || evento.Estado == EventoEstado.Cancelado)
+                {
+                    return ServiceResult<bool>.FailureResult($"No se puede reprogramar un evento en estado '{evento.Estado}'. Los eventos realizados o cancelados no pueden ser reprogramados.");
+                }
+
                 // 1. DETECCIÓN DE ESTADO POR FECHA (Lógica Centinela)
                 // Verificamos si la fecha guardada es el "Flag" de 1900
                 bool estabaIndefinido = evento.Inicio.Year == 1900;
@@ -385,15 +391,13 @@ namespace si_td_gestion_eventos.Services.Implementation
                     : evento.Inicio.ToString("dd/MM/yyyy");
 
                 string mensajeAuditoria = "";
-                string fechaHoy = DateTime.Now.ToString("dd/MM/yyyy");
+                string fechaHoy = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
 
                 // 3. APLICACIÓN DE CAMBIOS
                 if (model.FechaIndefinida)
                 {
                     // --- CASO A: Pasa a Indefinido ---
                     evento.Estado = EventoEstado.Reprogramado;
-
-                    // NO usamos una propiedad bool. USAMOS LA FECHA CENTINELA (1900).
                     evento.Inicio = new DateTime(1900, 1, 1);
                     evento.Fin = new DateTime(1900, 1, 1);
 
@@ -403,8 +407,6 @@ namespace si_td_gestion_eventos.Services.Implementation
                          model.NuevaHoraInicio.HasValue && model.NuevaHoraFin.HasValue)
                 {
                     // --- CASO B: Pasa a Fecha Concreta ---
-
-                    // Validación de negocio (Disponibilidad)
                     if (!await _businessRules.IsDateRangeAvailableAsync(
                         model.NuevaFechaInicio.Value, model.NuevaFechaFin.Value,
                         model.NuevaHoraInicio.Value, model.NuevaHoraFin.Value, model.EventoId))
@@ -413,8 +415,6 @@ namespace si_td_gestion_eventos.Services.Implementation
                     }
 
                     evento.Estado = EventoEstado.Reprogramado;
-                    // Aquí simplemente sobrescribimos la fecha 1900 con la real. No hace falta cambiar flags.
-
                     evento.Inicio = model.NuevaFechaInicio.Value.Date + model.NuevaHoraInicio.Value;
                     evento.Fin = model.NuevaFechaFin.Value.Date + model.NuevaHoraFin.Value;
                     evento.HoraInicio = model.NuevaHoraInicio.Value;
@@ -593,11 +593,27 @@ namespace si_td_gestion_eventos.Services.Implementation
         public async Task<ServiceResult<bool>> CambiarEstadoManualAsync(int id, EventoEstado nuevoEstado)
         {
             var evento = await _eventoRepository.GetByIdAsync(id);
-            if (evento == null) return ServiceResult<bool>.FailureResult("No encontrado.");
+            if (evento == null) return ServiceResult<bool>.FailureResult("Evento no encontrado.");
+            
+            // Guardar el estado anterior para auditoría
+            var estadoAnterior = evento.Estado;
+            
+            // Cambiar el estado
             evento.Estado = nuevoEstado;
+            
+            // Registrar el cambio en observaciones con timestamp
+            string fechaHoy = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+            string mensajeAuditoria = $"[CAMBIO MANUAL] Estado cambiado de '{estadoAnterior}' a '{nuevoEstado}' el {fechaHoy}.";
+            
+            if (string.IsNullOrEmpty(evento.Observaciones))
+                evento.Observaciones = mensajeAuditoria;
+            else
+                evento.Observaciones += $"{Environment.NewLine}{mensajeAuditoria}";
+            
             _eventoRepository.Update(evento);
             await _eventoRepository.SaveChangesAsync();
-            return ServiceResult<bool>.SuccessResult(true, "Estado actualizado.");
+            
+            return ServiceResult<bool>.SuccessResult(true, $"Estado actualizado a '{nuevoEstado}' correctamente.");
         }
 
         public async Task<IEnumerable<SelectListItem>> GetEventosSinFianzaParaDropdownAsync()

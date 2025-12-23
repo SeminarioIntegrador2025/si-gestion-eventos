@@ -45,21 +45,8 @@
                 <form asp-action="Edit" method="post" novalidate id="formEditarEvento">
                     <div class="card-body">
                         <input type="hidden" asp-for="EventoId" />
-
+                        
                         <partial name="_EventoEditForm" model="Model" />
-
-                        <div class="row mt-3">
-                            <div class="col-md-6">
-                                <label asp-for="HoraInicio" class="form-label fw-semibold">Hora de Inicio</label>
-                                <input asp-for="HoraInicio" class="form-control" type="time" />
-                                <span asp-validation-for="HoraInicio" class="text-danger"></span>
-                            </div>
-                            <div class="col-md-6">
-                                <label asp-for="HoraFin" class="form-label fw-semibold">Hora de Fin</label>
-                                <input asp-for="HoraFin" class="form-control" type="time" />
-                                <span asp-validation-for="HoraFin" class="text-danger"></span>
-                            </div>
-                        </div>
                     </div>
 
                     <div class="card-footer bg-transparent d-flex justify-content-between align-items-center">

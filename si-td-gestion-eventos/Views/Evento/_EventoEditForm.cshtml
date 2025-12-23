@@ -1,276 +1,254 @@
 ﻿@model si_td_gestion_eventos.Models.ViewModels.EventoVM
 @using si_td_gestion_eventos.Models.Enums
 
-<div class="row">
-    <div class="col-md-6">
-        <h4>Detalles del Evento</h4>
-        <hr />
+<div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
-        @* Fecha de Contrato (Bloqueada) *@
-        <div class="mb-3">
-            <label asp-for="FechaContrato" class="form-label fw-semibold">
-                <i class="fas fa-calendar me-1"></i>Fecha del Contrato
-            </label>
-            <input type="hidden" asp-for="FechaContrato" />
-            <div class="input-locked d-flex align-items-center gap-2 px-3 py-2 rounded border" style="background-color: rgba(15, 23, 42, .08);">
-                <i class="fa-solid fa-lock text-muted"></i>
-                <input value="@Model.FechaContrato.ToString("yyyy-MM-dd")" type="date" class="form-control-plaintext mb-0 flex-grow-1 text-muted"  style="background-color: rgba(15, 23, 42, .08);" />
-            </div>
-            <small class="text-muted">La fecha de contrato no se puede modificar</small>
-        </div>
-
-        @* Fechas Editables *@
+@* ========================================
+   SECCIÓN 1: INFORMACIÓN NO EDITABLE (ARRIBA)
+   ======================================== *@
+<div class="card mb-4 border-secondary">
+    <div class="card-header bg-light">
+        <h6 class="mb-0 text-muted">
+            <i class="fas fa-lock me-2"></i>Información del Contrato (No Editable)
+        </h6>
+    </div>
+    <div class="card-body bg-light">
         <div class="row">
-            <div class="col-md-6 mb-3">
-                <label asp-for="Inicio" class="form-label fw-semibold">
-                    <i class="fas fa-calendar-day me-1"></i>Fecha de Inicio del Evento *
-                </label>
-                <input asp-for="Inicio" type="date" class="form-control" />
-                <span asp-validation-for="Inicio" class="text-danger small"></span>
-            </div>
-            <div class="col-md-6 mb-3">
-                <label asp-for="Fin" class="form-label fw-semibold">
-                    <i class="fas fa-calendar-day me-1"></i>Fecha de Fin del Evento*
-                </label>
-                <input asp-for="Fin" type="date" class="form-control" />
-                <span asp-validation-for="Fin" class="text-danger small"></span>
-            </div>
-        </div>
-
-        @* Horas *@
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label asp-for="HoraInicio" class="form-label fw-semibold">
-                    <i class="fas fa-clock me-1"></i>Hora de Inicio del Evento*
-                </label>
-                <input asp-for="HoraInicio" type="time" class="form-control" />
-                <span asp-validation-for="HoraInicio" class="text-danger small"></span>
-            </div>
-            <div class="col-md-6 mb-3">
-                <label asp-for="HoraFin" class="form-label fw-semibold">
-                    <i class="fas fa-clock me-1"></i>Hora de Fin del Evento*
-                </label>
-                <input asp-for="HoraFin" type="time" class="form-control" />
-                <small class="text-muted">Si es el mismo día, debe ser posterior a la hora de inicio</small>
-                <span asp-validation-for="HoraFin" class="text-danger small"></span>
-            </div>
-        </div>
-
-        @* Tipo y Cantidad *@
-        <div class="mb-3">
-            <label asp-for="Tipo" class="form-label fw-semibold">
-                <i class="fas fa-tags me-1"></i>Tipo de Evento *
-            </label>
-            <select asp-for="Tipo" asp-items="Html.GetEnumSelectList<TipoEvento>()" class="form-select">
-                <option value="">-- Seleccione un Tipo --</option>
-            </select>
-            <span asp-validation-for="Tipo" class="text-danger small"></span>
-        </div>
-
-        <div class="mb-3">
-            <label asp-for="CantidadPersonas" class="form-label fw-semibold">
-                <i class="fas fa-users me-1"></i>Cantidad de Personas *
-            </label>
-            <input asp-for="CantidadPersonas" type="number" class="form-control" min="1" max="500" />
-            <small class="text-muted">Máximo 500 personas</small>
-            <span asp-validation-for="CantidadPersonas" class="text-danger small"></span>
-        </div>
-
-        @* Costos (Bloqueados) *@
-        <div class="row">
+            @* Cliente *@
             <div class="col-md-4 mb-3">
-                <label asp-for="CostoAlquiler" class="form-label fw-semibold">
-                    <i class="fas fa-dollar-sign me-1"></i>Costo Alquiler
+                <label class="form-label fw-semibold text-muted small">
+                    <i class="fas fa-user me-1"></i>Cliente Contratante
+                </label>
+                <input type="hidden" asp-for="ClienteId" />
+                <div class="d-flex align-items-center gap-2 px-3 py-2 rounded border bg-white">
+                    <i class="fa-solid fa-lock text-muted"></i>
+                    <span class="text-dark">@Model.ClienteNombreCompleto</span>
+                </div>
+            </div>
+
+            @* Fecha Contrato *@
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-semibold text-muted small">
+                    <i class="fas fa-calendar me-1"></i>Fecha del Contrato
+                </label>
+                <input type="hidden" asp-for="FechaContrato" />
+                <div class="d-flex align-items-center gap-2 px-3 py-2 rounded border bg-white">
+                    <i class="fa-solid fa-lock text-muted"></i>
+                    <span class="text-dark">@Model.FechaContrato.ToString("dd/MM/yyyy")</span>
+                </div>
+            </div>
+
+            @* Estado *@
+            <div class="col-md-4 mb-3">
+                <label class="form-label fw-semibold text-muted small">
+                    <i class="fas fa-info-circle me-1"></i>Estado del Evento
+                </label>
+                <input type="hidden" asp-for="Estado" />
+                <div class="d-flex align-items-center gap-2 px-3 py-2 rounded border bg-white">
+                    <i class="fa-solid fa-lock text-muted"></i>
+                    <span class="badge @(Model.Estado switch {
+                        EventoEstado.PendienteAdeudado => "bg-warning text-dark",
+                        EventoEstado.PendientePagado => "bg-success",
+                        EventoEstado.Realizado => "bg-info",
+                        EventoEstado.Cancelado => "bg-danger",
+                        EventoEstado.Reprogramado => "bg-primary",
+                        _ => "bg-secondary"
+                    })">@Model.Estado</span>
+                </div>
+                <small class="text-muted d-block mt-1">
+                    <i class="fas fa-tools me-1"></i>Solo editable mediante "Manipulación Manual de Estados"
+                </small>
+            </div>
+        </div>
+
+        <div class="row">
+            @* Costo Alquiler *@
+            <div class="col-md-4 mb-3 mb-md-0">
+                <label class="form-label fw-semibold text-muted small">
+                    <i class="fas fa-dollar-sign me-1"></i>Costo del Alquiler
                 </label>
                 <input type="hidden" asp-for="CostoAlquiler" />
-                <div class="input-locked d-flex align-items-center gap-2 px-2 py-2 rounded border" style="background-color: rgba(15, 23, 42, .08);">
+                <div class="d-flex align-items-center gap-2 px-3 py-2 rounded border bg-white">
                     <i class="fa-solid fa-lock text-muted"></i>
-                    <input value="@Model.CostoAlquiler.ToString("N2")" type="text" class="form-control-plaintext mb-0 flex-grow-1 text-muted" readonly style="background-color: transparent;" />
+                    <span class="text-dark fw-bold">@Model.CostoAlquiler.ToString("C")</span>
                 </div>
             </div>
-            <div class="col-md-4 mb-3">
-                <label asp-for="MontoReserva" class="form-label fw-semibold">
-                    <i class="fas fa-hand-holding-dollar me-1"></i>Monto Reserva
+
+            @* Monto Reserva *@
+            <div class="col-md-4 mb-3 mb-md-0">
+                <label class="form-label fw-semibold text-muted small">
+                    <i class="fas fa-hand-holding-dollar me-1"></i>Monto de Reserva
                 </label>
                 <input type="hidden" asp-for="MontoReserva" />
-                <div class="input-locked d-flex align-items-center gap-2 px-2 py-2 rounded border" style="background-color: rgba(15, 23, 42, .08);">
+                <div class="d-flex align-items-center gap-2 px-3 py-2 rounded border bg-white">
                     <i class="fa-solid fa-lock text-muted"></i>
-                    <input value="@Model.MontoReserva.ToString("N2")" type="text" class="form-control-plaintext mb-0 flex-grow-1 text-muted" readonly style="background-color: transparent;" />
+                    <span class="text-dark fw-bold">@Model.MontoReserva.ToString("C")</span>
                 </div>
             </div>
-            <div class="col-md-4 mb-3">
-                <label asp-for="MontoAireAcondicionado" class="form-label fw-semibold">
-                    <i class="fas fa-snowflake me-1"></i>Monto A/C
-                </label>
-                <input asp-for="MontoAireAcondicionado" type="number" step="0.01" min="0" class="form-control" />
-                <span asp-validation-for="MontoAireAcondicionado" class="text-danger small"></span>
-            </div>
+
+            @* Placeholder para simetría *@
+            <div class="col-md-4"></div>
         </div>
-
-    </div>
-
-    @* COLUMNA DERECHA *@
-    <div class="col-md-6">
-        <h4>Cliente y Responsable</h4>
-        <hr />
-
-        @* Cliente (Bloqueado) *@
-        <div class="mb-3">
-            <label asp-for="ClienteId" class="form-label fw-semibold">
-                <i class="fas fa-user me-1"></i>Cliente
-            </label>
-            <input type="hidden" asp-for="ClienteId" />
-            <div class="input-locked d-flex align-items-center gap-2 px-3 py-2 rounded border" style="background-color: rgba(15, 23, 42, .08);">
-                <i class="fa-solid fa-lock text-muted"></i>
-                <input value="@Model.ClienteNombreCompleto" type="text" class="form-control-plaintext mb-0 flex-grow-1 text-muted" readonly style="background-color: transparent;" />
-            </div>
-            <small class="text-muted">El cliente no se puede cambiar</small>
-        </div>
-
-        @* Responsable *@
-        <div class="mb-3">
-            <label asp-for="ResponsableNombre" class="form-label fw-semibold">
-                <i class="fas fa-user me-1"></i>Nombre del Responsable *
-            </label>
-            <input asp-for="ResponsableNombre" class="form-control" maxlength="100" />
-            <span asp-validation-for="ResponsableNombre" class="text-danger small"></span>
-        </div>
-
-        <div class="mb-3">
-            <label asp-for="ResponsableTelefono" class="form-label fw-semibold">
-                <i class="fas fa-phone me-1"></i>Teléfono del Responsable *
-            </label>
-            <input asp-for="ResponsableTelefono" class="form-control" maxlength="30" />
-            <span asp-validation-for="ResponsableTelefono" class="text-danger small"></span>
-        </div>
-
-        <div class="mb-3">
-            <label asp-for="ResponsableCedula" class="form-label fw-semibold">
-                <i class="fas fa-id-card me-1"></i>Cédula del Responsable *
-            </label>
-            <input asp-for="ResponsableCedula" class="form-control" placeholder="Ej: 1.234.567-8" maxlength="30" />
-            <span asp-validation-for="ResponsableCedula" class="text-danger small"></span>
-        </div>
-
-        @* Estado - Excluir Cancelado *@
-        <div class="mb-3">
-            <label asp-for="Estado" class="form-label fw-semibold">
-                <i class="fas fa-info-circle me-1"></i>Estado
-            </label>
-            <select asp-for="Estado" class="form-select">
-                @foreach (var estado in Enum.GetValues<EventoEstado>())
-                {
-                    if (estado != EventoEstado.Cancelado)
-                    {
-                        <option value="@estado" selected="@(Model.Estado == estado)">@estado.ToString()</option>
-                    }
-                }
-            </select>
-            <small class="text-muted">Para cancelar un evento, use la opción "Cancelar Evento"</small>
-            <span asp-validation-for="Estado" class="text-danger small"></span>
-        </div>
-
-        <div class="mb-3">
-            <label asp-for="Observaciones" class="form-label ">
-                <i class="fas fa-user me-1"></i>Observacions del Evento
-            </label>
-            <input asp-for="Observaciones" class="form-control"/>
-
-        </div>
-
-
     </div>
 </div>
 
-@section Scripts {
-    <script>
-        $(document).ready(function() {
-            // Validación en tiempo real de fechas y horas (sin validar fecha futura para edición)
-            function validateDateTime() {
-                const fechaInicio = new Date($('#Inicio').val());
-                const fechaFin = new Date($('#Fin').val());
-                const horaInicio = $('#HoraInicio').val();
-                const horaFin = $('#HoraFin').val();
+@* ========================================
+   SECCIÓN 2: INFORMACIÓN EDITABLE
+   ======================================== *@
+<h5 class="mb-3 text-primary border-bottom pb-2">
+    <i class="fas fa-edit me-2"></i>Información del Evento (Editable)
+</h5>
 
-                // Si es el mismo día, validar horas
-                if (fechaInicio.toDateString() === fechaFin.toDateString() && horaInicio && horaFin) {
-                    if (horaFin <= horaInicio) {
-                        $('#HoraFin').addClass('is-invalid');
-                        if ($('#HoraFin').next('.invalid-feedback').length === 0) {
-                            $('#HoraFin').after('<div class="invalid-feedback d-block">La hora de fin debe ser posterior a la hora de inicio</div>');
-                        }
-                    } else {
-                        $('#HoraFin').removeClass('is-invalid');
-                        $('#HoraFin').next('.invalid-feedback').remove();
-                    }
-                } else {
-                    $('#HoraFin').removeClass('is-invalid');
-                    $('#HoraFin').next('.invalid-feedback').remove();
-                }
+@* FECHAS Y HORAS - IGUAL QUE CREATE *@
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="Inicio" class="form-label fw-bold">
+                <i class="fas fa-calendar-day me-1"></i>Fecha de Inicio *
+            </label>
+            <input asp-for="Inicio" class="form-control" type="date" id="FechaInicio" />
+            <span asp-validation-for="Inicio" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="Fin" class="form-label fw-bold">
+                <i class="fas fa-calendar-day me-1"></i>Fecha de Fin *
+            </label>
+            <input asp-for="Fin" class="form-control" type="date" id="FechaFin" />
+            <span asp-validation-for="Fin" class="text-danger"></span>
+        </div>
+    </div>
+</div>
 
-                // Validar que fecha de fin no sea anterior a fecha de inicio
-                if (fechaFin < fechaInicio) {
-                    $('#Fin').addClass('is-invalid');
-                    if ($('#Fin').next('.invalid-feedback').length === 0) {
-                        $('#Fin').after('<div class="invalid-feedback d-block">La fecha de fin no puede ser anterior a la fecha de inicio</div>');
-                    }
-                } else {
-                    $('#Fin').removeClass('is-invalid');
-                    $('#Fin').siblings('.invalid-feedback').remove();
-                }
-            }
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="HoraInicio" class="form-label fw-bold">
+                <i class="fas fa-clock me-1"></i>Hora de Inicio *
+            </label>
+            <input asp-for="HoraInicio" class="form-control" type="time" id="HoraInicio"
+                   value="@(Model.HoraInicio?.ToString(@"hh\:mm"))" />
+            <span asp-validation-for="HoraInicio" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="HoraFin" class="form-label fw-bold">
+                <i class="fas fa-clock me-1"></i>Hora de Fin *
+            </label>
+            <input asp-for="HoraFin" class="form-control" type="time" id="HoraFin"
+                   value="@(Model.HoraFin?.ToString(@"hh\:mm"))" />
+            <span asp-validation-for="HoraFin" class="text-danger"></span>
+        </div>
+    </div>
+</div>
 
-            // Event listeners
-            $('#Inicio, #Fin').on('change', validateDateTime);
-            $('#HoraInicio, #HoraFin').on('change', validateDateTime);
+@* TIPO Y CANTIDAD *@
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="Tipo" class="form-label fw-bold">
+                <i class="fas fa-tags me-1"></i>Tipo de Evento *
+            </label>
+            <select asp-for="Tipo" class="form-select" asp-items="Html.GetEnumSelectList<TipoEvento>()">
+                <option value="">-- Seleccione un Tipo --</option>
+            </select>
+            <span asp-validation-for="Tipo" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="CantidadPersonas" class="form-label fw-bold">
+                <i class="fas fa-users me-1"></i>Cantidad de Personas *
+            </label>
+            <input asp-for="CantidadPersonas" class="form-control" type="number" min="1" max="400" placeholder="Ej: 50" />
+            <small class="text-muted">Máximo 400 personas</small>
+            <span asp-validation-for="CantidadPersonas" class="text-danger"></span>
+        </div>
+    </div>
+</div>
 
-            // Validación de nombre del responsable (solo letras y espacios)
-            $('#ResponsableNombre').on('blur', function() {
-                const valor = $(this).val();
-                const regex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
-                
-                if (valor && !regex.test(valor)) {
-                    $(this).addClass('is-invalid');
-                    if ($(this).next('.invalid-feedback').length === 0) {
-                        $(this).after('<div class="invalid-feedback d-block">El nombre solo puede contener letras y espacios</div>');
-                    }
-                } else {
-                    $(this).removeClass('is-invalid');
-                    $(this).siblings('.invalid-feedback').remove();
-                }
-            });
+@* AIRE ACONDICIONADO *@
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="MontoAireAcondicionado" class="form-label fw-bold">
+                <i class="fas fa-snowflake me-1"></i>Monto Aire Acondicionado
+            </label>
+            <div class="input-group">
+                <span class="input-group-text bg-light fw-bold">UYU</span>
+                <input asp-for="MontoAireAcondicionado" class="form-control" type="number" step="0.01" min="0" placeholder="0.00" />
+            </div>
+            <span asp-validation-for="MontoAireAcondicionado" class="text-danger"></span>
+        </div>
+    </div>
+</div>
 
-            // Validación de teléfono
-            $('#ResponsableTelefono').on('blur', function() {
-                const valor = $(this).val();
-                const regex = /^[0-9\s\-\(\)\+]+$/;
-                
-                if (valor && !regex.test(valor)) {
-                    $(this).addClass('is-invalid');
-                    if ($(this).next('.invalid-feedback').length === 0) {
-                        $(this).after('<div class="invalid-feedback d-block">El teléfono solo puede contener números, espacios, guiones o paréntesis</div>');
-                    }
-                } else {
-                    $(this).removeClass('is-invalid');
-                    $(this).siblings('.invalid-feedback').remove();
-                }
-            });
+@* ========================================
+   SECCIÓN 3: RESPONSABLE DEL SALÓN
+   ======================================== *@
+<hr class="my-4" />
+<h5 class="mb-3 text-primary">
+    <i class="fas fa-user-tie me-2"></i>Responsable del Salón
+</h5>
 
-            // Validación de cédula
-            $('#ResponsableCedula').on('blur', function() {
-                const valor = $(this).val();
-                const cleanCedula = valor.replace(/\./g, '').replace(/-/g, '');
-                
-                if (valor && (cleanCedula.length < 7 || cleanCedula.length > 8 || !/^\d+$/.test(cleanCedula))) {
-                    $(this).addClass('is-invalid');
-                    if ($(this).next('.invalid-feedback').length === 0) {
-                        $(this).after('<div class="invalid-feedback d-block">La cédula debe tener formato válido (ej: 1.234.567-8)</div>');
-                    }
-                } else {
-                    $(this).removeClass('is-invalid');
-                    $(this).siblings('.invalid-feedback').remove();
-                }
-            });
-        });
-    </script>
-}
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="ResponsableCedula" class="form-label fw-bold">
+                <i class="fas fa-id-card me-1"></i>Cédula del Responsable *
+            </label>
+            <input asp-for="ResponsableCedula" class="form-control" id="ResponsableCedula" placeholder="Ej: 1.234.567-8" maxlength="30" />
+            <small class="text-muted d-block mt-1">
+                <i class="fas fa-info-circle me-1"></i>Si es un Cliente registrado, los datos se autocompletarán.
+            </small>
+            <span asp-validation-for="ResponsableCedula" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="col-md-6"></div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="ResponsableNombre" class="form-label fw-bold">
+                <i class="fas fa-user me-1"></i>Nombre del Responsable *
+            </label>
+            <input asp-for="ResponsableNombre" class="form-control" id="ResponsableNombre" maxlength="100" />
+            <span asp-validation-for="ResponsableNombre" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="ResponsableTelefono" class="form-label fw-bold">
+                <i class="fas fa-phone me-1"></i>Teléfono del Responsable *
+            </label>
+            <input asp-for="ResponsableTelefono" class="form-control" id="ResponsableTelefono" maxlength="30" />
+            <span asp-validation-for="ResponsableTelefono" class="text-danger"></span>
+        </div>
+    </div>
+</div>
+
+@* ========================================
+   SECCIÓN 4: OBSERVACIONES 
+   ======================================== *@
+<hr class="my-4" />
+<h5 class="mb-3 text-primary border-bottom pb-2">
+    <i class="fas fa-file-lines me-2"></i>Observaciones del Evento
+</h5>
+
+<div class="form-group mb-3">
+    <label asp-for="Observaciones" class="form-label fw-bold">
+        <i class="fas fa-comment-dots me-1"></i>Notas y Comentarios
+    </label>
+    <textarea asp-for="Observaciones" 
+              class="form-control" 
+              rows="6" 
+              placeholder="Ingrese observaciones, cambios, o notas especiales sobre el evento...&#10;&#10;Los cambios de estado y reprogramaciones se registran automáticamente aquí."></textarea>
+    <span asp-validation-for="Observaciones" class="text-danger"></span>
+    <small class="text-muted d-block mt-2">
+        <i class="fas fa-info-circle me-1"></i>
+        Los cambios de estado realizados mediante "Manipulación Manual" y las reprogramaciones se registran automáticamente en este campo con fecha y hora.
+    </small>
+</div>
