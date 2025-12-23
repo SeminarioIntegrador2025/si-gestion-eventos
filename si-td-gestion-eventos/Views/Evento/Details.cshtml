@@ -55,15 +55,21 @@
             <i class="fa-solid fa-file-pdf me-1"></i><span class="d-none d-md-inline"> Reporte PDF</span>
         </a>
 
-        <button type="button" class="btn btn-warning text-dark btn-sm"
-                data-bs-toggle="modal" data-bs-target="#modalReprogramar"
-                title="Reprogramar Fecha">
-            <i class="fa-solid fa-clock-rotate-left me-1"></i><span class="d-none d-md-inline">Reprogramar</span>
-        </button>
+        @if (Model.Estado != EventoEstado.Realizado && Model.Estado != EventoEstado.Cancelado)
+        {
+            <button type="button" class="btn btn-warning text-dark btn-sm"
+                    data-bs-toggle="modal" data-bs-target="#modalReprogramar"
+                    title="Reprogramar Fecha">
+                <i class="fa-solid fa-clock-rotate-left me-1"></i><span class="d-none d-md-inline">Reprogramar</span>
+            </button>
+        }
 
-        <a asp-action="Edit" asp-route-id="@Model.EventoId" class="btn btn-primary btn-sm">
-            <i class="fa-solid fa-pen me-1"></i><span class="d-none d-md-inline">Editar</span>
-        </a>
+        @if (Model.Estado != EventoEstado.Realizado && Model.Estado != EventoEstado.Cancelado)
+        {
+            <a asp-action="Edit" asp-route-id="@Model.EventoId" class="btn btn-primary btn-sm">
+                <i class="fa-solid fa-pen me-1"></i><span class="d-none d-md-inline">Editar</span>
+            </a>
+        }
 
         @if (Model.PermiteAgregarPago)
         {
@@ -231,13 +237,13 @@
         }
         <partial name="_GestorServicios" model="listaServicios" />
 
-        @* FIANZA (RESTAURADO ORIGINAL) *@
+        @* FIANZA *@
         @if (Model.FianzaId != null)
         {
             <div class="card shadow-sm border-warning mb-3">
                 <div class="card-header bg-warning text-light d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h6 class="mb-0"><i class="fa-solid fa-shield-alt me-2"></i>Fianza</h6>
-                    <span class="badge bg-light text-dark">@Model.DetalleFianza.Estado</span>
+                    <span class="badge bg-light text-dark">@Html.DisplayFor(m => m.DetalleFianza.Estado)</span>
                 </div>
                 <div class="card-body">
                     <h5 class="text-center mb-3">@Model.DetalleFianza.Monto.ToString("C0")</h5>
@@ -355,15 +361,28 @@
 <div class="modal fade" id="modalCambiarEstadoManual" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content border-danger shadow-lg">
-            <div class="modal-header bg-danger text-white"><h5><i class="fas fa-exclamation-triangle me-2"></i>Manipulación Manual</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-header bg-danger text-white">
+                <h5><i class="fas fa-exclamation-triangle me-2"></i>Manipulación Manual</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
             <form asp-action="CambiarEstado" method="post">
                 <div class="modal-body">
                     <input type="hidden" name="eventoId" value="@Model.EventoId" />
-                    <div class="alert alert-danger p-2 small mb-3">Forzar cambio ignorando reglas.</div>
-                    <label class="fw-bold mb-2">Nuevo Estado:</label>
-                    <select name="nuevoEstado" class="form-select border-danger fw-bold" required asp-items="Html.GetEnumSelectList<EventoEstado>()"><option value="" disabled selected>-- Elegir --</option></select>
+                    <div class="alert alert-danger p-2 small mb-3">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Forzar cambio ignorando reglas de negocio.
+                    </div>
+                    <label class="fw-bold mb-2 text-dark">Nuevo Estado:</label>
+                    <select name="nuevoEstado" class="form-select border-danger fw-bold" required asp-items="Html.GetEnumSelectList<EventoEstado>()">
+                        <option value="" disabled selected>-- Elegir Estado --</option>
+                    </select>
                 </div>
-                <div class="modal-footer"><button type="submit" class="btn btn-danger btn-sm px-4 fw-bold shadow-sm" onclick="return confirm('¿Seguro?')">Guardar Cambio</button></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger btn-sm px-4 fw-bold shadow-sm" onclick="return confirm('¿Está seguro de cambiar el estado manualmente?')">
+                        <i class="fas fa-check me-2"></i>Guardar Cambio
+                    </button>
+                </div>
             </form>
         </div>
     </div>

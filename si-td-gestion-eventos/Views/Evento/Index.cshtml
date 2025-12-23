@@ -160,11 +160,15 @@
                                 <a asp-action="Details" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-info" title="Detalles">
                                     <i class="fa-solid fa-eye"></i>
                                 </a>
-                                <a asp-action="Edit" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-secondary" title="Editar">
-                                    <i class="fa-solid fa-pen"></i>
-                                </a>
+                                
+                                @if (e.Estado != EventoEstado.Realizado && e.Estado != EventoEstado.Cancelado)
+                                {
+                                    <a asp-action="Edit" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-secondary" title="Editar">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </a>
+                                }
 
-                                @if (e.Estado == EventoEstado.Cancelado || e.Estado == EventoEstado.Reprogramado)
+                                @if (e.Estado != EventoEstado.Cancelado && e.Estado != EventoEstado.Realizado)
                                 {
                                     <button type="button" class="btn btn-sm btn-outline-warning"
                                             title="Reprogramar / Asignar Fecha"
@@ -173,14 +177,15 @@
                                         <i class="fa-solid fa-clock-rotate-left"></i>
                                     </button>
                                 }
-                                else
+
+                                @if (e.Estado != EventoEstado.Realizado && e.Estado != EventoEstado.Cancelado)
                                 {
                                     <a asp-action="Cancel" asp-route-id="@e.EventoId" class="btn btn-sm btn-outline-danger" title="Cancelar">
                                         <i class="fa-solid fa-ban"></i>
                                     </a>
                                 }
 
-                                @if (e.SaldoRestante > 0 && e.Estado != EventoEstado.Cancelado)
+                                @if (e.SaldoRestante > 0 && e.Estado != EventoEstado.Cancelado && e.Estado != EventoEstado.Realizado)
                                 {
                                     <a asp-controller="Pago" asp-action="Create" asp-route-eventoId="@e.EventoId"
                                        class="btn btn-sm btn-outline-success" title="Agregar Pago">
@@ -204,28 +209,45 @@
 </div>
 
 @* PAGINACIÓN CON PERSISTENCIA *@
-<div class="d-flex justify-content-between align-items-center mt-3">
-    <nav aria-label="Paginación">
-        <ul class="pagination mb-0">
-            <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
-                <a class="page-link bg-transparent" asp-action="Index" asp-all-route-data="routeData"
-                   asp-route-page="@(Model.PageIndex - 1)">Anterior</a>
-            </li>
-            @for (int i = 1; i <= Model.TotalPages; i++)
-            {
-                <li class="page-item @(i == Model.PageIndex ? "active" : "")">
-                    <a class="page-link" asp-action="Index" asp-all-route-data="routeData" asp-route-page="@i">@i</a>
+<div class="d-flex justify-content-between align-items-center mt-4">
+    <small class="text-muted">
+        Página @Model.PageIndex de @Model.TotalPages (@Model.TotalCount resultados)
+    </small>
+
+    @if (Model.TotalPages > 1)
+    {
+        <nav aria-label="Paginación">
+            <ul class="pagination mb-0">
+                <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-all-route-data="routeData"
+                       asp-route-page="@(Model.PageIndex - 1)">
+                        <i class="fas fa-chevron-left me-1"></i>Anterior
+                    </a>
                 </li>
-            }
-            <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
-                <a class="page-link bg-transparent" asp-action="Index" asp-all-route-data="routeData"
-                   asp-route-page="@(Model.PageIndex + 1)">Siguiente</a>
-            </li>
-        </ul>
-    </nav>
-    <p class="text-muted small">
-        Página @Model.PageIndex de @Model.TotalPages (Total: @Model.TotalCount)
-    </p>
+
+                @for (int i = Model.StartPage; i <= Model.EndPage; i++)
+                {
+                    <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                        <a class="page-link"
+                           asp-action="Index"
+                           asp-all-route-data="routeData"
+                           asp-route-page="@i">@i</a>
+                    </li>
+                }
+
+                <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-all-route-data="routeData"
+                       asp-route-page="@(Model.PageIndex + 1)">
+                        Siguiente<i class="fas fa-chevron-right ms-1"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
 </div>
 
 @* MODAL REPROGRAMAR *@

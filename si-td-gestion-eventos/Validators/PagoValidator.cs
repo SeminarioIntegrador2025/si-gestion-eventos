@@ -3,10 +3,10 @@ using si_td_gestion_eventos.Models.ViewModels;
 using si_td_gestion_eventos.Services;
 using si_td_gestion_eventos.Models.Enums;
 
-using si_td_gestion_eventos.Services.Contracts; 
-using Microsoft.AspNetCore.Http; 
-using System.IO; 
-using System.Linq; 
+using si_td_gestion_eventos.Services.Contracts; 
+using Microsoft.AspNetCore.Http; 
+using System.IO; 
+using System.Linq; 
 
 namespace si_td_gestion_eventos.Validators
 {
@@ -36,6 +36,11 @@ namespace si_td_gestion_eventos.Validators
             RuleFor(p => p.Metodo)
               .IsInEnum().WithMessage("El método de pago no es válido.");
 
+            // ← CORRECCIÓN: Regla para obligar comprobante en transferencias (solo al crear)
+            RuleFor(p => p.ArchivoComprobante)
+              .NotNull()
+              .WithMessage("Debe adjuntar un archivo de comprobante para transferencias.")
+              .When(p => p.Metodo == MetodoPago.Transferencia && p.PagoId == 0);
 
             RuleFor(p => p.ArchivoComprobante)
               .Must(BeValidFileType).WithMessage("El tipo de archivo no es válido (solo PDF, JPG, PNG).")
@@ -63,13 +68,13 @@ namespace si_td_gestion_eventos.Validators
         }
 
 
-        //Helper
-        private bool BeValidFileType(IFormFile? file)
+        //Helper
+        private bool BeValidFileType(IFormFile? file)
         {
             if (file == null) return true;
             var allowedExtensions = new[] { ".pdf", ".jpg", ".jpeg", ".png" };
-            var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant(); // Agregado '?'
-            return extension != null && allowedExtensions.Contains(extension);
+            var extension = Path.GetExtension(file.FileName)?.ToLowerInvariant();
+            return extension != null && allowedExtensions.Contains(extension);
         }
 
     }

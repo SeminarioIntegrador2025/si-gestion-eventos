@@ -33,7 +33,7 @@ namespace si_td_gestion_eventos.Context
                 c.HasIndex(e => e.CedulaIdentidad).IsUnique().HasFilter("[CedulaIdentidad] IS NOT NULL");
                 c.HasIndex(e => e.RUT).IsUnique().HasFilter("[RUT] IS NOT NULL");
                 c.HasData(
-                    new Cliente { ClienteId = 1, Nombre = "test", Apellido = "test", CedulaIdentidad = "131331313", Domicilio = "calle", Telefono = "47832", Tipo = TipoCliente.PersonaFisica, Activo = true, RUT = null }
+                    new Cliente { ClienteId = 1, Nombre = "Juan", Apellido = "Perez", CedulaIdentidad = "12345678", Domicilio = "Calle Falsa", Telefono = "47832777", Tipo = TipoCliente.PersonaFisica, Activo = true, RUT = null }
                 );
             });
 

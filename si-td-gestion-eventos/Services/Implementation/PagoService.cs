@@ -229,8 +229,19 @@ namespace si_td_gestion_eventos.Services.Implementation
 
         public async Task<ServiceResult<bool>> AnularPagoAsync(int pagoId)
         {
-            var pago = await _pagoRepository.GetByIdAsync(pagoId);
-            if (pago == null || !pago.Valido) return ServiceResult<bool>.FailureResult("Pago no encontrado o ya anulado.");
+            var pago = await _pagoRepository.GetByIdWithIncludesAsync(pagoId, p => p.Evento);
+            
+            if (pago == null || !pago.Valido) 
+                return ServiceResult<bool>.FailureResult("Pago no encontrado o ya anulado.");
+
+            // Validar que el evento NO esté Cancelado ni Realizado
+            if (pago.Evento != null && 
+                (pago.Evento.Estado == EventoEstado.Cancelado || pago.Evento.Estado == EventoEstado.Realizado))
+            {
+                return ServiceResult<bool>.FailureResult(
+                    $"No se puede anular un pago de un evento {pago.Evento.Estado}. " +
+                    "Los pagos de eventos finalizados deben mantenerse para auditoría.");
+            }
 
             try
             {

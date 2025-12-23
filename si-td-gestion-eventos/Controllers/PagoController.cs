@@ -32,13 +32,27 @@ namespace si_td_gestion_eventos.Controllers
             bool isFilteredByEvent = eventoId.HasValue;
             ViewData["IsFilteredByEvent"] = isFilteredByEvent;
 
+            EventoVM? eventoActual = null;
+            
             if (isFilteredByEvent)
             {
+                // Obtenemos el evento completo con su estado
+                eventoActual = await _eventoService.GetByIdAsync(eventoId.Value);
+                
                 pagos = await _pagoService.GetPagosByEventoIdAsync(eventoId.Value);
                 ViewData["EventoId"] = eventoId.Value;
-                var primerPago = pagos.FirstOrDefault();
-                ViewData["EventoDescripcion"] = primerPago?.EventoDescripcion ?? "Evento sin pagos registrados";
-                ViewData["ClienteNombre"] = primerPago?.ClienteNombre ?? "N/A";
+                ViewData["EventoDescripcion"] = eventoActual?.Tipo + " - " + eventoActual?.Inicio.ToString("dd/MM/yyyy") ?? "Evento sin pagos registrados";
+                ViewData["ClienteNombreCompleto"] = eventoActual?.ClienteNombreCompleto ?? "N/A";
+                
+                ViewData["EstadoEvento"] = eventoActual?.Estado;
+                
+                // Determinar si permite agregar/editar pagos (NO si está Cancelado o Realizado)
+                bool permiteGestionarPagos = eventoActual != null && 
+                                      eventoActual.Estado != EventoEstado.Cancelado && 
+                                      eventoActual.Estado != EventoEstado.Realizado &&
+                                      eventoActual.SaldoRestante > 0;
+        
+                ViewData["PermiteNuevoPago"] = permiteGestionarPagos;
             }
             else
             {
@@ -68,7 +82,7 @@ namespace si_td_gestion_eventos.Controllers
 
             // Orden y Paginación
             pagos = pagos.OrderByDescending(p => p.Fecha).ToList();
-            var total = pagos.Count;
+            var total = pagos.Count();
             var pageItems = pagos.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
             var model = new PaginatedList<PagoVM>(pageItems, total, page, pageSize);
@@ -148,6 +162,16 @@ namespace si_td_gestion_eventos.Controllers
                 return RedirectToAction("Index", new { eventoId = pagoVM.EventoId });
             }
 
+            var evento = await _eventoService.GetByIdAsync(pagoVM.EventoId);
+            
+            if (evento != null && 
+                (evento.Estado == EventoEstado.Cancelado || evento.Estado == EventoEstado.Realizado))
+            {
+                TempData["Error"] = $"No se puede editar un pago de un evento {evento.Estado}. " +
+                                   "Los pagos de eventos finalizados no pueden ser modificados.";
+                return RedirectToAction("Index", new { eventoId = pagoVM.EventoId });
+            }
+
             return View(pagoVM);
         }
 
@@ -185,8 +209,22 @@ namespace si_td_gestion_eventos.Controllers
         [HttpGet]
         public async Task<IActionResult> DescargarRecibo(int pagoId)
         {
+            // Validar que el pago sea válido antes de generar PDF
+            var pago = await _pagoService.GetByIdAsync(pagoId);
+            
+            if (pago == null) 
+                return NotFound("No se encontró el registro del pago.");
+
+            if (!pago.Valido)
+            {
+                TempData["Error"] = "No se puede descargar el recibo de un pago anulado.";
+                return RedirectToAction("Index", new { eventoId = pago.EventoId });
+            }
+
             var pdfBytes = await _pagoService.GenerarReciboPdfAsync(pagoId);
-            if (pdfBytes == null) return NotFound("No se encontró el registro del pago.");
+            
+            if (pdfBytes == null) 
+                return NotFound("Error al generar el recibo.");
 
             return File(pdfBytes, "application/pdf", $"Recibo-Pago-{pagoId}-{DateTime.Now:yyyyMMdd}.pdf");
         }

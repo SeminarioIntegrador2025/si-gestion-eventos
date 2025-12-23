@@ -80,11 +80,11 @@ namespace si_td_gestion_eventos.Migrations
                         {
                             ClienteId = 1,
                             Activo = true,
-                            Apellido = "test",
-                            CedulaIdentidad = "131331313",
-                            Domicilio = "calle",
-                            Nombre = "test",
-                            Telefono = "47832",
+                            Apellido = "Perez",
+                            CedulaIdentidad = "12345678",
+                            Domicilio = "Calle Falsa",
+                            Nombre = "Juan",
+                            Telefono = "47832777",
                             Tipo = 0
                         });
                 });

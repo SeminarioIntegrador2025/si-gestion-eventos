@@ -322,10 +322,35 @@ namespace si_td_gestion_eventos.Services.Implementation
                 (!fechaHasta.HasValue || e.Inicio.Date <= fechaHasta.Value.Date) &&
                 (!estado.HasValue || e.Estado == estado.Value);
 
-            var listaEntidades = await _eventoRepository.FindWithIncludesAsync(predicate, e => e.Cliente);
-            return _mapper.Map<List<EventoVM>>(listaEntidades.OrderByDescending(e => e.Inicio));
-        }
+    var listaEntidades = await _eventoRepository.FindWithIncludesAsync(
+        predicate, 
+        e => e.Cliente, 
+        e => e.Pagos  // ← ESTE ES EL CAMBIO CLAVE
+    );
+    
+    var listaOrdenada = listaEntidades.OrderByDescending(e => e.Inicio).ToList();
+    var items = _mapper.Map<List<EventoVM>>(listaOrdenada);
 
+    foreach (var eventoVM in items)
+    {
+        var eventoEntity = listaOrdenada.FirstOrDefault(e => e.EventoId == eventoVM.EventoId);
+        if (eventoEntity != null)
+        {
+            // Calculamos el total de pagos válidos
+            decimal totalPagadoReal = eventoEntity.Pagos?
+                                            .Where(p => p.Valido)
+                                            .Sum(p => (decimal)p.Monto) ?? 0;
+
+            eventoVM.TotalPagado = totalPagadoReal;
+
+            // Calculamos el costo total y el saldo restante
+            decimal costoTotal = (decimal)eventoEntity.CostoAlquiler + (decimal)(eventoEntity.MontoAireAcondicionado ?? 0);
+            eventoVM.SaldoRestante = costoTotal - totalPagadoReal;
+        }
+    }
+
+    return items;
+}
         #endregion
 
         #region 3. Acciones de Negocio (Estado y Fechas)
@@ -334,18 +359,38 @@ namespace si_td_gestion_eventos.Services.Implementation
         {
             try
             {
-                if (!await _businessRules.CanCancelEventoAsync(id)) return ServiceResult<bool>.FailureResult("No se puede cancelar este evento.");
+                if (!await _businessRules.CanCancelEventoAsync(id)) 
+                    return ServiceResult<bool>.FailureResult("No se puede cancelar este evento.");
 
                 var evento = await _eventoRepository.GetByIdAsync(id);
-                if (evento == null) return ServiceResult<bool>.FailureResult("Evento no encontrado.");
+                if (evento == null) 
+                    return ServiceResult<bool>.FailureResult("Evento no encontrado.");
 
+                var estadoAnterior = evento.Estado;
+                var fechaOriginal = evento.Inicio.Year > 2000 
+                    ? evento.Inicio.ToString("dd/MM/yyyy HH:mm") 
+                    : "Fecha por definir";
+
+                // Cambiar estado
                 evento.Estado = EventoEstado.Cancelado;
+
+                string fechaHoy = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+                string mensajeAuditoria = $"[EVENTO CANCELADO] Estado anterior: '{estadoAnterior}'. Fecha programada: {fechaOriginal}. Cancelado el {fechaHoy}.";
+                
+                if (string.IsNullOrEmpty(evento.Observaciones))
+                    evento.Observaciones = mensajeAuditoria;
+                else
+                    evento.Observaciones += $"{Environment.NewLine}{mensajeAuditoria}";
+
                 _eventoRepository.Update(evento);
                 await _eventoRepository.SaveChangesAsync();
 
-                return ServiceResult<bool>.SuccessResult(true, "El evento ha sido cancelado.");
+                return ServiceResult<bool>.SuccessResult(true, "El evento ha sido cancelado y se registró en las observaciones.");
             }
-            catch (Exception) { return ServiceResult<bool>.FailureResult("Error inesperado al cancelar."); }
+            catch (Exception ex) 
+            { 
+                return ServiceResult<bool>.FailureResult($"Error inesperado al cancelar: {ex.Message}"); 
+            }
         }
 
         public async Task<ServiceResult<bool>> ConfirmAsync(int id)
@@ -375,6 +420,12 @@ namespace si_td_gestion_eventos.Services.Implementation
                 var evento = await _eventoRepository.GetByIdAsync(model.EventoId);
                 if (evento == null) return ServiceResult<bool>.FailureResult("No existe el evento.");
 
+                // VALIDACIÓN: No permitir reprogramar eventos finalizados
+                if (evento.Estado == EventoEstado.Realizado || evento.Estado == EventoEstado.Cancelado)
+                {
+                    return ServiceResult<bool>.FailureResult($"No se puede reprogramar un evento en estado '{evento.Estado}'. Los eventos realizados o cancelados no pueden ser reprogramados.");
+                }
+
                 // 1. DETECCIÓN DE ESTADO POR FECHA (Lógica Centinela)
                 // Verificamos si la fecha guardada es el "Flag" de 1900
                 bool estabaIndefinido = evento.Inicio.Year == 1900;
@@ -385,15 +436,13 @@ namespace si_td_gestion_eventos.Services.Implementation
                     : evento.Inicio.ToString("dd/MM/yyyy");
 
                 string mensajeAuditoria = "";
-                string fechaHoy = DateTime.Now.ToString("dd/MM/yyyy");
+                string fechaHoy = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
 
                 // 3. APLICACIÓN DE CAMBIOS
                 if (model.FechaIndefinida)
                 {
                     // --- CASO A: Pasa a Indefinido ---
                     evento.Estado = EventoEstado.Reprogramado;
-
-                    // NO usamos una propiedad bool. USAMOS LA FECHA CENTINELA (1900).
                     evento.Inicio = new DateTime(1900, 1, 1);
                     evento.Fin = new DateTime(1900, 1, 1);
 
@@ -403,8 +452,6 @@ namespace si_td_gestion_eventos.Services.Implementation
                          model.NuevaHoraInicio.HasValue && model.NuevaHoraFin.HasValue)
                 {
                     // --- CASO B: Pasa a Fecha Concreta ---
-
-                    // Validación de negocio (Disponibilidad)
                     if (!await _businessRules.IsDateRangeAvailableAsync(
                         model.NuevaFechaInicio.Value, model.NuevaFechaFin.Value,
                         model.NuevaHoraInicio.Value, model.NuevaHoraFin.Value, model.EventoId))
@@ -413,8 +460,6 @@ namespace si_td_gestion_eventos.Services.Implementation
                     }
 
                     evento.Estado = EventoEstado.Reprogramado;
-                    // Aquí simplemente sobrescribimos la fecha 1900 con la real. No hace falta cambiar flags.
-
                     evento.Inicio = model.NuevaFechaInicio.Value.Date + model.NuevaHoraInicio.Value;
                     evento.Fin = model.NuevaFechaFin.Value.Date + model.NuevaHoraFin.Value;
                     evento.HoraInicio = model.NuevaHoraInicio.Value;
@@ -593,11 +638,27 @@ namespace si_td_gestion_eventos.Services.Implementation
         public async Task<ServiceResult<bool>> CambiarEstadoManualAsync(int id, EventoEstado nuevoEstado)
         {
             var evento = await _eventoRepository.GetByIdAsync(id);
-            if (evento == null) return ServiceResult<bool>.FailureResult("No encontrado.");
+            if (evento == null) return ServiceResult<bool>.FailureResult("Evento no encontrado.");
+            
+            // Guardar el estado anterior para auditoría
+            var estadoAnterior = evento.Estado;
+            
+            // Cambiar el estado
             evento.Estado = nuevoEstado;
+            
+            // Registrar el cambio en observaciones con timestamp
+            string fechaHoy = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+            string mensajeAuditoria = $"[CAMBIO MANUAL] Estado cambiado de '{estadoAnterior}' a '{nuevoEstado}' el {fechaHoy}.";
+            
+            if (string.IsNullOrEmpty(evento.Observaciones))
+                evento.Observaciones = mensajeAuditoria;
+            else
+                evento.Observaciones += $"{Environment.NewLine}{mensajeAuditoria}";
+            
             _eventoRepository.Update(evento);
             await _eventoRepository.SaveChangesAsync();
-            return ServiceResult<bool>.SuccessResult(true, "Estado actualizado.");
+            
+            return ServiceResult<bool>.SuccessResult(true, $"Estado actualizado a '{nuevoEstado}' correctamente.");
         }
 
         public async Task<IEnumerable<SelectListItem>> GetEventosSinFianzaParaDropdownAsync()
@@ -633,9 +694,10 @@ namespace si_td_gestion_eventos.Services.Implementation
         public async Task<IEnumerable<SelectListItem>> GetEventosParaFiltroPagosAsync()
         {
             var evs = await _eventoRepository.FindWithIncludesAsync(e => true, e => e.Cliente);
-            return evs.OrderByDescending(e => e.Inicio).Select(e => new SelectListItem { Value = e.EventoId.ToString(), Text = $"{e.Cliente.Nombre} - {e.Inicio:dd/MM}" });
+            return evs.OrderByDescending(e => e.Inicio).Select(e => new SelectListItem { Value = e.EventoId.ToString(), Text = $"{e.Cliente.Nombre}  {(e.Cliente.Apellido ?? "")} - Fecha de Inicio: {e.Inicio:dd/MM}" });
         }
 
-        #endregion
     }
+
+    #endregion
 }
