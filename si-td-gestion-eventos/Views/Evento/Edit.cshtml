@@ -21,29 +21,11 @@
 
     <div class="row justify-content-center">
         <div class="col-lg-10">
-   
-            @if (ViewData.ModelState.Any(x => string.IsNullOrEmpty(x.Key) && x.Value.Errors.Any()))
-            {
-                <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
-                    <h6 class="alert-heading fw-bold">
-                        <i class="fas fa-exclamation-triangle me-2"></i>Error al Guardar
-                    </h6>
-                    <ul class="mb-0 small">
-                        @foreach (var error in ViewData.ModelState.Where(x => string.IsNullOrEmpty(x.Key)).SelectMany(v => v.Value.Errors))
-                        {
-                            <li>@error.ErrorMessage</li>
-                        }
-                    </ul>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            }
-
-            @* ALERTA GENERAL *@
-            @if (ViewData.ModelState.Any(x => !string.IsNullOrEmpty(x.Key) && x.Value.Errors.Any()))
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
             {
                 <div class="alert alert-warning alert-dismissible fade show shadow-sm" role="alert">
-                    <i class="fas fa-info-circle me-2"></i>
-                    <strong>Hay errores en el formulario.</strong> Por favor, revisa los campos marcados en rojo.
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Error al guardar.</strong> Por favor, revise los errores marcados en el formulario.
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             }
@@ -82,7 +64,66 @@
     <script>
         $(document).ready(function () {
 
-            // --- BLOQUE 1: Formato Visual de Cédula ---
+            $.validator.methods.range = function(value, element, param) {
+                var globalizedValue = value.replace(",", ".");
+                return this.optional(element) || (globalizedValue >= param[0] && globalizedValue <= param[1]);
+            };
+
+            $.validator.methods.number = function(value, element) {
+                return this.optional(element) || /^-?(?:\d+|\d{1,3}(?:[\s\.,]\d{3})+)(?:[\.,]\d+)?$/.test(value);
+            };
+
+            //  MENSAJES DE VALIDACIÓN 
+            if ($.validator && $.validator.messages) {
+                $.extend($.validator.messages, {
+                    required: "Este campo es obligatorio.",
+                    email: "Por favor, ingrese un correo electrónico válido.",
+                    url: "Por favor, ingrese una URL válida.",
+                    date: "Por favor, ingrese una fecha válida.",
+                    dateISO: "Por favor, ingrese una fecha válida (ISO).",
+                    number: "Por favor, ingrese un número válido.",
+                    digits: "Por favor, ingrese solo dígitos.",
+                    creditcard: "Por favor, ingrese un número de tarjeta válido.",
+                    equalTo: "Por favor, ingrese el mismo valor nuevamente.",
+                    maxlength: $.validator.format("Por favor, no ingrese más de {0} caracteres."),
+                    minlength: $.validator.format("Por favor, ingrese al menos {0} caracteres."),
+                    rangelength: $.validator.format("Por favor, ingrese un valor entre {0} y {1} caracteres."),
+                    range: $.validator.format("Por favor, ingrese un valor entre {0} y {1}."),
+                    max: $.validator.format("Por favor, ingrese un valor menor o igual a {0}."),
+                    min: $.validator.format("Por favor, ingrese un valor mayor o igual a {0}.")
+                });
+            }
+
+            $('#CantidadPersonas').on('blur', function() {
+                const val = parseInt($(this).val());
+                const $error = $(this).siblings('.text-danger');
+                
+                if (val < 50) {
+                    $(this).addClass('is-invalid');
+                    $error.text('Se necesitan al menos 50 personas para el evento.');
+                } else if (val > 400) {
+                    $(this).addClass('is-invalid');
+                    $error.text('El salón no permite más de 400 personas.');
+                } else {
+                    $(this).removeClass('is-invalid');
+                    $error.text('');
+                }
+            });
+
+            $('#MontoAireAcondicionado').on('blur', function() {
+                const val = parseFloat($(this).val());
+                const $error = $(this).closest('.form-group').find('.text-danger');
+                
+                if (val < 0) {
+                    $(this).addClass('is-invalid');
+                    $error.text('El monto no puede ser negativo.');
+                } else {
+                    $(this).removeClass('is-invalid');
+                    $error.text('');
+                }
+            });
+
+            // --- BLOQUE: Formato Visual de Cédula ---
             $('#ResponsableCedula').on('input', function() {
                 let value = this.value.replace(/[^\d]/g, '');
                 if (value.length > 8) {
@@ -94,7 +135,7 @@
                 this.value = value;
             });
 
-            // --- BLOQUE 2: Autocompletado por CI (Lógica AJAX) ---
+            // --- BLOQUE: Autocompletado por CI (Lógica AJAX) ---
             const $inputCI = $("#ResponsableCedula");
             const $inputNombre = $("#ResponsableNombre");
             const $inputTel = $("#ResponsableTelefono");

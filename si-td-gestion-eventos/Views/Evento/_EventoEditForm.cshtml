@@ -1,8 +1,6 @@
 ﻿@model si_td_gestion_eventos.Models.ViewModels.EventoVM
 @using si_td_gestion_eventos.Models.Enums
 
-<div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-
 @* ========================================
    SECCIÓN 1: INFORMACIÓN NO EDITABLE (ARRIBA)
    ======================================== *@
@@ -162,8 +160,8 @@
             <label asp-for="CantidadPersonas" class="form-label fw-bold">
                 <i class="fas fa-users me-1"></i>Cantidad de Personas *
             </label>
-            <input asp-for="CantidadPersonas" class="form-control" type="number" min="1" max="400" placeholder="Ej: 50" />
-            <small class="text-muted">Máximo 400 personas</small>
+            <input asp-for="CantidadPersonas" class="form-control" type="number" min="50" max="400" placeholder="Ej: 50" />
+            <small class="text-muted">Mínimo 50, máximo 400 personas</small>
             <span asp-validation-for="CantidadPersonas" class="text-danger"></span>
         </div>
     </div>

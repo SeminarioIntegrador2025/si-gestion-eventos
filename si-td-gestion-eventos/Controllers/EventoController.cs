@@ -218,6 +218,7 @@ namespace si_td_gestion_eventos.Controllers
                 return NotFound();
             }
 
+            // VALIDACIÓN ADICIONAL: Double-check en el POST
             var eventoActual = await _eventoService.GetByIdAsync(id);
             if (eventoActual == null)
             {
@@ -239,7 +240,26 @@ namespace si_td_gestion_eventos.Controllers
             {
                 foreach (var error in validationResult.Errors)
                 {
-                    ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
+                    // TRADUCIR MENSAJES DE RANGO
+                    string mensaje = error.ErrorMessage;
+                    
+                    if (error.PropertyName == "CantidadPersonas")
+                    {
+                        if (mensaje.Contains("greater than or equal to"))
+                        {
+                            mensaje = "Se necesitan al menos 50 personas para el evento.";
+                        }
+                        else if (mensaje.Contains("less than or equal to"))
+                        {
+                            mensaje = "El salón no permite más de 400 personas.";
+                        }
+                    }
+                    else if (error.PropertyName == "MontoAireAcondicionado" && mensaje.Contains("greater than or equal to"))
+                    {
+                        mensaje = "El monto no puede ser negativo.";
+                    }
+
+                    ModelState.AddModelError(error.PropertyName, mensaje);
                 }
             }
 
@@ -251,9 +271,19 @@ namespace si_td_gestion_eventos.Controllers
                     TempData["Ok"] = result.Message;
                     return RedirectToAction(nameof(Index));
                 }
+                
+                // FILTRAR MENSAJES DE ERRORES TÉCNICOS
                 foreach (var error in result.Errors)
                 {
-                    ModelState.AddModelError(string.Empty, error);
+                    if (!error.Contains("entity changes") && !error.Contains("inner exception"))
+                    {
+                        ModelState.AddModelError(string.Empty, error);
+                    }
+                    else
+                    {
+                        // Error técnico genérico
+                        ModelState.AddModelError(string.Empty, "Ocurrió un error al guardar los cambios. Por favor, intente nuevamente.");
+                    }
                 }
             }
 

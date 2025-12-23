@@ -32,9 +32,8 @@ namespace si_td_gestion_eventos.Validators
                 .IsInEnum().WithMessage("Debe seleccionar un tipo de evento válido."); // IsInEnum es más robusto que NotEmpty para enums
 
             RuleFor(e => e.CantidadPersonas)
-                .GreaterThan(0).WithMessage("La cantidad de personas debe ser mayor a cero.")
-                .LessThanOrEqualTo(400).WithMessage("La cantidad de personas no puede exceder 400.")
-                // La validación de entero es implícita si el tipo en VM es int, pero Must es una doble verificación
+                .GreaterThanOrEqualTo(50).WithMessage("Se necesitan al menos 50 personas para el evento.")
+                .LessThanOrEqualTo(400).WithMessage("El salón no permite más de 400 personas.")
                 .Must(c => c % 1 == 0).WithMessage("La cantidad de personas debe ser un número entero.");
 
             // --- Fechas y Horas (Presencia y Coherencia Básica) ---
@@ -103,7 +102,7 @@ namespace si_td_gestion_eventos.Validators
                 .WithMessage("El monto de reserva no puede ser mayor al costo del alquiler.");
 
             RuleFor(x => x.MontoAireAcondicionado)
-                .GreaterThanOrEqualTo(0).WithMessage("El monto del aire acondicionado no puede ser negativo.")
+                .GreaterThanOrEqualTo(0).WithMessage("El monto no puede ser negativo.")
                 .When(x => x.MontoAireAcondicionado.HasValue);
 
             // --- Responsable del Salón (Validaciones detalladas) ---
