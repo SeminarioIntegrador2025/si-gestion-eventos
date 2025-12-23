@@ -36,9 +36,6 @@ namespace si_td_gestion_eventos.Validators
             RuleFor(p => p.Metodo)
               .IsInEnum().WithMessage("El método de pago no es válido.");
 
-            RuleFor(p => p.ArchivoComprobante)
-              .NotNull().WithMessage("Debe adjuntar un archivo de comprobante para transferencias.")
-              .When(p => p.Metodo == MetodoPago.Transferencia && p.PagoId == 0);
 
             RuleFor(p => p.ArchivoComprobante)
               .Must(BeValidFileType).WithMessage("El tipo de archivo no es válido (solo PDF, JPG, PNG).")
