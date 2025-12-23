@@ -42,7 +42,7 @@ namespace si_td_gestion_eventos.Controllers
                 pagos = await _pagoService.GetPagosByEventoIdAsync(eventoId.Value);
                 ViewData["EventoId"] = eventoId.Value;
                 ViewData["EventoDescripcion"] = eventoActual?.Tipo + " - " + eventoActual?.Inicio.ToString("dd/MM/yyyy") ?? "Evento sin pagos registrados";
-                ViewData["ClienteNombre"] = eventoActual?.ClienteNombreCompleto ?? "N/A";
+                ViewData["ClienteNombreCompleto"] = eventoActual?.ClienteNombreCompleto ?? "N/A";
                 
                 ViewData["EstadoEvento"] = eventoActual?.Estado;
                 

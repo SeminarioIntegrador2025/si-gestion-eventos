@@ -694,9 +694,10 @@ namespace si_td_gestion_eventos.Services.Implementation
         public async Task<IEnumerable<SelectListItem>> GetEventosParaFiltroPagosAsync()
         {
             var evs = await _eventoRepository.FindWithIncludesAsync(e => true, e => e.Cliente);
-            return evs.OrderByDescending(e => e.Inicio).Select(e => new SelectListItem { Value = e.EventoId.ToString(), Text = $"{e.Cliente.Nombre} - {e.Inicio:dd/MM}" });
+            return evs.OrderByDescending(e => e.Inicio).Select(e => new SelectListItem { Value = e.EventoId.ToString(), Text = $"{e.Cliente.Nombre}  {(e.Cliente.Apellido ?? "")} - Fecha de Inicio: {e.Inicio:dd/MM}" });
         }
 
-        #endregion
     }
+
+    #endregion
 }
