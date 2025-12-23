@@ -3,10 +3,6 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using si_td_gestion_eventos.Models.Enums;
 using si_td_gestion_eventos.Models.ViewModels;
 using si_td_gestion_eventos.Services.Contracts;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace si_td_gestion_eventos.Controllers
 {
@@ -39,18 +35,13 @@ namespace si_td_gestion_eventos.Controllers
         [HttpGet]
         public async Task<IActionResult> Create(int? eventoId)
         {
-            var fianzaVM = new FianzaVM
-            {
-                FechaRegistro = DateTime.Today
-            };
+            var fianzaVM = new FianzaVM { FechaRegistro = DateTime.Today };
 
             if (eventoId.HasValue)
             {
-                // Caso A: Venimos desde un Evento específico
                 var evento = await _eventoService.GetByIdAsync(eventoId.Value);
                 if (evento == null) return NotFound();
 
-                // Validar si ya tiene fianza
                 if (evento.FianzaId.HasValue)
                 {
                     TempData["Error"] = "Este evento ya tiene una fianza registrada.";
@@ -58,15 +49,9 @@ namespace si_td_gestion_eventos.Controllers
                 }
 
                 fianzaVM.EventoId = eventoId.Value;
-                // Usamos el helper para cargar la info de la vista
-                await CargarDatosVistaCreate(fianzaVM);
-            }
-            else
-            {
-                // Caso B: Venimos desde el menú general
-                await CargarDatosVistaCreate(fianzaVM);
             }
 
+            await CargarDatosVistaCreate(fianzaVM);
             return View(fianzaVM);
         }
 
@@ -74,27 +59,22 @@ namespace si_td_gestion_eventos.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(FianzaVM fianzaVM)
         {
-            // 1. Validación del Modelo
             if (!ModelState.IsValid)
             {
-                await CargarDatosVistaCreate(fianzaVM); // Recarga datos necesarios para la vista
+                await CargarDatosVistaCreate(fianzaVM);
                 return View(fianzaVM);
             }
 
-            // 2. Intentar crear la fianza
             var result = await _fianzaService.CreateAsync(fianzaVM);
 
             if (result.Success)
             {
                 TempData["Ok"] = "Fianza registrada exitosamente.";
-                // Volvemos al detalle del evento asociado
                 return RedirectToAction("Details", "Evento", new { id = fianzaVM.EventoId });
             }
 
-            // 3. Si falla la lógica de negocio, mostramos el error
-            ModelState.AddModelError(string.Empty, result.Errors.FirstOrDefault());
-
-            await CargarDatosVistaCreate(fianzaVM); // Recarga datos necesarios
+            ModelState.AddModelError(string.Empty, result.Errors.FirstOrDefault() ?? "Error al crear fianza.");
+            await CargarDatosVistaCreate(fianzaVM);
             return View(fianzaVM);
         }
 
@@ -103,10 +83,7 @@ namespace si_td_gestion_eventos.Controllers
         public async Task<IActionResult> Edit(int id)
         {
             var fianzaVM = await _fianzaService.GetByIdAsync(id);
-            if (fianzaVM == null)
-            {
-                return NotFound();
-            }
+            if (fianzaVM == null) return NotFound();
             return View(fianzaVM);
         }
 
@@ -114,34 +91,31 @@ namespace si_td_gestion_eventos.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, FianzaVM fianzaVM)
         {
-            if (id != fianzaVM.FianzaId)
-                return BadRequest();
+            if (id != fianzaVM.FianzaId) return BadRequest();
 
-            // 1. OBTENER DATOS ORIGINALES (Necesario para comparar montos y restaurar vista)
+            // 1. Obtener datos originales de la DB (Punto de Verdad)
             var fianzaOriginal = await _fianzaService.GetByIdAsync(id);
             if (fianzaOriginal == null) return NotFound();
 
-            // 2. VALIDACIÓN MANUAL DE MONTO
-            // Verificamos explícitamente si el usuario quiere devolver más de lo que pagó
-            if (fianzaVM.MontoDevuelto.HasValue && fianzaVM.MontoDevuelto.Value > fianzaOriginal.Monto)
+            // 2. Validación manual de monto (Capa de protección inmediata)
+            if (fianzaVM.MontoDevuelto > fianzaOriginal.Monto)
             {
-                // Asignamos el error a la clave "MontoDevuelto" para que aparezca bajo el input
-                ModelState.AddModelError("MontoDevuelto", $"El monto a devolver no puede ser mayor al monto original ({fianzaOriginal.Monto:C2}).");
+                ModelState.AddModelError("MontoDevuelto", $"El monto a devolver no puede ser mayor al original ({fianzaOriginal.Monto:C2}).");
             }
 
-            // 3. VERIFICAR MODELSTATE
+            // 3. Manejo de fallo en validación
             if (!ModelState.IsValid)
             {
-                // Restauramos la descripción del evento para que no se pierda en la vista
-                fianzaVM.EventoDescripcion = fianzaOriginal.EventoDescripcion;
-
-                // IMPORTANTE: Restauramos el monto original en el VM para que el validador de la vista (si existe) tenga referencia
+                // RESTAURACIÓN DE ESTADO (Solución al bug visual)
+                // Devolvemos el VM pero forzamos que el Estado y el Monto vuelvan a ser los reales
+                fianzaVM.Estado = fianzaOriginal.Estado;
                 fianzaVM.Monto = fianzaOriginal.Monto;
+                fianzaVM.EventoDescripcion = fianzaOriginal.EventoDescripcion;
 
                 return View(fianzaVM);
             }
 
-            // 4. ACTUALIZAR
+            // 4. Intento de actualización en el servicio
             var result = await _fianzaService.UpdateAsync(fianzaVM);
 
             if (result.Success)
@@ -150,60 +124,35 @@ namespace si_td_gestion_eventos.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // 5. MANEJO DE ERRORES DEL SERVICIO
-            if (!string.IsNullOrEmpty(result.Message))
-                ModelState.AddModelError(string.Empty, result.Message);
+            // 5. Si el servicio deniega (ej: por lógica de negocio profunda)
+            ModelState.AddModelError(string.Empty, result.Message ?? "Error al actualizar.");
 
-            foreach (var error in result.Errors ?? new List<string>())
-                ModelState.AddModelError(string.Empty, error);
-
-            // Recargar datos visuales si falló el servicio
-            fianzaVM.EventoDescripcion = fianzaOriginal.EventoDescripcion;
+            // Re-restauramos datos visuales para que la vista no se rompa
+            fianzaVM.Estado = fianzaOriginal.Estado;
             fianzaVM.Monto = fianzaOriginal.Monto;
+            fianzaVM.EventoDescripcion = fianzaOriginal.EventoDescripcion;
 
             return View(fianzaVM);
         }
 
-        // --- ELIMINAR (DELETE) ---
+        // --- ELIMINAR Y DETALLES (Mantener igual) ---
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
             var result = await _fianzaService.DeleteAsync(id);
-
-            if (result.Success)
-            {
-                TempData["Ok"] = result.Message;
-            }
-            else
-            {
-                string mensajeError = !string.IsNullOrEmpty(result.Message)
-                                      ? result.Message
-                                      : result.Errors?.FirstOrDefault();
-
-                TempData["Error"] = mensajeError;
-            }
-
+            if (result.Success) TempData["Ok"] = result.Message;
+            else TempData["Error"] = result.Message ?? result.Errors?.FirstOrDefault();
             return RedirectToAction(nameof(Index));
         }
 
-        // --- DETALLES (DETAILS) ---
         [HttpGet]
         public async Task<IActionResult> Details(int id)
         {
             var fianzaVM = await _fianzaService.GetByIdAsync(id);
-            if (fianzaVM == null)
-            {
-                return NotFound();
-            }
-            return View(fianzaVM);
+            return fianzaVM == null ? NotFound() : View(fianzaVM);
         }
 
-        // --- MÉTODOS PRIVADOS DE AYUDA (HELPERS) ---
-
-        /// <summary>
-        /// Carga los datos necesarios para la vista Create
-        /// </summary>
         private async Task CargarDatosVistaCreate(FianzaVM fianzaVM)
         {
             if (fianzaVM.EventoId > 0)
@@ -213,13 +162,11 @@ namespace si_td_gestion_eventos.Controllers
                 {
                     fianzaVM.EventoDescripcion = $"{evento.ClienteNombreCompleto} - {evento.Tipo} ({evento.Inicio:dd/MM/yyyy})";
                     ViewBag.EventoPreseleccionado = true;
+                    return;
                 }
             }
-            else
-            {
-                ViewBag.EventosDisponibles = await _eventoService.GetEventosSinFianzaParaDropdownAsync();
-                ViewBag.EventoPreseleccionado = false;
-            }
+            ViewBag.EventosDisponibles = await _eventoService.GetEventosSinFianzaParaDropdownAsync();
+            ViewBag.EventoPreseleccionado = false;
         }
     }
 }

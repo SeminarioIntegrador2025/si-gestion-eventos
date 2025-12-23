@@ -41,6 +41,18 @@ namespace si_td_gestion_eventos.Validators
                 .NotEmpty().WithMessage("La fecha del contrato es obligatoria.");
             // La regla LessThanOrEqualTo(Today) se movió al RuleSet "Create" porque al editar podrías ver un contrato viejo.
 
+
+            // Fecha de inicio debe ser futura al crear (puede ser hoy)
+            RuleFor(x => x.Inicio)
+                .GreaterThanOrEqualTo(DateTime.Today) // Permite crear eventos para hoy
+                .WithMessage("La fecha de inicio debe ser hoy o una fecha futura.");
+
+                // Si es hoy, la hora de inicio no puede ser pasada
+                RuleFor(x => x.HoraInicio)
+                    .GreaterThanOrEqualTo(DateTime.Now.TimeOfDay)
+                    .When(x => x.Inicio.Date == DateTime.Today, ApplyConditionTo.CurrentValidator)
+                    .WithMessage("Si el evento es hoy, la hora de inicio no puede ser anterior a la hora actual.");
+
             RuleFor(x => x.Inicio)
                 .NotEmpty().WithMessage("La fecha de inicio es obligatoria.");
             // La regla de que sea futura se movió al RuleSet "Create".
@@ -136,17 +148,6 @@ namespace si_td_gestion_eventos.Validators
                     .LessThanOrEqualTo(DateTime.Today)
                     .WithMessage("La fecha del contrato no puede ser futura.");
 
-                // Fecha de inicio debe ser futura al crear (puede ser hoy)
-                RuleFor(x => x.Inicio)
-                    .GreaterThanOrEqualTo(DateTime.Today) // Permite crear eventos para hoy
-                    .WithMessage("La fecha de inicio debe ser hoy o una fecha futura.");
-
-
-                // Si es hoy, la hora de inicio no puede ser pasada
-                RuleFor(x => x.HoraInicio)
-                    .GreaterThanOrEqualTo(DateTime.Now.TimeOfDay)
-                    .When(x => x.Inicio.Date == DateTime.Today, ApplyConditionTo.CurrentValidator)
-                    .WithMessage("Si el evento es hoy, la hora de inicio no puede ser anterior a la hora actual.");
 
                 // Validación específica del Monto de Reserva al crear y sin ser el evento en las 48hs proximas
                 RuleFor(x => x)
